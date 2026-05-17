@@ -1,5 +1,5 @@
 {
-    "name": "vendor/package",
+    "name": "myth/courier",
     "description": "A CodeIgniter 4 package",
     "license": "MIT",
     "type": "library",
@@ -28,7 +28,7 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "YourVendor\\YourPackage\\": "src"
+            "Myth\\Courier\\": "src"
         }
     },
     "autoload-dev": {

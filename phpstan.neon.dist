@@ -18,9 +18,9 @@ parameters:
 		- CodeIgniter\CodeIgniter::CI_VERSION
 	codeigniter:
 		additionalConfigNamespaces:
-			- YourVendor\YourPackage\Config
+			- Myth\Courier\Config
 		additionalServices:
-			- YourVendor\YourPackage\Config\Services
+			- Myth\Courier\Config\Services
 	strictRules:
 		allRules: false
 		disallowedLooseComparison: true
