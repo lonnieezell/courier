@@ -109,26 +109,43 @@ class ContactService
      */
     public function applyTags(int $contactId, array $slugs): void
     {
+        if ($slugs === []) {
+            return;
+        }
+
+        // Fetch all matching tags in one query
+        $found      = $this->tagModel->whereIn('slug', $slugs)->findAll();
+        $tagsBySlug = array_combine(array_column($found, 'slug'), $found);
+
+        // Insert any tags that don't exist yet
         foreach ($slugs as $slug) {
-            $tag = $this->tagModel->where('slug', $slug)->first();
-
-            if ($tag === null) {
-                $label = ucwords(str_replace(['-', '_'], ' ', $slug));
-                $id    = $this->tagModel->insert(['slug' => $slug, 'label' => $label]);
-                $tag   = $this->tagModel->find($id);
+            if (! isset($tagsBySlug[$slug])) {
+                $label              = ucwords(str_replace(['-', '_'], ' ', $slug));
+                $id                 = $this->tagModel->insert(['slug' => $slug, 'label' => $label]);
+                $tagsBySlug[$slug]  = $this->tagModel->find($id);
             }
+        }
 
-            $exists = $this->contactTagModel
-                ->where('contact_id', $contactId)
-                ->where('tag_id', $tag->id)
-                ->countAllResults();
+        // Determine which associations already exist (one query)
+        $allTagIds    = array_map(static fn(object $t): int => $t->id, $tagsBySlug);
+        $linked       = $this->contactTagModel
+            ->select('tag_id')
+            ->where('contact_id', $contactId)
+            ->whereIn('tag_id', $allTagIds)
+            ->findAll();
+        $linkedTagIds = array_column($linked, 'tag_id');
 
-            if ($exists === 0) {
-                $this->contactTagModel->insert([
-                    'contact_id' => $contactId,
-                    'tag_id'     => $tag->id,
-                ]);
+        // Batch-insert only the missing associations
+        $toInsert = [];
+
+        foreach ($tagsBySlug as $tag) {
+            if (! in_array($tag->id, $linkedTagIds, true)) {
+                $toInsert[] = ['contact_id' => $contactId, 'tag_id' => $tag->id];
             }
+        }
+
+        if ($toInsert !== []) {
+            $this->contactTagModel->insertBatch($toInsert);
         }
     }
 
@@ -140,18 +157,22 @@ class ContactService
      */
     public function removeTags(int $contactId, array $slugs): void
     {
-        foreach ($slugs as $slug) {
-            $tag = $this->tagModel->where('slug', $slug)->first();
-
-            if ($tag === null) {
-                continue;
-            }
-
-            $this->contactTagModel
-                ->where('contact_id', $contactId)
-                ->where('tag_id', $tag->id)
-                ->delete();
+        if ($slugs === []) {
+            return;
         }
+
+        $tags = $this->tagModel->whereIn('slug', $slugs)->findAll();
+
+        if ($tags === []) {
+            return;
+        }
+
+        $tagIds = array_column($tags, 'id');
+
+        $this->contactTagModel
+            ->where('contact_id', $contactId)
+            ->whereIn('tag_id', $tagIds)
+            ->delete();
     }
 
     public function getContact(string $email): ?object

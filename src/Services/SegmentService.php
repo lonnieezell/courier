@@ -69,6 +69,33 @@ class SegmentService
     }
 
     /**
+     * Yields contacts matching the segment in chunks to avoid loading the
+     * full result set into memory at once. Use this instead of resolve()
+     * when processing large segments.
+     *
+     * @return \Generator<int, list<object>>
+     */
+    public function resolveChunked(int $segmentId, int $chunkSize = 200): \Generator
+    {
+        $offset = 0;
+
+        do {
+            $rows = $this->buildQuery($segmentId)
+                ->limit($chunkSize, $offset)
+                ->get()
+                ->getResultObject();
+
+            if ($rows === []) {
+                break;
+            }
+
+            yield $rows;
+
+            $offset += $chunkSize;
+        } while (count($rows) === $chunkSize);
+    }
+
+    /**
      * Builds the base query for a segment, applying all rules.
      */
     private function buildQuery(int $segmentId): BaseBuilder
@@ -97,6 +124,12 @@ class SegmentService
 
         return $builder;
     }
+
+    /** Contact columns allowed as segment rule fields. */
+    private const ALLOWED_FIELDS = [
+        'email', 'first_name', 'last_name', 'status', 'source',
+        'subscribed_at', 'unsubscribed_at',
+    ];
 
     private function applyRule(
         BaseBuilder $builder,
@@ -134,10 +167,19 @@ class SegmentService
             }
 
             $key = substr($field, 7);
+
+            if (! preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
+                throw new InvalidArgumentException("Invalid custom field key: {$key}");
+            }
+
             $col = "JSON_EXTRACT(c.custom_fields, '$.{$key}')";
             $this->applyColumnOp($builder, $col, $op, $value, $isOr);
 
             return;
+        }
+
+        if (! in_array($field, self::ALLOWED_FIELDS, true)) {
+            throw new InvalidArgumentException("Unknown segment field: {$field}");
         }
 
         $this->applyColumnOp($builder, "c.{$field}", $op, $value, $isOr);
