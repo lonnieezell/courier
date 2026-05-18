@@ -37,7 +37,7 @@ class Courier extends BaseConfig
     public int $batchSize = 200;
 
     /**
-     * Microseconds to sleep between sends. 0 = disabled.
+     * Milliseconds to sleep between individual sends (0 = no throttle).
      */
     public int $throttleMs = 0;
 

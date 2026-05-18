@@ -16,6 +16,7 @@ namespace Tests\Models\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -41,7 +42,7 @@ final class SendModelTest extends CIUnitTestCase
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([
             'name'       => 'Test Campaign',
             'subject'    => 'Hello',
-            'type'       => 'blast',
+            'type'       => CampaignType::Blast,
             'status'     => CampaignStatus::Draft,
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',

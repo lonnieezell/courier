@@ -9,6 +9,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
@@ -69,7 +70,7 @@ final class MailerServiceTest extends CIUnitTestCase
         $campaignId    = (int) $this->campaignModel->insert([
             'name'       => 'Test Campaign',
             'subject'    => 'Hello',
-            'type'       => 'blast',
+            'type'       => CampaignType::Blast,
             'view'       => self::BODY_VIEW,
             'status'     => CampaignStatus::Draft,
             'from_name'  => 'Sender',

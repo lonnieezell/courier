@@ -28,9 +28,9 @@ theme:
     - search.highlight
     - search.share
 
-repo_url: https://github.com/vendor/package
+repo_url: https://github.com/lonnieezell/courier
 edit_uri: edit/develop/docs/
-copyright: Copyright &copy; 2025 Your Name.
+copyright: Copyright &copy; 2025 Lonnie Ezell.
 
 markdown_extensions:
   - pymdownx.superfences

@@ -16,6 +16,7 @@ namespace Tests\Models\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -42,7 +43,7 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([
             'name'       => 'Test Drip',
             'subject'    => 'Welcome',
-            'type'       => 'drip',
+            'type'       => CampaignType::DripSequence,
             'status'     => CampaignStatus::Draft,
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
