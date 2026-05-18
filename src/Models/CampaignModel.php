@@ -18,6 +18,7 @@ class CampaignModel extends Model
         'name',
         'subject',
         'type',
+        'view',
         'layout',
         'status',
         'segment_id',

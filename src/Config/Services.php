@@ -14,13 +14,17 @@ declare(strict_types=1);
 namespace Myth\Courier\Config;
 
 use CodeIgniter\Config\BaseService;
+use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\SegmentModel;
+use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
+use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\SegmentService;
+use Myth\Courier\Services\TemplateService;
 
 class Services extends BaseService
 {
@@ -47,6 +51,28 @@ class Services extends BaseService
         return new SegmentService(
             model(ContactModel::class),
             model(SegmentModel::class),
+        );
+    }
+
+    public static function templateService(bool $getShared = true): TemplateService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('templateService');
+        }
+
+        return new TemplateService();
+    }
+
+    public static function mailerService(bool $getShared = true): MailerService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('mailerService');
+        }
+
+        return new MailerService(
+            static::templateService(),
+            model(SendModel::class),
+            model(CampaignModel::class),
         );
     }
 }

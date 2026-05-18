@@ -27,6 +27,7 @@ class CreateCourierCampaignsTable extends Migration
             'name'         => ['type' => 'VARCHAR', 'constraint' => 200, 'null' => false],
             'subject'      => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => false],
             'type'         => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'blast'],
+            'view'         => ['type' => 'VARCHAR', 'constraint' => 200, 'null' => true],
             'layout'       => ['type' => 'VARCHAR', 'constraint' => 200, 'null' => true],
             'status'       => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'draft'],
             'segment_id'   => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => true],

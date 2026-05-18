@@ -1,0 +1,1 @@
+<div class="layout"><?= $content ?></div>
