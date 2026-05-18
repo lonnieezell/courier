@@ -2,10 +2,21 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Models\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\SendModel;
@@ -19,7 +30,6 @@ final class SendModelTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private int $contactId;
     private int $campaignId;
 
@@ -32,7 +42,7 @@ final class SendModelTest extends CIUnitTestCase
             'name'       => 'Test Campaign',
             'subject'    => 'Hello',
             'type'       => 'blast',
-            'status'     => 'draft',
+            'status'     => CampaignStatus::Draft,
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
         ]);
@@ -43,7 +53,7 @@ final class SendModelTest extends CIUnitTestCase
         $model = new SendModel();
         $send  = $model->createPending($this->contactId, $this->campaignId, null);
 
-        $this->assertSame('pending', $send->status);
+        $this->assertSame(SendStatus::Pending, $send->status);
         $this->assertSame(32, strlen($send->open_token));
         $this->assertSame(32, strlen($send->click_token));
     }

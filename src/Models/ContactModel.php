@@ -14,7 +14,6 @@ class ContactModel extends Model
     protected $table         = 'courier_contacts';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'email',
         'first_name',
@@ -26,16 +25,14 @@ class ContactModel extends Model
         'unsubscribed_at',
         'custom_fields',
     ];
-
     protected array $casts = [
         'custom_fields' => '?json',
+        'status'        => 'enum[\Myth\Courier\Enums\ContactStatus]',
     ];
-
     protected $validationRules = [
         'email'  => 'required|valid_email|max_length[255]|is_unique[courier_contacts.email,id,{id}]',
         'status' => 'permit_empty|in_list[subscribed,unsubscribed,bounced,complained]',
     ];
-
     protected $beforeInsert = ['generateToken'];
 
     /**

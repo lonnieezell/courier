@@ -2,10 +2,21 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Models\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\DripEnrollmentModel;
@@ -20,7 +31,6 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private int $contactId;
     private int $campaignId;
 
@@ -33,7 +43,7 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
             'name'       => 'Test Drip',
             'subject'    => 'Welcome',
             'type'       => 'drip',
-            'status'     => 'draft',
+            'status'     => CampaignStatus::Draft,
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
         ]);
@@ -95,6 +105,6 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
 
         $updated = $enrollmentModel->find($enrollmentId);
 
-        $this->assertSame('completed', $updated->status);
+        $this->assertSame(EnrollmentStatus::Completed, $updated->status);
     }
 }

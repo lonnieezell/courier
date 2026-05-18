@@ -2,10 +2,20 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Models\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\ContactModel;
 
 /**
@@ -53,8 +63,8 @@ final class ContactModelTest extends CIUnitTestCase
     public function testSubscribedScopeReturnsOnlySubscribedContacts(): void
     {
         $model = new ContactModel();
-        $model->insert(['email' => 'sub@example.com', 'status' => 'subscribed']);
-        $model->insert(['email' => 'unsub@example.com', 'status' => 'unsubscribed']);
+        $model->insert(['email' => 'sub@example.com', 'status' => ContactStatus::Subscribed]);
+        $model->insert(['email' => 'unsub@example.com', 'status' => ContactStatus::Unsubscribed]);
 
         $results = $model->subscribed()->findAll();
 

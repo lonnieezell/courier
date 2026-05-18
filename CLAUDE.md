@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A CodeIgniter 4 package skeleton/template. The placeholder strings `YourVendor`, `YourPackage`, and `vendor/package` throughout the codebase must be replaced before publishing a real package.
 
+## General Guidelines
+- Follow PSR-12 coding style (enforced by `php-cs-fixer`).
+- Use strict types and type declarations.
+- Use PHPDoc comments for all public methods and properties.
+- Follow CI4 conventions for Models, Services, and Config.
+- Write unit tests for all new features and bug fixes.
+- When adding new dependencies, update `composer.json` and ensure they are compatible with CI4 and PHP 8.2+.
+- When modifying CI4 config or services, update `Registrar.php` and `Services.php` accordingly.
+- When adding new features, consider how they will be tested and whether they require new database tables or config options.
+
 ## Commands
 
 ### Testing

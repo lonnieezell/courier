@@ -14,12 +14,10 @@ class TagModel extends Model
     protected $table         = 'courier_tags';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'slug',
         'label',
     ];
-
     protected $validationRules = [
         'slug'  => 'required|max_length[100]',
         'label' => 'required|max_length[100]',

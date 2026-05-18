@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\Enums\SendStatus;
 
 /**
  * Manages individual email sends, including tracking tokens and delivery status.
@@ -14,7 +15,6 @@ class SendModel extends Model
     protected $table         = 'courier_sends';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'contact_id',
         'campaign_id',
@@ -27,7 +27,9 @@ class SendModel extends Model
         'opened_at',
         'clicked_at',
     ];
-
+    protected array $casts = [
+        'status' => 'enum[\Myth\Courier\Enums\SendStatus]',
+    ];
     protected $validationRules = [
         'contact_id'  => 'required|integer',
         'campaign_id' => 'required|integer',
@@ -45,7 +47,7 @@ class SendModel extends Model
             'contact_id'   => $contactId,
             'campaign_id'  => $campaignId,
             'drip_step_id' => $stepId,
-            'status'       => 'pending',
+            'status'       => SendStatus::Pending,
             'open_token'   => bin2hex(random_bytes(16)),
             'click_token'  => bin2hex(random_bytes(16)),
         ]);

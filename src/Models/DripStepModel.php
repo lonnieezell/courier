@@ -14,7 +14,6 @@ class DripStepModel extends Model
     protected $table         = 'courier_drip_steps';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'campaign_id',
         'position',
@@ -22,7 +21,6 @@ class DripStepModel extends Model
         'subject',
         'delay_hours',
     ];
-
     protected $validationRules = [
         'campaign_id' => 'required|integer',
         'position'    => 'required|integer',

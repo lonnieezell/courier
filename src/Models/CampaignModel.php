@@ -14,7 +14,6 @@ class CampaignModel extends Model
     protected $table         = 'courier_campaigns';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'name',
         'subject',
@@ -28,11 +27,10 @@ class CampaignModel extends Model
         'scheduled_at',
         'sent_at',
     ];
-
     protected array $casts = [
         'tag_filter' => '?json',
+        'status'     => 'enum[\Myth\Courier\Enums\CampaignStatus]',
     ];
-
     protected $validationRules = [
         'name'       => 'required|max_length[200]',
         'subject'    => 'required|max_length[500]',

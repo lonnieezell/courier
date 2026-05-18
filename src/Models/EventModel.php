@@ -14,17 +14,14 @@ class EventModel extends Model
     protected $table         = 'courier_events';
     protected $returnType    = 'object';
     protected $useTimestamps = true;
-
     protected $allowedFields = [
         'send_id',
         'type',
         'metadata',
     ];
-
     protected array $casts = [
         'metadata' => '?json',
     ];
-
     protected $validationRules = [
         'send_id' => 'required|integer',
         'type'    => 'required|in_list[open,click,bounce,unsubscribe]',
