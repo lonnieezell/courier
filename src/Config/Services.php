@@ -14,12 +14,13 @@ declare(strict_types=1);
 namespace Myth\Courier\Config;
 
 use CodeIgniter\Config\BaseService;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
-use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\DripStepModel;
+use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\CampaignService;
@@ -90,6 +91,8 @@ class Services extends BaseService
             static::segmentService(),
             static::mailerService(),
             model(SendModel::class),
+            model(ContactModel::class),
+            config(CourierConfig::class),
         );
     }
 }

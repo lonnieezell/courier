@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Commands\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
@@ -10,15 +19,12 @@ use Myth\Courier\Commands\SendCampaign;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
-use Myth\Courier\Enums\SendStatus;
+use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
-use Myth\Courier\Models\ContactTagModel;
-use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\DripStepModel;
-use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\SegmentModel;
-use Myth\Courier\Models\TagModel;
+use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\SegmentService;
@@ -31,11 +37,10 @@ final class SendCampaignTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    protected $refresh   = true;
-    protected $namespace = 'Myth\Courier';
-
     private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
+    protected $refresh   = true;
+    protected $namespace = 'Myth\Courier';
     private CampaignModel $campaignModel;
     private ContactModel $contactModel;
     private SendModel $sendModel;
@@ -69,6 +74,8 @@ final class SendCampaignTest extends CIUnitTestCase
             $segmentService,
             $mailerService,
             $this->sendModel,
+            $this->contactModel,
+            $config,
         );
 
         $this->command = new SendCampaign($this->campaignModel, $campaignService);
@@ -79,7 +86,7 @@ final class SendCampaignTest extends CIUnitTestCase
         // Create a contact and a scheduled campaign
         $contactId = (int) $this->contactModel->insert([
             'email'  => 'r@example.com',
-            'status' => \Myth\Courier\Enums\ContactStatus::Subscribed,
+            'status' => ContactStatus::Subscribed,
         ]);
 
         $campaignId = (int) $this->campaignModel->insert([
@@ -110,7 +117,7 @@ final class SendCampaignTest extends CIUnitTestCase
     {
         $contactId = (int) $this->contactModel->insert([
             'email'  => 'p@example.com',
-            'status' => \Myth\Courier\Enums\ContactStatus::Subscribed,
+            'status' => ContactStatus::Subscribed,
         ]);
 
         // First campaign: will throw because view doesn't exist
@@ -150,7 +157,7 @@ final class SendCampaignTest extends CIUnitTestCase
     {
         $contactId = (int) $this->contactModel->insert([
             'email'  => 'sp@example.com',
-            'status' => \Myth\Courier\Enums\ContactStatus::Subscribed,
+            'status' => ContactStatus::Subscribed,
         ]);
 
         $campaign1Id = (int) $this->campaignModel->insert([

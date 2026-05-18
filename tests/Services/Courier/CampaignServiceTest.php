@@ -2,10 +2,21 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Services\Courier;
 
+use BackedEnum;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use DateTime;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
@@ -17,6 +28,7 @@ use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\DripStepModel;
+use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\CampaignService;
@@ -32,16 +44,17 @@ final class CampaignServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
+    /**
+     * View constant reused from existing test fixtures
+     */
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private CampaignService $service;
     private CampaignModel $campaignModel;
     private ContactModel $contactModel;
     private SendModel $sendModel;
-
-    /** View constant reused from existing test fixtures */
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected function setUp(): void
     {
@@ -56,7 +69,7 @@ final class CampaignServiceTest extends CIUnitTestCase
 
         $segmentService = new SegmentService(
             $this->contactModel,
-            new \Myth\Courier\Models\SegmentModel(),
+            new SegmentModel(),
         );
 
         $mailerService = new MailerService(
@@ -71,6 +84,8 @@ final class CampaignServiceTest extends CIUnitTestCase
             $segmentService,
             $mailerService,
             $this->sendModel,
+            $this->contactModel,
+            $config,
         );
     }
 
@@ -127,8 +142,8 @@ final class CampaignServiceTest extends CIUnitTestCase
 
     public function testScheduleSetsStatusAndDatetime(): void
     {
-        $id       = $this->insertDraftCampaign();
-        $sendAt   = new \DateTime('2026-06-01 10:00:00');
+        $id     = $this->insertDraftCampaign();
+        $sendAt = new DateTime('2026-06-01 10:00:00');
 
         $this->service->schedule($id, $sendAt);
 
@@ -142,7 +157,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $id = $this->insertDraftCampaign(['status' => CampaignStatus::Sent]);
 
         $this->expectException(CourierValidationException::class);
-        $this->service->schedule($id, new \DateTime());
+        $this->service->schedule($id, new DateTime());
     }
 
     public function testScheduleThrowsIfViewMissing(): void
@@ -157,7 +172,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         ]);
 
         $this->expectException(CourierValidationException::class);
-        $this->service->schedule($id, new \DateTime());
+        $this->service->schedule($id, new DateTime());
     }
 
     // -------------------------------------------------------------------------
@@ -245,8 +260,8 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->insertContact('b@example.com');
         $this->insertContact('unsub@example.com', ContactStatus::Unsubscribed);
 
-        $campaign  = $this->makeCampaignObject();
-        $contacts  = $this->service->resolveAudience($campaign);
+        $campaign = $this->makeCampaignObject();
+        $contacts = $this->service->resolveAudience($campaign);
 
         $this->assertCount(2, $contacts);
     }
@@ -272,7 +287,7 @@ final class CampaignServiceTest extends CIUnitTestCase
 
     public function testResolveAudienceWithBothNarrowsResult(): void
     {
-        $segmentModel = new \Myth\Courier\Models\SegmentModel();
+        $segmentModel = new SegmentModel();
         $segmentId    = (int) $segmentModel->insert([
             'name'       => 'All',
             'rules'      => [],
@@ -317,14 +332,14 @@ final class CampaignServiceTest extends CIUnitTestCase
 
     public function testPrepareBatchCreatesExpectedSendRows(): void
     {
-        $campaign  = $this->insertAndFetchCampaign();
-        $contact   = $this->insertContact('p@example.com');
-        $contacts  = [$contact];
+        $campaign = $this->insertAndFetchCampaign();
+        $contact  = $this->insertContact('p@example.com');
+        $contacts = [$contact];
 
         $sends = $this->service->prepareBatch($campaign, $contacts, 0);
 
         $this->assertCount(1, $sends);
-        $this->assertSame('pending', $sends[0]->status instanceof \BackedEnum ? $sends[0]->status->value : $sends[0]->status);
+        $this->assertSame('pending', $sends[0]->status instanceof BackedEnum ? $sends[0]->status->value : $sends[0]->status);
     }
 
     public function testPrepareBatchIsIdempotentForPendingSends(): void
@@ -381,7 +396,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertCount(1, $sends);
         $refreshed = $this->sendModel->where('id', $send->id)->first();
         $this->assertNotNull($refreshed);
-        $statusVal = $refreshed->status instanceof \BackedEnum ? $refreshed->status->value : $refreshed->status;
+        $statusVal = $refreshed->status instanceof BackedEnum ? $refreshed->status->value : $refreshed->status;
         $this->assertSame('pending', $statusVal);
     }
 

@@ -2,8 +2,19 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Myth\Courier\Services;
 
+use DateTimeInterface;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -25,6 +36,8 @@ class CampaignService
         private readonly SegmentService $segmentService,
         private readonly MailerService $mailerService,
         private readonly SendModel $sendModel,
+        private readonly ContactModel $contactModel,
+        private readonly CourierConfig $config,
     ) {
     }
 
@@ -42,6 +55,10 @@ class CampaignService
             if (! isset($data[$field]) || (string) $data[$field] === '') {
                 throw new CourierValidationException("The {$field} field is required.");
             }
+        }
+
+        if (filter_var($data['from_email'], FILTER_VALIDATE_EMAIL) === false) {
+            throw new CourierValidationException('The from_email field must be a valid email address.');
         }
 
         if (! isset($data['type']) || (string) $data['type'] === '') {
@@ -74,7 +91,13 @@ class CampaignService
             throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
-        $type = $campaign->type instanceof CampaignType ? $campaign->type : CampaignType::from((string) $campaign->type);
+        $type = $campaign->type instanceof CampaignType
+            ? $campaign->type
+            : CampaignType::tryFrom((string) $campaign->type);
+
+        if ($type === null) {
+            throw new CourierValidationException('Campaign has an unrecognized type.');
+        }
 
         if ($type !== CampaignType::DripSequence) {
             throw new CourierValidationException('Only drip_sequence campaigns can have drip steps.');
@@ -108,17 +131,21 @@ class CampaignService
      *
      * @throws CourierValidationException
      */
-    public function schedule(int $campaignId, \DateTime $sendAt): void
+    public function schedule(int $campaignId, DateTimeInterface $sendAt): void
     {
         $campaign = $this->campaignModel->find($campaignId);
 
         if ($campaign === null) {
-            throw new CourierValidationException('Only draft campaigns can be scheduled.');
+            throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
         $status = $campaign->status instanceof CampaignStatus
             ? $campaign->status
-            : CampaignStatus::from((string) $campaign->status);
+            : CampaignStatus::tryFrom((string) $campaign->status);
+
+        if ($status === null) {
+            throw new CourierValidationException('Campaign has an unrecognized status.');
+        }
 
         if ($status !== CampaignStatus::Draft) {
             throw new CourierValidationException('Only draft campaigns can be scheduled.');
@@ -145,12 +172,16 @@ class CampaignService
         $campaign = $this->campaignModel->find($campaignId);
 
         if ($campaign === null) {
-            throw new CourierValidationException('Only paused campaigns can be resumed.');
+            throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
         $status = $campaign->status instanceof CampaignStatus
             ? $campaign->status
-            : CampaignStatus::from((string) $campaign->status);
+            : CampaignStatus::tryFrom((string) $campaign->status);
+
+        if ($status === null) {
+            throw new CourierValidationException('Campaign has an unrecognized status.');
+        }
 
         if ($status !== CampaignStatus::Paused) {
             throw new CourierValidationException('Only paused campaigns can be resumed.');
@@ -176,8 +207,6 @@ class CampaignService
      */
     public function resolveAudience(object $campaign): array
     {
-        $contactModel = new ContactModel();
-
         $segmentId = isset($campaign->segment_id)
             ? (int) $campaign->segment_id
             : null;
@@ -195,7 +224,7 @@ class CampaignService
         } elseif ($tagFilter !== null) {
             $contacts = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter));
         } else {
-            $contacts = $this->indexById($contactModel->subscribed()->findAll());
+            $contacts = $this->indexById($this->contactModel->subscribed()->findAll());
         }
 
         // Final subscribed guard
@@ -224,20 +253,33 @@ class CampaignService
      */
     public function prepareBatch(object $campaign, array $contacts, int $offset): array
     {
-        $batchSize = (int) config('Courier')->batchSize;
+        $batchSize = (int) $this->config->batchSize;
         $slice     = array_slice($contacts, $offset, $batchSize);
         $sends     = [];
 
+        if ($slice === []) {
+            return [];
+        }
+
+        $contactIds   = array_map(static fn (object $c): int => (int) $c->id, $slice);
+        $existingRows = $this->sendModel
+            ->where('campaign_id', (int) $campaign->id)
+            ->whereIn('contact_id', $contactIds)
+            ->findAll();
+
+        $existingMap = [];
+
+        foreach ($existingRows as $row) {
+            $existingMap[(int) $row->contact_id] = $row;
+        }
+
         foreach ($slice as $contact) {
-            $existing = $this->sendModel
-                ->where('contact_id', (int) $contact->id)
-                ->where('campaign_id', (int) $campaign->id)
-                ->first();
+            $existing = $existingMap[(int) $contact->id] ?? null;
 
             if ($existing !== null) {
                 $status = $existing->status instanceof SendStatus
                     ? $existing->status
-                    : SendStatus::from((string) $existing->status);
+                    : SendStatus::tryFrom((string) $existing->status);
 
                 if ($status === SendStatus::Pending || $status === SendStatus::Sent) {
                     $sends[] = $existing;
@@ -245,7 +287,7 @@ class CampaignService
                     continue;
                 }
 
-                // Failed → reset to pending for retry
+                // Failed or unknown → reset to pending for retry
                 $this->sendModel->update($existing->id, ['status' => SendStatus::Pending]);
                 $sends[] = $this->sendModel->find($existing->id);
 
@@ -268,16 +310,34 @@ class CampaignService
      */
     public function sendBatch(array $sends): array
     {
-        $contactModel  = new ContactModel();
-        $throttleMs    = (int) config('Courier')->throttleMs;
+        $throttleMs    = (int) $this->config->throttleMs;
         $campaignCache = [];
         $sent          = 0;
         $failed        = 0;
 
+        if ($sends === []) {
+            return ['sent' => 0, 'failed' => 0];
+        }
+
+        $contactIds  = array_unique(array_map(static fn (object $s): int => (int) $s->contact_id, $sends));
+        $contactRows = $this->contactModel->whereIn('id', $contactIds)->findAll();
+        $contactMap  = [];
+
+        foreach ($contactRows as $c) {
+            $contactMap[(int) $c->id] = $c;
+        }
+
         foreach ($sends as $send) {
-            $contact = $contactModel->find((int) $send->contact_id);
+            $contact = $contactMap[(int) $send->contact_id] ?? null;
+
+            if ($contact === null) {
+                $failed++;
+
+                continue;
+            }
 
             $campaignId = (int) $send->campaign_id;
+
             if (! isset($campaignCache[$campaignId])) {
                 $campaignCache[$campaignId] = $this->campaignModel->find($campaignId);
             }
@@ -304,33 +364,25 @@ class CampaignService
         $table = 'courier_sends';
 
         $rows = $db->table($table)
-            ->select('status, COUNT(*) as cnt')
+            ->select('status, COUNT(*) as cnt, COUNT(opened_at) as opened_cnt, COUNT(clicked_at) as clicked_cnt')
             ->where('campaign_id', $campaignId)
             ->groupBy('status')
             ->get()
             ->getResultObject();
 
         $byStatus = [];
+        $opened   = 0;
+        $clicked  = 0;
 
         foreach ($rows as $row) {
             $key            = $row->status instanceof SendStatus ? $row->status->value : (string) $row->status;
             $byStatus[$key] = (int) $row->cnt;
+            $opened += (int) $row->opened_cnt;
+            $clicked += (int) $row->clicked_cnt;
         }
 
-        $total = array_sum($byStatus);
-
-        $opened = (int) $db->table($table)
-            ->where('campaign_id', $campaignId)
-            ->where('opened_at IS NOT NULL', null, false)
-            ->countAllResults();
-
-        $clicked = (int) $db->table($table)
-            ->where('campaign_id', $campaignId)
-            ->where('clicked_at IS NOT NULL', null, false)
-            ->countAllResults();
-
         return [
-            'total'   => $total,
+            'total'   => array_sum($byStatus),
             'sent'    => $byStatus[SendStatus::Sent->value] ?? 0,
             'failed'  => $byStatus[SendStatus::Failed->value] ?? 0,
             'opened'  => $opened,
