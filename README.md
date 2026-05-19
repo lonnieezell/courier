@@ -2,6 +2,8 @@
 
 Email campaigns and drip sequences for CodeIgniter 4.
 
+**[Full documentation →](https://lonnieezell.github.io/courier/)**
+
 - **Blast campaigns** — send a one-time email to a segment, tag-filtered audience, or all contacts
 - **Drip sequences** — multi-step automated email sequences with configurable delays between steps
 - **Contact management** — subscribe/unsubscribe, status tracking, tags, and custom fields
