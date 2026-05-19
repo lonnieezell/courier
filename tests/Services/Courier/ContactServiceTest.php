@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Services\Courier;
 
+use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
@@ -11,6 +12,7 @@ use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
+use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Exceptions\CourierValidationException;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -23,6 +25,7 @@ use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\TemplateService;
+use RuntimeException;
 
 /**
  * @internal
@@ -213,6 +216,66 @@ final class ContactServiceTest extends CIUnitTestCase
         $result = $this->service->unsubscribeByToken('no-such-token');
 
         $this->assertFalse($result);
+    }
+
+    public function testSubscribeFiresContactSubscribedEvent(): void
+    {
+        $fired = null;
+        Events::on(CourierEvents::CONTACT_SUBSCRIBED, static function ($contact) use (&$fired): void {
+            $fired = $contact;
+        });
+
+        $contact = $this->service->subscribe(['email' => 'event@example.com']);
+
+        Events::removeAllListeners(CourierEvents::CONTACT_SUBSCRIBED);
+
+        $this->assertNotNull($fired);
+        $this->assertSame('event@example.com', $fired->email);
+    }
+
+    public function testSubscribeEventListenerExceptionDoesNotHaltSubscription(): void
+    {
+        Events::on(CourierEvents::CONTACT_SUBSCRIBED, static function (): void {
+            throw new RuntimeException('listener exploded');
+        });
+
+        $contact = $this->service->subscribe(['email' => 'safe@example.com']);
+
+        Events::removeAllListeners(CourierEvents::CONTACT_SUBSCRIBED);
+
+        $this->assertSame('safe@example.com', $contact->email);
+    }
+
+    public function testUnsubscribeFiresContactUnsubscribedEvent(): void
+    {
+        $contact = $this->service->subscribe(['email' => 'willleave@example.com']);
+
+        $fired = null;
+        Events::on(CourierEvents::CONTACT_UNSUBSCRIBED, static function ($c) use (&$fired): void {
+            $fired = $c;
+        });
+
+        $this->service->unsubscribeByToken($contact->unsubscribe_token);
+
+        Events::removeAllListeners(CourierEvents::CONTACT_UNSUBSCRIBED);
+
+        $this->assertNotNull($fired);
+        $this->assertSame('willleave@example.com', $fired->email);
+    }
+
+    public function testUnsubscribeEventListenerExceptionDoesNotHaltUnsubscribe(): void
+    {
+        $contact = $this->service->subscribe(['email' => 'safeleave@example.com']);
+
+        Events::on(CourierEvents::CONTACT_UNSUBSCRIBED, static function (): void {
+            throw new RuntimeException('listener exploded');
+        });
+
+        $result = $this->service->unsubscribeByToken($contact->unsubscribe_token);
+
+        Events::removeAllListeners(CourierEvents::CONTACT_UNSUBSCRIBED);
+
+        $this->assertTrue($result);
     }
 
     public function testServiceLocatorContactServiceCancelsDripEnrollmentsOnUnsubscribe(): void

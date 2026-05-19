@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use CodeIgniter\Email\Email;
+use CodeIgniter\Events\Events;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\CampaignDTO;
 use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
+use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\SendModel;
 use Psr\Log\LoggerAwareTrait;
+use Throwable;
 
 /**
  * Renders and delivers individual emails, recording delivery status in SendModel.
@@ -88,6 +91,12 @@ class MailerService
                 'sent_at' => date('Y-m-d H:i:s'),
             ]);
 
+            try {
+                Events::trigger(CourierEvents::EMAIL_SENT, $sendLog);
+            } catch (Throwable $e) {
+                log_message('error', 'courier:email.sent listener error: ' . $e->getMessage());
+            }
+
             return true;
         }
 
@@ -114,10 +123,22 @@ class MailerService
 
             $this->sendModel->update($sendLog->id, $update);
 
+            try {
+                Events::trigger(CourierEvents::EMAIL_SENT, $sendLog);
+            } catch (Throwable $e) {
+                log_message('error', 'courier:email.sent listener error: ' . $e->getMessage());
+            }
+
             return true;
         }
 
         $this->sendModel->update($sendLog->id, ['status' => SendStatus::Failed]);
+
+        try {
+            Events::trigger(CourierEvents::EMAIL_FAILED, $sendLog);
+        } catch (Throwable $e) {
+            log_message('error', 'courier:email.failed listener error: ' . $e->getMessage());
+        }
 
         return false;
     }

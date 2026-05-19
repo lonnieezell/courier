@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Myth\Courier\Services;
 
+use CodeIgniter\Events\Events;
 use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
+use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Exceptions\CourierValidationException;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\TagModel;
+use Throwable;
 
 class ContactService
 {
@@ -82,6 +85,12 @@ class ContactService
             $this->dripService->enroll($contact->id, $dripCampaignId);
         }
 
+        try {
+            Events::trigger(CourierEvents::CONTACT_SUBSCRIBED, $contact);
+        } catch (Throwable $e) {
+            log_message('error', 'courier:contact.subscribed listener error: ' . $e->getMessage());
+        }
+
         return $contact;
     }
 
@@ -103,6 +112,12 @@ class ContactService
         ]);
 
         $this->dripService?->cancelAllForContact($contact->id);
+
+        try {
+            Events::trigger(CourierEvents::CONTACT_UNSUBSCRIBED, $contact);
+        } catch (Throwable $e) {
+            log_message('error', 'courier:contact.unsubscribed listener error: ' . $e->getMessage());
+        }
 
         return true;
     }

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Tests\Services\Courier;
 
 use CodeIgniter\Email\Email;
+use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
+use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
@@ -19,6 +21,7 @@ use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\TemplateService;
+use RuntimeException;
 
 /**
  * @internal
@@ -142,5 +145,73 @@ final class MailerServiceTest extends CIUnitTestCase
 
         $this->assertStringContainsString(urlencode('https://example.com/single'), $result);
         $this->assertStringContainsString(urlencode('https://example.com/double'), $result);
+    }
+
+    public function testSendFiresEmailSentEvent(): void
+    {
+        $fired = null;
+        Events::on(CourierEvents::EMAIL_SENT, static function ($send) use (&$fired): void {
+            $fired = $send;
+        });
+
+        $sendLog = $this->makeSendLog();
+        $this->service->send($this->contact, $this->campaign, $sendLog);
+
+        Events::removeAllListeners(CourierEvents::EMAIL_SENT);
+
+        $this->assertNotNull($fired);
+        $this->assertSame((int) $sendLog->id, (int) $fired->id);
+    }
+
+    public function testSendEmailSentListenerExceptionDoesNotHaltSend(): void
+    {
+        Events::on(CourierEvents::EMAIL_SENT, static function (): void {
+            throw new RuntimeException('listener exploded');
+        });
+
+        $sendLog = $this->makeSendLog();
+        $result  = $this->service->send($this->contact, $this->campaign, $sendLog);
+
+        Events::removeAllListeners(CourierEvents::EMAIL_SENT);
+
+        $this->assertTrue($result);
+    }
+
+    public function testSendFiresEmailFailedEvent(): void
+    {
+        $config           = config(CourierConfig::class);
+        $config->testMode = false;
+
+        $emailMock = $this->createMock(Email::class);
+        $emailMock->method('clear')->willReturnSelf();
+        $emailMock->method('setFrom')->willReturnSelf();
+        $emailMock->method('setTo')->willReturnSelf();
+        $emailMock->method('setSubject')->willReturnSelf();
+        $emailMock->method('setMessage')->willReturnSelf();
+        $emailMock->method('setAltMessage')->willReturnSelf();
+        $emailMock->method('send')->willReturn(false);
+
+        $service = new MailerService(
+            new TemplateService(),
+            $this->sendModel,
+            $this->campaignModel,
+            $emailMock,
+        );
+
+        $fired = null;
+        Events::on(CourierEvents::EMAIL_FAILED, static function ($send) use (&$fired): void {
+            $fired = $send;
+        });
+
+        $sendLog = $this->makeSendLog();
+        $result  = $service->send($this->contact, $this->campaign, $sendLog);
+
+        Events::removeAllListeners(CourierEvents::EMAIL_FAILED);
+
+        $config->testMode = true;
+
+        $this->assertFalse($result);
+        $this->assertNotNull($fired);
+        $this->assertSame((int) $sendLog->id, (int) $fired->id);
     }
 }
