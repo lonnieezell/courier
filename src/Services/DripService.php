@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Myth\Courier\Services;
 
 use Myth\Courier\Config\Courier as CourierConfig;
@@ -12,6 +21,8 @@ use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\DripStepModel;
+use RuntimeException;
+use Throwable;
 
 /**
  * Manages drip campaign enrollment and step delivery.
@@ -43,14 +54,14 @@ class DripService implements DripServiceInterface
         $campaign = $this->campaignModel->find($campaignId);
 
         if ($campaign === null || $campaign->type !== CampaignType::DripSequence) {
-            throw new \RuntimeException('Campaign not found or is not a drip sequence.');
+            throw new RuntimeException('Campaign not found or is not a drip sequence.');
         }
 
         /** @var object $contact */
         $contact = $this->contactModel->find($contactId);
 
         if ($contact === null || $contact->status !== ContactStatus::Subscribed) {
-            throw new \RuntimeException('Contact is not subscribed.');
+            throw new RuntimeException('Contact is not subscribed.');
         }
 
         $existing = $this->enrollmentModel
@@ -68,7 +79,7 @@ class DripService implements DripServiceInterface
             ->first();
 
         if ($step1 === null) {
-            throw new \RuntimeException('Campaign has no drip steps.');
+            throw new RuntimeException('Campaign has no drip steps.');
         }
 
         $id = $this->enrollmentModel->insert([
@@ -139,16 +150,19 @@ class DripService implements DripServiceInterface
         $campaignIds = array_values(array_unique(array_column($enrollments, 'campaign_id')));
 
         $contactMap = [];
+
         foreach ($this->contactModel->whereIn('id', $contactIds)->findAll() as $c) {
             $contactMap[$c->id] = $c;
         }
 
         $campaignMap = [];
+
         foreach ($this->campaignModel->whereIn('id', $campaignIds)->findAll() as $camp) {
             $campaignMap[$camp->id] = $camp;
         }
 
         $stepMap = [];
+
         foreach ($this->stepModel->whereIn('campaign_id', $campaignIds)->findAll() as $step) {
             $stepMap[$step->campaign_id][$step->position] = $step;
         }
@@ -188,7 +202,7 @@ class DripService implements DripServiceInterface
                     ]);
                     $failed++;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 log_message('error', '[Courier] DripService: exception processing enrollment {id}: {message}', [
                     'id'      => $enrollment->id,
                     'message' => $e->getMessage(),

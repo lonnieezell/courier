@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Commands\Courier;
 
 use CodeIgniter\CLI\Commands;
@@ -21,6 +30,7 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\TemplateService;
+use RuntimeException;
 
 /**
  * @internal
@@ -33,7 +43,6 @@ final class ProcessDripsTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private ProcessDrips $command;
     private DripService $dripService;
     private CampaignModel $campaignModel;
@@ -122,17 +131,10 @@ final class ProcessDripsTest extends CIUnitTestCase
         // Instead, test that run() doesn't propagate exceptions by injecting a mock via anonymous class trick.
         // We test this by verifying run() returns without throwing even when processDue() throws.
 
-        $throwingService = new class (
-            $this->enrollmentModel,
-            $this->stepModel,
-            $this->campaignModel,
-            new MailerService(new TemplateService(), new SendModel(), $this->campaignModel),
-            $this->contactModel,
-            config(CourierConfig::class),
-        ) extends DripService {
+        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(), new SendModel(), $this->campaignModel), $this->contactModel, config(CourierConfig::class)) extends DripService {
             public function processDue(): array
             {
-                throw new \RuntimeException('Simulated failure');
+                throw new RuntimeException('Simulated failure');
             }
         };
 

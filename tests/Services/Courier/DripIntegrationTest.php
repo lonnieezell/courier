@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Services\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
@@ -9,7 +18,6 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
-use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -38,7 +46,6 @@ final class DripIntegrationTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private ContactService $contactService;
     private DripService $dripService;
     private CampaignModel $campaignModel;

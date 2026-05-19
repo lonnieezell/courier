@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of YourVendor/YourPackage.
+ *
+ * (c) Your Name <you@example.com>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
+
 namespace Tests\Services\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
@@ -19,6 +28,7 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\TemplateService;
+use RuntimeException;
 
 /**
  * @internal
@@ -31,7 +41,6 @@ final class DripServiceTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
-
     private DripService $service;
     private CampaignModel $campaignModel;
     private ContactModel $contactModel;
@@ -90,11 +99,11 @@ final class DripServiceTest extends CIUnitTestCase
     private function createStep(int $campaignId, int $position = 1, int $delayHours = 24): object
     {
         $id = $this->stepModel->insert([
-            'campaign_id'  => $campaignId,
-            'position'     => $position,
-            'view'         => self::BODY_VIEW,
-            'subject'      => "Step {$position}",
-            'delay_hours'  => $delayHours,
+            'campaign_id' => $campaignId,
+            'position'    => $position,
+            'view'        => self::BODY_VIEW,
+            'subject'     => "Step {$position}",
+            'delay_hours' => $delayHours,
         ]);
 
         return $this->stepModel->find($id);
@@ -155,7 +164,7 @@ final class DripServiceTest extends CIUnitTestCase
             'status' => ContactStatus::Unsubscribed,
         ]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->service->enroll($id, $campaign->id);
     }
 
@@ -164,7 +173,7 @@ final class DripServiceTest extends CIUnitTestCase
         $campaign = $this->createDripCampaign();
         $contact  = $this->createSubscribedContact();
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Campaign has no drip steps');
         $this->service->enroll($contact->id, $campaign->id);
     }
@@ -182,7 +191,7 @@ final class DripServiceTest extends CIUnitTestCase
         ]);
         $contact = $this->createSubscribedContact();
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->service->enroll($contact->id, $id);
     }
 
