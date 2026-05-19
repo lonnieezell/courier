@@ -1,135 +1,203 @@
-# YourVendor/YourPackage
+# myth/courier
 
-A starter template for building CodeIgniter 4 packages. Replace `YourVendor`, `YourPackage`, and related placeholders throughout the codebase before publishing.
+Email campaigns and drip sequences for CodeIgniter 4.
 
-## Starting a New Project from This Template
-
-1. Create a new empty repo on GitHub (no README, no .gitignore).
-2. Clone this template and point it at your new repo:
-
-```bash
-git clone https://github.com/lonnieezell/codeigniter-package-skeleton.git your-package-name
-cd your-package-name
-git remote set-url origin https://github.com/YOUR_ORG/your-package-name.git
-git push -u origin main
-```
-
-3. Find and replace all placeholder strings throughout the codebase:
-
-| Placeholder | Replace with |
-|---|---|
-| `YourVendor` | Your Composer vendor name (e.g. `Acme`) |
-| `YourPackage` | Your package name (e.g. `MyAddon`) |
-| `vendor/package` | Your Composer package slug (e.g. `acme/my-addon`) |
-
-4. Run `composer install` (or `docker compose up`) to install dependencies.
+- **Blast campaigns** — send a one-time email to a segment, tag-filtered audience, or all contacts
+- **Drip sequences** — multi-step automated email sequences with configurable delays between steps
+- **Contact management** — subscribe/unsubscribe, status tracking, tags, and custom fields
+- **Audience segmentation** — target contacts by segment or tag
+- **Email tracking** — open pixels, click-wrapped links, bounce and complaint logging
+- **CLI automation** — spark commands for scheduled delivery and drip processing
 
 ## Requirements
 
 - PHP 8.4+
 - CodeIgniter 4.7+
 
+## Installation
+
+**Not registered on Packagist yet** — for now, add this to your `composer.json`:
+
+```json
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/lonnieezell/courier"
+    }
+]
+```
+
+Then require the package:
+
+```bash
+composer require myth/courier
+```
+
+Run the package migrations:
+
+```bash
+php spark migrate --all
+```
+
+## Configuration
+
+Publish the config file:
+
+```bash
+php spark publish:config Courier
+```
+
+Key properties in `app/Config/Courier.php`:
+
+| Property | Default | Description |
+|---|---|---|
+| `$fromName` | `''` | Default sender name |
+| `$fromEmail` | `''` | Default sender address |
+| `$defaultLayout` | bundled layout | CI4 view path for the email wrapper |
+| `$trackingHost` | `''` | Custom tracking domain (leave empty to use `base_url()`) |
+| `$batchSize` | `200` | Max emails sent per CLI run |
+| `$throttleMs` | `0` | Milliseconds to sleep between individual sends |
+| `$testMode` | `false` | Log emails instead of sending them |
+
+## Usage
+
+Services are resolved via CI4's service container.
+
+### Subscribe a contact
+
+```php
+$contactService = service('contactService');
+
+$contact = $contactService->subscribe([
+    'email'      => 'jane@example.com',
+    'first_name' => 'Jane',
+]);
+
+// Optionally apply tags on subscribe
+$contact = $contactService->subscribe($data, tags: ['newsletter', 'vip']);
+```
+
+### Schedule a blast campaign
+
+```php
+$campaignService = service('campaignService');
+
+$campaign = $campaignService->create([
+    'name'            => 'May Newsletter',
+    'subject'         => 'What\'s new in May',
+    'view'            => 'emails/newsletter',
+    'audience_filter' => ['tags' => ['newsletter']],
+]);
+
+$campaignService->schedule($campaign->id, new DateTime('+1 hour'));
+```
+
+### Enroll a contact in a drip sequence
+
+```php
+$dripService = service('dripService');
+
+$dripService->enroll(contactId: $contact->id, campaignId: $drip->id);
+```
+
+## CLI Commands
+
+Run these on a cron schedule to process campaigns and drip steps automatically.
+
+```bash
+# Send all scheduled blast campaigns that are due
+php spark courier:send-campaign
+
+# Send a specific campaign by ID
+php spark courier:send-campaign 42
+
+# Process a batch of due drip steps
+php spark courier:process-drips
+```
+
+A typical cron setup sends campaigns once per minute and processes drips every minute:
+
+```
+* * * * * php /path/to/app/spark courier:send-campaign
+* * * * * php /path/to/app/spark courier:process-drips
+```
+
 ## Project Structure
 
 ```
 src/
+  Commands/             # spark courier:send-campaign, courier:process-drips
   Config/
-    Registrar.php   # Hooks into CI4's auto-discovery (filters, etc.)
-    Services.php    # Register package services
-  Exceptions/
-    PackageException.php
+    Courier.php         # Package configuration
+    Registrar.php       # CI4 auto-discovery hooks
+    Services.php        # Service container bindings
+  Database/
+    Migrations/         # Schema migrations (contacts, campaigns, drips, sends, events)
+  DTO/                  # Typed data transfer objects
+  Enums/                # Status enums (CampaignStatus, ContactStatus, etc.)
+  Models/               # CI4 models (Contact, Campaign, Send, Event, Tag, …)
+  Services/             # CampaignService, DripService, ContactService, MailerService, …
+  Views/                # Bundled email templates and layouts
 tests/
-  ExampleTest.php
-  _support/         # Test helpers and fixtures
+  Commands/
+  Models/
+  Services/
+  _support/             # Fixtures and test helpers
 docs/
-  index.md          # Documentation home page
-  installation.md   # Installation guide
-  changelog.md      # Changelog
-mkdocs.yml          # MkDocs configuration (Material theme)
-```
-
-## Getting Started with Docker
-
-The repo includes a Docker setup using PHP 8.4 with all CI4-required extensions and Xdebug for coverage. Dependencies are installed automatically on first run.
-
-Start the dev server (visits `http://localhost:8080` to see the CI4 welcome page):
-
-```bash
-docker compose up
-```
-
-Rebuild the image after changing the `Dockerfile`:
-
-```bash
-composer docker:build
+  index.md
+  installation.md
+  changelog.md
+mkdocs.yml              # Material for MkDocs
 ```
 
 ## Running Tests
 
 ```bash
-composer docker:test            # run phpunit in Docker
-composer docker:test:coverage   # run with HTML coverage report (build/phpunit/html/)
+composer test                       # run PHPUnit locally
+composer test:coverage              # HTML coverage report → build/phpunit/html/
 
-# or locally
-composer test
-composer test:coverage
+composer docker:test                # run PHPUnit in Docker
+composer docker:test:coverage       # coverage in Docker
+```
+
+Run a single test file:
+
+```bash
+./vendor/bin/phpunit tests/Services/Courier/CampaignServiceTest.php
 ```
 
 ## Code Quality
 
 ```bash
-composer docker:cs          # check coding style
-composer docker:cs-fix      # fix coding style
-composer docker:analyze     # PHPStan + Rector dry-run
-composer docker:rector      # apply Rector changes
-composer docker:ci          # run all checks (style, analysis, tests)
+composer cs          # check coding style (php-cs-fixer, dry-run)
+composer cs-fix      # auto-fix coding style
+composer analyze     # PHPStan (level 5) + Rector dry-run
+composer rector      # apply Rector changes
+composer ci          # run all checks: cs → analyze → test
 
-# or locally (same commands without the docker: prefix)
-composer cs
-composer cs-fix
-composer analyze
-composer ci
+# Docker equivalents (prefix with docker:)
+composer docker:cs
+composer docker:ci
 ```
 
-## Docker Shell
-
-Open a bash shell inside the container:
+## Docker
 
 ```bash
-composer docker:shell
+docker compose up         # start dev environment at http://localhost:8080
+composer docker:build     # rebuild image after Dockerfile changes
+composer docker:shell     # bash shell inside the container
 ```
 
 ## Documentation (MkDocs)
 
-Docs live in `docs/` and are built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). Update `mkdocs.yml` with your `site_name`, `repo_url`, and `copyright` after cloning.
-
-**Install MkDocs** (requires Python 3 + pip):
+Docs live in `docs/` and are built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 ```bash
 pip3 install mkdocs mkdocs-material
+mkdocs serve        # live-reload preview at http://127.0.0.1:8000
+mkdocs build        # build static output to site/
+mkdocs gh-deploy    # deploy to GitHub Pages
 ```
-
-**Preview locally** (live-reload at `http://127.0.0.1:8000`):
-
-```bash
-mkdocs serve
-```
-
-**Build static output** to `site/`:
-
-```bash
-mkdocs build
-```
-
-**Deploy to GitHub Pages** (done automatically by CI, but can be run manually):
-
-```bash
-mkdocs gh-deploy
-```
-
-## How the Package Integrates with CI4
-
-CI4 auto-discovers your package via `src/Config/Registrar.php`. Add filter aliases, routes, or other config there. Register services in `src/Config/Services.php`. No manual wiring needed in the host app — Composer autoload and CI4's discovery handle it automatically.
 
 ## License
 
