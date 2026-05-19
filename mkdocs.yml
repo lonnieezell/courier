@@ -1,5 +1,5 @@
-site_name: YourVendor/YourPackage
-site_description: Documentation for YourVendor/YourPackage
+site_name: Courier
+site_description: Email marketing for CodeIgniter 4 — contacts, campaigns, drip sequences, and tracking.
 
 theme:
   name: material
@@ -33,11 +33,15 @@ edit_uri: edit/develop/docs/
 copyright: Copyright &copy; 2025 Lonnie Ezell.
 
 markdown_extensions:
-  - pymdownx.superfences
   - pymdownx.highlight:
-      use_pygments: false
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - admonition
   - pymdownx.details
+  - tables
 
 plugins:
   - search
@@ -45,4 +49,11 @@ plugins:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Changelog: changelog.md
+  - Configuration: configuration.md
+  - Contacts: contacts.md
+  - Campaigns: campaigns.md
+  - Drip Sequences: drip-sequences.md
+  - Email Templates: templates.md
+  - CLI Commands: commands.md
+  - Tracking: tracking.md
+  - Events: events.md
