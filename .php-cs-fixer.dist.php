@@ -37,8 +37,4 @@ $options = [
     'cacheFile' => 'build/.php-cs-fixer.cache',
 ];
 
-return Factory::create(new CodeIgniter4(), $overrides, $options)->forLibrary(
-    'YourVendor/YourPackage',
-    'Your Name',
-    'you@example.com',
-);
+return Factory::create(new CodeIgniter4(), $overrides, $options)->forProjects();
