@@ -39,7 +39,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     /**
      * View constant reused from existing test fixtures
      */
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -216,8 +216,8 @@ final class CampaignServiceTest extends CIUnitTestCase
             'delay_hours' => 48,
         ]);
 
-        $this->assertSame(1, (int) $step1->position);
-        $this->assertSame(2, (int) $step2->position);
+        $this->assertSame(1, $step1->position);
+        $this->assertSame(2, $step2->position);
     }
 
     public function testAddDripStepThrowsForNonDripCampaign(): void
@@ -371,7 +371,7 @@ final class CampaignServiceTest extends CIUnitTestCase
 
         $this->assertSame(1, $count);
         // The row returned is the existing one
-        $this->assertSame((int) $send->id, (int) $sends[0]->id);
+        $this->assertSame($send->id, (int) $sends[0]->id);
     }
 
     public function testPrepareBatchResetsFailed(): void

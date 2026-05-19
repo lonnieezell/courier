@@ -28,7 +28,7 @@ final class DripServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -125,10 +125,10 @@ final class DripServiceTest extends CIUnitTestCase
         $after      = time();
 
         $this->assertNotNull($enrollment);
-        $this->assertSame(1, (int) $enrollment->current_step);
+        $this->assertSame(1, $enrollment->current_step);
         $this->assertSame(EnrollmentStatus::Active, $enrollment->status);
 
-        $nextSendAt = strtotime($enrollment->next_send_at);
+        $nextSendAt = strtotime((string) $enrollment->next_send_at);
         $this->assertGreaterThanOrEqual($before + 48 * 3600, $nextSendAt);
         $this->assertLessThanOrEqual($after + 48 * 3600, $nextSendAt);
     }

@@ -33,14 +33,13 @@ final class DripIntegrationTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
     private ContactService $contactService;
     private DripService $dripService;
     private CampaignModel $campaignModel;
-    private ContactModel $contactModel;
     private DripEnrollmentModel $enrollmentModel;
     private DripStepModel $stepModel;
     private SendModel $sendModel;
@@ -53,7 +52,7 @@ final class DripIntegrationTest extends CIUnitTestCase
         $config->testMode = true;
 
         $this->campaignModel   = new CampaignModel();
-        $this->contactModel    = new ContactModel();
+        $contactModel    = new ContactModel();
         $this->enrollmentModel = new DripEnrollmentModel();
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();
@@ -69,12 +68,12 @@ final class DripIntegrationTest extends CIUnitTestCase
             $this->stepModel,
             $this->campaignModel,
             $mailerService,
-            $this->contactModel,
+            $contactModel,
             $config,
         );
 
         $this->contactService = new ContactService(
-            $this->contactModel,
+            $contactModel,
             new TagModel(),
             $this->enrollmentModel,
             new ContactTagModel(),

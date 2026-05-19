@@ -51,7 +51,7 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
             'subject'     => 'Step 1',
             'delay_hours' => 0,
         ]);
-        $step2Id = $stepModel->insert([
+        $stepModel->insert([
             'campaign_id' => $this->campaignId,
             'position'    => 2,
             'view'        => 'emails/followup',

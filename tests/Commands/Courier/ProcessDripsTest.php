@@ -30,7 +30,7 @@ final class ProcessDripsTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -69,7 +69,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         );
 
         Services::injectMock('dripService', $this->dripService);
-        $this->command = new ProcessDrips(service('logger'), $this->createMock(Commands::class));
+        $this->command = new ProcessDrips(service('logger'), $this->createStub(Commands::class));
     }
 
     public function testRunCallsProcessDueAndLogsResult(): void
@@ -130,7 +130,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         };
 
         Services::injectMock('dripService', $throwingService);
-        $command = new ProcessDrips(service('logger'), $this->createMock(Commands::class));
+        $command = new ProcessDrips(service('logger'), $this->createStub(Commands::class));
 
         // Should not throw
         $command->run([]);

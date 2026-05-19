@@ -27,7 +27,7 @@ final class ContactModelTest extends CIUnitTestCase
         $contact = $model->find($id);
 
         $this->assertNotEmpty($contact->unsubscribe_token);
-        $this->assertSame(64, strlen($contact->unsubscribe_token));
+        $this->assertSame(64, strlen((string) $contact->unsubscribe_token));
     }
 
     public function testExistingTokenIsPreservedOnInsert(): void

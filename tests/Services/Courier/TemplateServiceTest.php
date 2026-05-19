@@ -16,9 +16,9 @@ final class TemplateServiceTest extends CIUnitTestCase
     /**
      * Namespaced view paths for test fixtures under src/Views/tests/
      */
-    private const BODY_VIEW = 'Myth\\Courier\\Views\\tests/test_body';
+    private const string BODY_VIEW = 'Myth\\Courier\\Views\\tests/test_body';
 
-    private const LAYOUT_VIEW = 'Myth\\Courier\\Views\\tests/test_layout';
+    private const string LAYOUT_VIEW = 'Myth\\Courier\\Views\\tests/test_layout';
 
     private TemplateService $service;
 

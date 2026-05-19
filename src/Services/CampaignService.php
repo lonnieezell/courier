@@ -201,9 +201,7 @@ class CampaignService
      */
     public function resolveAudience(CampaignDTO $campaign): array
     {
-        $segmentId = isset($campaign->segment_id)
-            ? (int) $campaign->segment_id
-            : null;
+        $segmentId = $campaign->segment_id ?? null;
 
         $tagFilter = isset($campaign->tag_filter) && is_array($campaign->tag_filter) && $campaign->tag_filter !== []
             ? $campaign->tag_filter
@@ -247,7 +245,7 @@ class CampaignService
      */
     public function prepareBatch(CampaignDTO $campaign, array $contacts, int $offset): array
     {
-        $batchSize = (int) $this->config->batchSize;
+        $batchSize = $this->config->batchSize;
         $slice     = array_slice($contacts, $offset, $batchSize);
         $sends     = [];
 
@@ -255,9 +253,9 @@ class CampaignService
             return [];
         }
 
-        $contactIds   = array_map(static fn (object $c): int => (int) $c->id, $slice);
+        $contactIds   = array_map(static fn (object $c): int => $c->id, $slice);
         $existingRows = $this->sendModel
-            ->where('campaign_id', (int) $campaign->id)
+            ->where('campaign_id', $campaign->id)
             ->whereIn('contact_id', $contactIds)
             ->findAll();
 
@@ -288,7 +286,7 @@ class CampaignService
                 continue;
             }
 
-            $sends[] = $this->sendModel->createPending((int) $contact->id, (int) $campaign->id, null);
+            $sends[] = $this->sendModel->createPending((int) $contact->id, $campaign->id, null);
         }
 
         return $sends;
@@ -304,7 +302,7 @@ class CampaignService
      */
     public function sendBatch(array $sends): array
     {
-        $throttleMs    = (int) $this->config->throttleMs;
+        $throttleMs    = $this->config->throttleMs;
         $campaignCache = [];
         $sent          = 0;
         $failed        = 0;
@@ -313,7 +311,7 @@ class CampaignService
             return ['sent' => 0, 'failed' => 0];
         }
 
-        $contactIds  = array_unique(array_map(static fn (object $s): int => (int) $s->contact_id, $sends));
+        $contactIds  = array_unique(array_map(static fn (object $s): int => $s->contact_id, $sends));
         $contactRows = $this->contactModel->whereIn('id', $contactIds)->findAll();
         $contactMap  = [];
 

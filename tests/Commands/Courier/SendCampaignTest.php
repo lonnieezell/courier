@@ -30,7 +30,7 @@ final class SendCampaignTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -71,14 +71,14 @@ final class SendCampaignTest extends CIUnitTestCase
             $config,
         );
 
-        $this->command = new SendCampaign(service('logger'), $this->createMock(Commands::class));
+        $this->command = new SendCampaign(service('logger'), $this->createStub(Commands::class));
         Services::injectMock('campaignService', $campaignService);
     }
 
     public function testRunProcessesScheduledCampaignAndSetsStatusSent(): void
     {
         // Create a contact and a scheduled campaign
-        $contactId = (int) $this->contactModel->insert([
+        $this->contactModel->insert([
             'email'  => 'r@example.com',
             'status' => ContactStatus::Subscribed,
         ]);
@@ -109,7 +109,7 @@ final class SendCampaignTest extends CIUnitTestCase
 
     public function testRunSetsStatusPausedOnExceptionAndContinuesToNextCampaign(): void
     {
-        $contactId = (int) $this->contactModel->insert([
+        $this->contactModel->insert([
             'email'  => 'p@example.com',
             'status' => ContactStatus::Subscribed,
         ]);
@@ -149,7 +149,7 @@ final class SendCampaignTest extends CIUnitTestCase
 
     public function testRunWithSpecificCampaignIdOnlyProcessesThatCampaign(): void
     {
-        $contactId = (int) $this->contactModel->insert([
+        $this->contactModel->insert([
             'email'  => 'sp@example.com',
             'status' => ContactStatus::Subscribed,
         ]);

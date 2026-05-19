@@ -66,7 +66,7 @@ final class SegmentServiceTest extends CIUnitTestCase
 
         $tagId = $tagModel->skipValidation(true)->insert(['slug' => 'newsletter', 'label' => 'Newsletter']);
         $c1Id  = $contactModel->insert(['email' => 'sub@example.com']);
-        $c2Id  = $contactModel->insert(['email' => 'nosub@example.com']);
+        $contactModel->insert(['email' => 'nosub@example.com']);
 
         $pivotModel->insert(['contact_id' => $c1Id, 'tag_id' => $tagId]);
 

@@ -17,7 +17,7 @@ final class TrackEventsTest extends CIUnitTestCase
     {
         $this->expectNotToPerformAssertions();
 
-        $command = new TrackEvents(service('logger'), $this->createMock(Commands::class));
+        $command = new TrackEvents(service('logger'), $this->createStub(Commands::class));
         $command->run([]);
     }
 }

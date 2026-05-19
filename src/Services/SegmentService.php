@@ -21,7 +21,7 @@ class SegmentService
     /**
      * Contact columns allowed as segment rule fields.
      */
-    private const ALLOWED_FIELDS = [
+    private const array ALLOWED_FIELDS = [
         'email', 'first_name', 'last_name', 'status', 'source',
         'subscribed_at', 'unsubscribed_at',
     ];
@@ -157,7 +157,7 @@ class SegmentService
             return;
         }
 
-        if (str_starts_with($field, 'custom:')) {
+        if (str_starts_with((string) $field, 'custom:')) {
             $driver = $db->DBDriver;
 
             if (! in_array($driver, ['MySQLi', 'SQLite3'], true)) {
@@ -166,9 +166,9 @@ class SegmentService
                 );
             }
 
-            $key = substr($field, 7);
+            $key = substr((string) $field, 7);
 
-            if (! preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
+            if (! preg_match('/^\w+$/', $key)) {
                 throw new InvalidArgumentException("Invalid custom field key: {$key}");
             }
 

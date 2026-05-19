@@ -125,7 +125,7 @@ class DripService implements DripServiceInterface
      */
     public function processDue(): array
     {
-        $batchSize = (int) $this->config->batchSize;
+        $batchSize = $this->config->batchSize;
 
         $enrollments = $this->enrollmentModel
             ->where('status', EnrollmentStatus::Active->value)

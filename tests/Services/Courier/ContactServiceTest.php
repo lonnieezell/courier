@@ -34,7 +34,7 @@ final class ContactServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -108,7 +108,7 @@ final class ContactServiceTest extends CIUnitTestCase
 
         $contact = $this->service->subscribe(['email' => 'old@example.com']);
 
-        $this->assertSame((int) $id, (int) $contact->id);
+        $this->assertSame((int) $id, $contact->id);
         $this->assertSame(ContactStatus::Subscribed, $contact->status);
         $this->assertCount(1, $model->findAll());
     }
@@ -225,7 +225,7 @@ final class ContactServiceTest extends CIUnitTestCase
             $fired = $contact;
         });
 
-        $contact = $this->service->subscribe(['email' => 'event@example.com']);
+        $this->service->subscribe(['email' => 'event@example.com']);
 
         Events::removeAllListeners(CourierEvents::CONTACT_SUBSCRIBED);
 
