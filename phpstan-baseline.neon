@@ -1,0 +1,121 @@
+parameters:
+	ignoreErrors:
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\CampaignModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 2
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\ContactModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 2
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\ContactTagModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\DripEnrollmentModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\DripStepModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\SegmentModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\SendModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 2
+			path: src/Config/Services.php
+
+		-
+			rawMessage: Call to function model with Myth\Courier\Models\TagModel::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Config/Services.php
+
+		-
+			rawMessage: 'Call to an undefined method CodeIgniter\Database\ConnectionInterface::fieldExists().'
+			identifier: method.notFound
+			count: 1
+			path: src/Database/Migrations/2026-05-18-120010_AddViewToCourierCampaigns.php
+
+		-
+			rawMessage: Call to function config with Myth\Courier\Config\Courier::class is discouraged.
+			identifier: codeigniter.factoriesClassConstFetch
+			count: 1
+			path: src/Services/MailerService.php
+
+		-
+			rawMessage: 'Call to protected method getMessageID() of class CodeIgniter\Email\Email.'
+			identifier: method.protected
+			count: 1
+			path: src/Services/MailerService.php
+
+		-
+			rawMessage: Cannot access property $id on list<stdClass>.
+			identifier: property.nonObject
+			count: 1
+			path: src/Services/MailerService.php
+
+		-
+			rawMessage: 'Parameter #2 $campaign of method Myth\Courier\Services\MailerService::send() expects object, list<stdClass> given.'
+			identifier: argument.type
+			count: 1
+			path: src/Services/MailerService.php
+
+		-
+			rawMessage: Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.
+			identifier: ternary.shortNotAllowed
+			count: 3
+			path: src/Services/MailerService.php
+
+		-
+			rawMessage: Variable $content might not be defined.
+			identifier: variable.undefined
+			count: 1
+			path: src/Views/courier/layouts/default.php
+
+		-
+			rawMessage: Variable $content might not be defined.
+			identifier: variable.undefined
+			count: 1
+			path: src/Views/courier/layouts/plain.php
+
+		-
+			rawMessage: Variable $content might not be defined.
+			identifier: variable.undefined
+			count: 1
+			path: src/Views/tests/test_layout.php
+
+		-
+			rawMessage: Cannot access property $sent_at on list<stdClass>.
+			identifier: property.nonObject
+			count: 1
+			path: tests/Services/Courier/MailerServiceTest.php
+
+		-
+			rawMessage: Cannot access property $status on list<stdClass>.
+			identifier: property.nonObject
+			count: 1
+			path: tests/Services/Courier/MailerServiceTest.php
+
+		-
+			rawMessage: Variable $content might not be defined.
+			identifier: variable.undefined
+			count: 1
+			path: tests/_support/Views/test_layout.php

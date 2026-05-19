@@ -16,6 +16,7 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\ContactService;
+use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\SegmentService;
 use Myth\Courier\Services\TemplateService;
@@ -82,6 +83,22 @@ class Services extends BaseService
             static::segmentService(),
             static::mailerService(),
             model(SendModel::class),
+            model(ContactModel::class),
+            config(CourierConfig::class),
+        );
+    }
+
+    public static function dripService(bool $getShared = true): DripService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('dripService');
+        }
+
+        return new DripService(
+            model(DripEnrollmentModel::class),
+            model(DripStepModel::class),
+            model(CampaignModel::class),
+            static::mailerService(),
             model(ContactModel::class),
             config(CourierConfig::class),
         );

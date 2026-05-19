@@ -26,26 +26,22 @@ class SendCampaign extends BaseCommand
         'campaignId' => '[Optional] ID of a specific campaign to send.',
     ];
 
-    public function __construct(
-        private readonly CampaignModel $campaignModel,
-        private readonly CampaignService $campaignService,
-    ) {
-        // BaseCommand requires no-arg construction via CI4 discovery,
-        // but we accept injected dependencies for testability.
-    }
-
     /**
      * @param array<int|string, mixed> $params
      */
     public function run(array $params): void
     {
+        /** @var CampaignService $campaignService */
+        $campaignService = service('campaignService');
+        $campaignModel   = model(CampaignModel::class);
+
         $campaignId = isset($params[0]) && $params[0] !== '' ? (int) $params[0] : null;
 
         if ($campaignId !== null) {
-            $campaigns = [$this->campaignModel->find($campaignId)];
+            $campaigns = [$campaignModel->find($campaignId)];
             $campaigns = array_filter($campaigns);
         } else {
-            $campaigns = $this->campaignModel
+            $campaigns = $campaignModel
                 ->where('status', CampaignStatus::Scheduled->value)
                 ->where('scheduled_at <=', date('Y-m-d H:i:s'))
                 ->findAll();
@@ -55,23 +51,23 @@ class SendCampaign extends BaseCommand
 
         foreach ($campaigns as $campaign) {
             try {
-                $this->campaignModel->update($campaign->id, ['status' => CampaignStatus::Sending]);
+                $campaignModel->update($campaign->id, ['status' => CampaignStatus::Sending]);
 
-                $contacts = $this->campaignService->resolveAudience($campaign);
+                $contacts = $campaignService->resolveAudience($campaign);
                 $offset   = 0;
 
                 do {
-                    $sends = $this->campaignService->prepareBatch($campaign, $contacts, $offset);
-                    $this->campaignService->sendBatch($sends);
+                    $sends = $campaignService->prepareBatch($campaign, $contacts, $offset);
+                    $campaignService->sendBatch($sends);
                     $offset += $batchSize;
                 } while (count($sends) === $batchSize);
 
-                $this->campaignModel->update($campaign->id, [
+                $campaignModel->update($campaign->id, [
                     'status'  => CampaignStatus::Sent,
                     'sent_at' => date('Y-m-d H:i:s'),
                 ]);
             } catch (Throwable $e) {
-                $this->campaignModel->update($campaign->id, ['status' => CampaignStatus::Paused]);
+                $campaignModel->update($campaign->id, ['status' => CampaignStatus::Paused]);
                 log_message('error', '[courier:send-campaign] Campaign {id} failed: {message}', [
                     'id'      => $campaign->id,
                     'message' => $e->getMessage(),

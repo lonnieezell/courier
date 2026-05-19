@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Commands\Courier;
 
+use CodeIgniter\CLI\Commands;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Config\Services;
 use Myth\Courier\Commands\SendCampaign;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
@@ -69,7 +71,8 @@ final class SendCampaignTest extends CIUnitTestCase
             $config,
         );
 
-        $this->command = new SendCampaign($this->campaignModel, $campaignService);
+        $this->command = new SendCampaign(service('logger'), $this->createMock(Commands::class));
+        Services::injectMock('campaignService', $campaignService);
     }
 
     public function testRunProcessesScheduledCampaignAndSetsStatusSent(): void

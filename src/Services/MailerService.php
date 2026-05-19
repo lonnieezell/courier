@@ -143,10 +143,15 @@ class MailerService
      * Convenience wrapper for drip step sends.
      * Loads the campaign, creates the pending send record, then calls send().
      */
-    public function sendStep(object $contact, object $dripStep): bool
+    public function sendStep(object $contact, object $dripStep, ?object $campaign = null): bool
     {
-        $campaign = $this->campaignModel->find($dripStep->campaign_id);
-        $sendLog  = $this->sendModel->createPending($contact->id, $campaign->id, $dripStep->id);
+        $campaign ??= $this->campaignModel->find($dripStep->campaign_id);
+
+        if ($campaign === null) {
+            return false;
+        }
+
+        $sendLog = $this->sendModel->createPending($contact->id, $campaign->id, $dripStep->id);
 
         return $this->send($contact, $campaign, $sendLog, $dripStep->subject);
     }

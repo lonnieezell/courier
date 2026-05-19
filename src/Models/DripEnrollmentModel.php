@@ -39,7 +39,7 @@ class DripEnrollmentModel extends Model
      */
     public function advance(object $enrollment): void
     {
-        $nextStep = (new DripStepModel())
+        $nextStep = model(DripStepModel::class)
             ->where('campaign_id', $enrollment->campaign_id)
             ->where('position', $enrollment->current_step + 1)
             ->first();
@@ -52,7 +52,7 @@ class DripEnrollmentModel extends Model
 
         $this->update($enrollment->id, [
             'current_step' => $nextStep->position,
-            'next_send_at' => date('Y-m-d H:i:s', strtotime("+{$nextStep->delay_hours} hours")),
+            'next_send_at' => date('Y-m-d H:i:s', time() + ((int) $nextStep->delay_hours * 3600)),
         ]);
     }
 }
