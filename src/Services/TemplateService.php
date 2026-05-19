@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Renders email HTML using CI4's view() system.
@@ -65,7 +66,7 @@ class TemplateService
     {
         try {
             return view($path, $data);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new InvalidArgumentException(
                 "Courier: could not render view \"{$path}\": " . $e->getMessage(),
                 0,

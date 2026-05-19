@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
-use Myth\Courier\Enums\CampaignType;
 
 /**
  * Manages email campaigns, both one-time blasts and multi-step drip sequences.

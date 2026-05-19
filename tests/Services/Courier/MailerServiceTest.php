@@ -27,12 +27,13 @@ final class MailerServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    protected $refresh   = true;
-    protected $namespace = 'Myth\Courier';
-
-    /** Test fixture view under src/Views/tests/ — resolved via Myth\Courier namespace */
+    /**
+     * Test fixture view under src/Views/tests/ — resolved via Myth\Courier namespace
+     */
     private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
+    protected $refresh   = true;
+    protected $namespace = 'Myth\Courier';
     private MailerService $service;
     private SendModel $sendModel;
     private CampaignModel $campaignModel;
@@ -43,8 +44,8 @@ final class MailerServiceTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config                  = config(CourierConfig::class);
-        $config->testMode    = true;
+        $config               = config(CourierConfig::class);
+        $config->testMode     = true;
         $config->trackingHost = 'https://track.example.com';
 
         // Email mock — must never be called in testMode
@@ -55,7 +56,7 @@ final class MailerServiceTest extends CIUnitTestCase
         $this->campaignModel = new CampaignModel();
 
         // Create a real contact (satisfies FK constraint on courier_sends)
-        $contactService  = new ContactService(
+        $contactService = new ContactService(
             new ContactModel(),
             new TagModel(),
             new DripEnrollmentModel(),
@@ -67,7 +68,7 @@ final class MailerServiceTest extends CIUnitTestCase
         ]);
 
         // Create a real campaign
-        $campaignId    = (int) $this->campaignModel->insert([
+        $campaignId = (int) $this->campaignModel->insert([
             'name'       => 'Test Campaign',
             'subject'    => 'Hello',
             'type'       => CampaignType::Blast,

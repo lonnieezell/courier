@@ -6,6 +6,7 @@ namespace Myth\Courier\Services;
 
 use CodeIgniter\Database\BaseBuilder;
 use CodeIgniter\Database\BaseConnection;
+use Generator;
 use InvalidArgumentException;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\SegmentModel;
@@ -16,6 +17,14 @@ use RuntimeException;
  */
 class SegmentService
 {
+    /**
+     * Contact columns allowed as segment rule fields.
+     */
+    private const ALLOWED_FIELDS = [
+        'email', 'first_name', 'last_name', 'status', 'source',
+        'subscribed_at', 'unsubscribed_at',
+    ];
+
     public function __construct(
         private readonly ContactModel $contactModel,
         private readonly SegmentModel $segmentModel,
@@ -73,9 +82,9 @@ class SegmentService
      * full result set into memory at once. Use this instead of resolve()
      * when processing large segments.
      *
-     * @return \Generator<int, list<object>>
+     * @return Generator<int, list<object>>
      */
-    public function resolveChunked(int $segmentId, int $chunkSize = 200): \Generator
+    public function resolveChunked(int $segmentId, int $chunkSize = 200): Generator
     {
         $offset = 0;
 
@@ -124,12 +133,6 @@ class SegmentService
 
         return $builder;
     }
-
-    /** Contact columns allowed as segment rule fields. */
-    private const ALLOWED_FIELDS = [
-        'email', 'first_name', 'last_name', 'status', 'source',
-        'subscribed_at', 'unsubscribed_at',
-    ];
 
     private function applyRule(
         BaseBuilder $builder,

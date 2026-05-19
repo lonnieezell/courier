@@ -8,6 +8,7 @@ use CodeIgniter\CLI\BaseCommand;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Services\CampaignService;
+use Throwable;
 
 /**
  * Sends scheduled blast campaigns.
@@ -69,7 +70,7 @@ class SendCampaign extends BaseCommand
                     'status'  => CampaignStatus::Sent,
                     'sent_at' => date('Y-m-d H:i:s'),
                 ]);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->campaignModel->update($campaign->id, ['status' => CampaignStatus::Paused]);
                 log_message('error', '[courier:send-campaign] Campaign {id} failed: {message}', [
                     'id'      => $campaign->id,

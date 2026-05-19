@@ -120,15 +120,15 @@ class ContactService
         // Insert any tags that don't exist yet
         foreach ($slugs as $slug) {
             if (! isset($tagsBySlug[$slug])) {
-                $label              = ucwords(str_replace(['-', '_'], ' ', $slug));
-                $id                 = $this->tagModel->insert(['slug' => $slug, 'label' => $label]);
-                $tagsBySlug[$slug]  = $this->tagModel->find($id);
+                $label             = ucwords(str_replace(['-', '_'], ' ', $slug));
+                $id                = $this->tagModel->insert(['slug' => $slug, 'label' => $label]);
+                $tagsBySlug[$slug] = $this->tagModel->find($id);
             }
         }
 
         // Determine which associations already exist (one query)
-        $allTagIds    = array_map(static fn(object $t): int => $t->id, $tagsBySlug);
-        $linked       = $this->contactTagModel
+        $allTagIds = array_map(static fn (object $t): int => $t->id, $tagsBySlug);
+        $linked    = $this->contactTagModel
             ->select('tag_id')
             ->where('contact_id', $contactId)
             ->whereIn('tag_id', $allTagIds)

@@ -27,7 +27,7 @@ class MailerService
         private ?Email $email = null,
     ) {
         $this->config = config(CourierConfig::class);
-        $this->email  ??= service('email');
+        $this->email ??= service('email');
     }
 
     private function trackingBase(): string
@@ -47,8 +47,8 @@ class MailerService
      */
     public function send(object $contact, object $campaign, object $sendLog, ?string $subject = null): bool
     {
-        $layout  = $campaign->layout ?? $this->config->defaultLayout;
-        $subject = $subject ?? $campaign->subject;
+        $layout = $campaign->layout ?? $this->config->defaultLayout;
+        $subject ??= $campaign->subject;
 
         $data = [
             'contact' => $contact,
@@ -87,7 +87,7 @@ class MailerService
             return true;
         }
 
-        $fromName  = $campaign->from_name  ?: $this->config->fromName;
+        $fromName  = $campaign->from_name ?: $this->config->fromName;
         $fromEmail = $campaign->from_email ?: $this->config->fromEmail;
 
         $this->email->clear();

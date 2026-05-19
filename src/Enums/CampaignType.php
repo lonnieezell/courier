@@ -6,6 +6,6 @@ namespace Myth\Courier\Enums;
 
 enum CampaignType: string
 {
-    case Blast         = 'blast';
-    case DripSequence  = 'drip_sequence';
+    case Blast        = 'blast';
+    case DripSequence = 'drip_sequence';
 }

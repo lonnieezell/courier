@@ -13,11 +13,14 @@ use Myth\Courier\Services\TemplateService;
  */
 final class TemplateServiceTest extends CIUnitTestCase
 {
-    private TemplateService $service;
+    /**
+     * Namespaced view paths for test fixtures under src/Views/tests/
+     */
+    private const BODY_VIEW = 'Myth\\Courier\\Views\\tests/test_body';
 
-    /** Namespaced view paths for test fixtures under src/Views/tests/ */
-    private const BODY_VIEW   = 'Myth\\Courier\\Views\\tests/test_body';
     private const LAYOUT_VIEW = 'Myth\\Courier\\Views\\tests/test_layout';
+
+    private TemplateService $service;
 
     protected function setUp(): void
     {
@@ -27,8 +30,8 @@ final class TemplateServiceTest extends CIUnitTestCase
 
     public function testRenderWithLayoutReturnsLayoutWrapper(): void
     {
-        $contact       = (object) ['first_name' => 'Alice'];
-        $html          = $this->service->render(self::BODY_VIEW, self::LAYOUT_VIEW, ['contact' => $contact]);
+        $contact = (object) ['first_name' => 'Alice'];
+        $html    = $this->service->render(self::BODY_VIEW, self::LAYOUT_VIEW, ['contact' => $contact]);
 
         $this->assertStringContainsString('class="layout"', $html);
     }

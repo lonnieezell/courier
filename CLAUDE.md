@@ -10,6 +10,7 @@ A CodeIgniter 4 package skeleton/template. The placeholder strings `YourVendor`,
 - Follow PSR-12 coding style (enforced by `php-cs-fixer`).
 - Use strict types and type declarations.
 - Use PHPDoc comments for all public methods and properties.
+- Add docblocks for each class, but never for file level or tests.
 - Follow CI4 conventions for Models, Services, and Config.
 - Write unit tests for all new features and bug fixes.
 - When adding new dependencies, update `composer.json` and ensure they are compatible with CI4 and PHP 8.2+.
