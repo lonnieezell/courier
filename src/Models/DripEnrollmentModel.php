@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\DTO\DripEnrollmentDTO;
 use Myth\Courier\Enums\EnrollmentStatus;
+use Myth\Courier\Traits\HasDTO;
 
 /**
  * Manages a contact's enrollment and progress through a drip campaign.
  */
 class DripEnrollmentModel extends Model
 {
-    protected $table         = 'courier_drip_enrollments';
-    protected $returnType    = 'object';
-    protected $useTimestamps = true;
-    protected $allowedFields = [
+    use HasDTO;
+
+    protected $table           = 'courier_drip_enrollments';
+    protected $returnType      = 'object';
+    protected string $dtoClass = DripEnrollmentDTO::class;
+    protected $afterFind       = ['convertToDto'];
+    protected $useTimestamps   = true;
+    protected $allowedFields   = [
         'contact_id',
         'campaign_id',
         'current_step',
@@ -37,7 +43,7 @@ class DripEnrollmentModel extends Model
      * If no next step exists the enrollment is marked completed; otherwise
      * current_step and next_send_at are updated based on the step's delay_hours.
      */
-    public function advance(object $enrollment): void
+    public function advance(DripEnrollmentDTO $enrollment): void
     {
         $nextStep = model(DripStepModel::class)
             ->where('campaign_id', $enrollment->campaign_id)

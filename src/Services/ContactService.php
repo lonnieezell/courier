@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Myth\Courier\Services;
 
+use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Exceptions\CourierValidationException;
@@ -37,7 +38,7 @@ class ContactService
      * @param array<string, mixed> $data
      * @param list<string>         $tags
      */
-    public function subscribe(array $data, array $tags = [], ?int $dripCampaignId = null): object
+    public function subscribe(array $data, array $tags = [], ?int $dripCampaignId = null): ContactDTO
     {
         if (! isset($data['email']) || $data['email'] === '') {
             throw new CourierValidationException('The email field is required.');
@@ -175,7 +176,7 @@ class ContactService
             ->delete();
     }
 
-    public function getContact(string $email): ?object
+    public function getContact(string $email): ?ContactDTO
     {
         return $this->contactModel->where('email', $email)->first();
     }

@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\Traits\HasDTO;
 
 /**
  * Manages email contacts, including token generation and subscription status.
  */
 class ContactModel extends Model
 {
-    protected $table         = 'courier_contacts';
-    protected $returnType    = 'object';
-    protected $useTimestamps = true;
-    protected $allowedFields = [
+    use HasDTO;
+
+    protected $table           = 'courier_contacts';
+    protected $returnType      = 'object';
+    protected string $dtoClass = ContactDTO::class;
+    protected $afterFind       = ['convertToDto'];
+    protected $useTimestamps   = true;
+    protected $allowedFields   = [
         'email',
         'first_name',
         'last_name',

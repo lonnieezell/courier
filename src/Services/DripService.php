@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\DripEnrollmentDTO;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
@@ -39,7 +40,7 @@ class DripService implements DripServiceInterface
      * Returns null if the contact is already enrolled (any status).
      * Throws \RuntimeException if the contact is not subscribed or the campaign has no steps.
      */
-    public function enroll(int $contactId, int $campaignId): ?object
+    public function enroll(int $contactId, int $campaignId): ?DripEnrollmentDTO
     {
         /** @var object $campaign */
         $campaign = $this->campaignModel->find($campaignId);
@@ -208,7 +209,7 @@ class DripService implements DripServiceInterface
     /**
      * Returns the enrollment object for a contact+campaign pair, or null if none exists.
      */
-    public function getEnrollmentStatus(int $contactId, int $campaignId): ?object
+    public function getEnrollmentStatus(int $contactId, int $campaignId): ?DripEnrollmentDTO
     {
         return $this->enrollmentModel
             ->where('contact_id', $contactId)

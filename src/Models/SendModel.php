@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
+use Myth\Courier\Traits\HasDTO;
 
 /**
  * Manages individual email sends, including tracking tokens and delivery status.
  */
 class SendModel extends Model
 {
-    protected $table         = 'courier_sends';
-    protected $returnType    = 'object';
-    protected $useTimestamps = true;
-    protected $allowedFields = [
+    use HasDTO;
+
+    protected $table           = 'courier_sends';
+    protected $returnType      = 'object';
+    protected string $dtoClass = SendDTO::class;
+    protected $afterFind       = ['convertToDto'];
+    protected $useTimestamps   = true;
+    protected $allowedFields   = [
         'contact_id',
         'campaign_id',
         'drip_step_id',
@@ -41,7 +47,7 @@ class SendModel extends Model
      * open and click tracking tokens, then returns the hydrated object.
      * Pass null for $stepId on blast campaigns that have no drip step.
      */
-    public function createPending(int $contactId, int $campaignId, ?int $stepId): object
+    public function createPending(int $contactId, int $campaignId, ?int $stepId): SendDTO
     {
         $id = $this->insert([
             'contact_id'   => $contactId,

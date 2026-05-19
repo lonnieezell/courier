@@ -9,6 +9,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use DateTime;
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\CampaignDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -459,12 +460,12 @@ final class CampaignServiceTest extends CIUnitTestCase
      *
      * @param array<string, mixed> $overrides
      */
-    private function makeCampaignObject(array $overrides = []): object
+    private function makeCampaignObject(array $overrides = []): CampaignDTO
     {
-        return (object) array_merge([
+        return CampaignDTO::fromObject((object) array_merge([
             'id'         => 0,
             'segment_id' => null,
             'tag_filter' => null,
-        ], $overrides);
+        ], $overrides));
     }
 }

@@ -6,6 +6,10 @@ namespace Myth\Courier\Services;
 
 use CodeIgniter\Email\Email;
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\CampaignDTO;
+use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\DTO\DripStepDTO;
+use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\SendModel;
@@ -45,7 +49,7 @@ class MailerService
      * The caller must pre-create $sendLog via SendModel::createPending().
      * Pass $subject to override $campaign->subject (used by drip steps).
      */
-    public function send(object $contact, object $campaign, object $sendLog, ?string $subject = null): bool
+    public function send(ContactDTO $contact, CampaignDTO $campaign, SendDTO $sendLog, ?string $subject = null): bool
     {
         $layout = $campaign->layout ?? $this->config->defaultLayout;
         $subject ??= $campaign->subject;
@@ -143,7 +147,7 @@ class MailerService
      * Convenience wrapper for drip step sends.
      * Loads the campaign, creates the pending send record, then calls send().
      */
-    public function sendStep(object $contact, object $dripStep, ?object $campaign = null): bool
+    public function sendStep(ContactDTO $contact, DripStepDTO $dripStep, ?CampaignDTO $campaign = null): bool
     {
         $campaign ??= $this->campaignModel->find($dripStep->campaign_id);
 

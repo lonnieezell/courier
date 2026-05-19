@@ -6,6 +6,10 @@ namespace Myth\Courier\Services;
 
 use DateTimeInterface;
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\CampaignDTO;
+use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\DTO\DripStepDTO;
+use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -40,7 +44,7 @@ class CampaignService
      *
      * @throws CourierValidationException
      */
-    public function create(array $data): object
+    public function create(array $data): CampaignDTO
     {
         foreach (['name', 'subject', 'from_name', 'from_email'] as $field) {
             if (! isset($data[$field]) || (string) $data[$field] === '') {
@@ -74,7 +78,7 @@ class CampaignService
      *
      * @throws CourierValidationException
      */
-    public function addDripStep(int $campaignId, array $stepData): object
+    public function addDripStep(int $campaignId, array $stepData): DripStepDTO
     {
         $campaign = $this->campaignModel->find($campaignId);
 
@@ -101,12 +105,11 @@ class CampaignService
         }
 
         if (! isset($stepData['position'])) {
-            $maxRow = $this->dripStepModel
-                ->selectMax('position')
+            $count = (int) $this->dripStepModel
                 ->where('campaign_id', $campaignId)
-                ->first();
+                ->countAllResults();
 
-            $stepData['position'] = ($maxRow !== null ? (int) $maxRow->position : 0) + 1;
+            $stepData['position'] = $count + 1;
         }
 
         $stepData['campaign_id'] = $campaignId;
@@ -196,7 +199,7 @@ class CampaignService
      *
      * @return list<object>
      */
-    public function resolveAudience(object $campaign): array
+    public function resolveAudience(CampaignDTO $campaign): array
     {
         $segmentId = isset($campaign->segment_id)
             ? (int) $campaign->segment_id
@@ -238,11 +241,11 @@ class CampaignService
      *   - pending/sent rows are returned as-is (no duplicate insert)
      *   - failed rows are reset to pending (retry)
      *
-     * @param list<object> $contacts Full resolved audience (not yet sliced)
+     * @param list<ContactDTO> $contacts Full resolved audience (not yet sliced)
      *
-     * @return list<object> Send objects for this batch slice
+     * @return list<SendDTO> Send objects for this batch slice
      */
-    public function prepareBatch(object $campaign, array $contacts, int $offset): array
+    public function prepareBatch(CampaignDTO $campaign, array $contacts, int $offset): array
     {
         $batchSize = (int) $this->config->batchSize;
         $slice     = array_slice($contacts, $offset, $batchSize);
@@ -295,7 +298,7 @@ class CampaignService
      * Sends a batch of Send rows via the mailer.
      * Applies throttle (milliseconds) between each send if configured.
      *
-     * @param list<object> $sends
+     * @param list<SendDTO> $sends
      *
      * @return array{sent: int, failed: int}
      */

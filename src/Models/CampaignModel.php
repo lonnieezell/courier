@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\DTO\CampaignDTO;
+use Myth\Courier\Traits\HasDTO;
 
 /**
  * Manages email campaigns, both one-time blasts and multi-step drip sequences.
  */
 class CampaignModel extends Model
 {
-    protected $table         = 'courier_campaigns';
-    protected $returnType    = 'object';
-    protected $useTimestamps = true;
-    protected $allowedFields = [
+    use HasDTO;
+
+    protected $table           = 'courier_campaigns';
+    protected $returnType      = 'object';
+    protected string $dtoClass = CampaignDTO::class;
+    protected $afterFind       = ['convertToDto'];
+    protected $useTimestamps   = true;
+    protected $allowedFields   = [
         'name',
         'subject',
         'type',
