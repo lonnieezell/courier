@@ -6,6 +6,7 @@ namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
 use Myth\Courier\DTO\DripEnrollmentDTO;
+use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Traits\HasDTO;
 
@@ -43,9 +44,9 @@ class DripEnrollmentModel extends Model
      * If no next step exists the enrollment is marked completed; otherwise
      * current_step and next_send_at are updated based on the step's delay_hours.
      */
-    public function advance(DripEnrollmentDTO $enrollment): void
+    public function advance(DripEnrollmentDTO $enrollment, ?DripStepDTO $nextStep = null): void
     {
-        $nextStep = model(DripStepModel::class)
+        $nextStep ??= model(DripStepModel::class)
             ->where('campaign_id', $enrollment->campaign_id)
             ->where('position', $enrollment->current_step + 1)
             ->first();

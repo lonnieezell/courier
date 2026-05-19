@@ -185,8 +185,10 @@ class DripService implements DripServiceInterface
 
                 $campaign = $campaignMap[$enrollment->campaign_id] ?? null;
 
+                $nextStep = $stepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null;
+
                 if ($this->mailerService->sendStep($contact, $step, $campaign)) {
-                    $this->enrollmentModel->advance($enrollment);
+                    $this->enrollmentModel->advance($enrollment, $nextStep);
                     $processed++;
                 } else {
                     log_message('error', '[Courier] DripService: failed to send step for enrollment {id}', [

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
-use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Exceptions\CourierValidationException;
+use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
@@ -42,6 +43,14 @@ class ContactService
     {
         if (! isset($data['email']) || $data['email'] === '') {
             throw new CourierValidationException('The email field is required.');
+        }
+
+        if ($dripCampaignId !== null && $this->dripService !== null) {
+            $campaign = model(CampaignModel::class)->find($dripCampaignId);
+
+            if ($campaign === null || $campaign->type !== CampaignType::DripSequence) {
+                throw new CourierValidationException('Campaign not found or is not a drip sequence.');
+            }
         }
 
         $contact = $this->contactModel->where('email', $data['email'])->first();
@@ -93,11 +102,7 @@ class ContactService
             'unsubscribed_at' => date('Y-m-d H:i:s'),
         ]);
 
-        $this->enrollmentModel
-            ->where('contact_id', $contact->id)
-            ->where('status', EnrollmentStatus::Active->value)
-            ->set('status', EnrollmentStatus::Cancelled)
-            ->update();
+        $this->dripService?->cancelAllForContact($contact->id);
 
         return true;
     }

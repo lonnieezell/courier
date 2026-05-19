@@ -6,6 +6,7 @@ namespace Tests\Services\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -15,8 +16,13 @@ use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
+use Myth\Courier\Models\DripStepModel;
+use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
+use Myth\Courier\Services\DripService;
+use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\TemplateService;
 
 /**
  * @internal
@@ -25,20 +31,57 @@ final class ContactServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
     private ContactService $service;
+    private CampaignModel $campaignModel;
+    private DripEnrollmentModel $enrollmentModel;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->campaignModel   = new CampaignModel();
+        $this->enrollmentModel = new DripEnrollmentModel();
+
         $this->service = new ContactService(
             new ContactModel(),
             new TagModel(),
-            new DripEnrollmentModel(),
+            $this->enrollmentModel,
             new ContactTagModel(),
         );
+    }
+
+    private function makeDripService(): DripService
+    {
+        $config           = config(CourierConfig::class);
+        $config->testMode = true;
+
+        return new DripService(
+            $this->enrollmentModel,
+            new DripStepModel(),
+            $this->campaignModel,
+            new MailerService(new TemplateService(), new SendModel(), $this->campaignModel),
+            new ContactModel(),
+            $config,
+        );
+    }
+
+    private function createDripCampaign(): object
+    {
+        $id = $this->campaignModel->insert([
+            'name'       => 'Welcome Drip',
+            'subject'    => 'Welcome',
+            'type'       => CampaignType::DripSequence,
+            'status'     => CampaignStatus::Draft,
+            'view'       => self::BODY_VIEW,
+            'from_name'  => 'Sender',
+            'from_email' => 'sender@example.com',
+        ]);
+
+        return $this->campaignModel->find($id);
     }
 
     public function testSubscribeCreatesNewContact(): void
@@ -87,32 +130,77 @@ final class ContactServiceTest extends CIUnitTestCase
         $this->assertSame(2, $pivotCount);
     }
 
-    public function testUnsubscribeByTokenUpdatesStatusAndCancelsEnrollments(): void
+    public function testSubscribeWithDripCampaignEnrollsContact(): void
     {
-        $contactModel    = new ContactModel();
-        $enrollmentModel = new DripEnrollmentModel();
-        $campaignId      = (new CampaignModel())->skipValidation(true)->insert([
-            'name'       => 'Test',
-            'subject'    => 'Test',
-            'type'       => CampaignType::DripSequence,
+        $campaign = $this->createDripCampaign();
+        (new DripStepModel())->insert([
+            'campaign_id' => $campaign->id,
+            'position'    => 1,
+            'view'        => self::BODY_VIEW,
+            'subject'     => 'Step 1',
+            'delay_hours' => 24,
+        ]);
+
+        $this->service->setDripService($this->makeDripService());
+        $contact = $this->service->subscribe(['email' => 'drip@example.com'], [], $campaign->id);
+
+        $enrollment = $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->first();
+
+        $this->assertNotNull($enrollment);
+        $this->assertSame(EnrollmentStatus::Active, $enrollment->status);
+    }
+
+    public function testSubscribeThrowsBeforeCreatingContactIfCampaignNotFound(): void
+    {
+        $this->service->setDripService($this->makeDripService());
+
+        $this->expectException(CourierValidationException::class);
+        $this->service->subscribe(['email' => 'drip@example.com'], [], 99999);
+
+        $this->assertCount(0, (new ContactModel())->findAll());
+    }
+
+    public function testSubscribeThrowsBeforeCreatingContactIfCampaignIsNotDripType(): void
+    {
+        $id = $this->campaignModel->insert([
+            'name'       => 'Blast',
+            'subject'    => 'Hi',
+            'type'       => CampaignType::Blast,
             'status'     => CampaignStatus::Draft,
+            'view'       => self::BODY_VIEW,
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
         ]);
 
-        $contactId = $contactModel->insert(['email' => 'unsub@example.com']);
-        $contact   = $contactModel->find($contactId);
+        $this->service->setDripService($this->makeDripService());
 
-        $enrollmentModel->insert([
-            'contact_id'  => $contactId,
-            'campaign_id' => $campaignId,
-            'status'      => EnrollmentStatus::Active,
+        $this->expectException(CourierValidationException::class);
+        $this->service->subscribe(['email' => 'drip@example.com'], [], $id);
+
+        $this->assertCount(0, (new ContactModel())->findAll());
+    }
+
+    public function testUnsubscribeByTokenUpdatesStatusAndCancelsEnrollments(): void
+    {
+        $contactModel = new ContactModel();
+        $campaign     = $this->createDripCampaign();
+        (new DripStepModel())->insert([
+            'campaign_id' => $campaign->id,
+            'position'    => 1,
+            'view'        => self::BODY_VIEW,
+            'subject'     => 'Step 1',
+            'delay_hours' => 24,
         ]);
 
-        $result = $this->service->unsubscribeByToken($contact->unsubscribe_token);
+        $this->service->setDripService($this->makeDripService());
+        $contact = $this->service->subscribe(['email' => 'unsub@example.com'], [], $campaign->id);
 
-        $updated    = $contactModel->find($contactId);
-        $enrollment = $enrollmentModel->where('contact_id', $contactId)->first();
+        $result     = $this->service->unsubscribeByToken($contact->unsubscribe_token);
+        $updated    = $contactModel->find($contact->id);
+        $enrollment = $this->enrollmentModel->where('contact_id', $contact->id)->first();
 
         $this->assertTrue($result);
         $this->assertSame(ContactStatus::Unsubscribed, $updated->status);
