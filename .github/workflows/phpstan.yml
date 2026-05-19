@@ -3,7 +3,7 @@ name: PHPStan
 on:
   pull_request:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - 'composer.*'
@@ -11,7 +11,7 @@ on:
       - '.github/workflows/phpstan.yml'
   push:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - 'composer.*'

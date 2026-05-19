@@ -3,13 +3,13 @@ name: PHPCSFixer
 on:
   pull_request:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - '.github/workflows/phpcsfixer.yml'
   push:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - '.github/workflows/phpcsfixer.yml'

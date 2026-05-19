@@ -3,14 +3,14 @@ name: Unused
 on:
   pull_request:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - 'composer.*'
       - '.github/workflows/unused.yml'
   push:
     branches:
-      - develop
+      - main
     paths:
       - '**.php'
       - 'composer.*'
