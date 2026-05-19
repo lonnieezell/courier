@@ -57,4 +57,40 @@ final class SendModelTest extends CIUnitTestCase
 
         $this->assertNull($send->drip_step_id);
     }
+
+    public function testFindByOpenTokenReturnsMatchingSend(): void
+    {
+        $model = new SendModel();
+        $send  = $model->createPending($this->contactId, $this->campaignId, null);
+
+        $found = $model->findByOpenToken($send->open_token);
+
+        $this->assertNotNull($found);
+        $this->assertSame($send->id, $found->id);
+    }
+
+    public function testFindByOpenTokenReturnsNullForMissingToken(): void
+    {
+        $model = new SendModel();
+
+        $this->assertNull($model->findByOpenToken('doesnotexist'));
+    }
+
+    public function testFindByClickTokenReturnsMatchingSend(): void
+    {
+        $model = new SendModel();
+        $send  = $model->createPending($this->contactId, $this->campaignId, null);
+
+        $found = $model->findByClickToken($send->click_token);
+
+        $this->assertNotNull($found);
+        $this->assertSame($send->id, $found->id);
+    }
+
+    public function testFindByClickTokenReturnsNullForMissingToken(): void
+    {
+        $model = new SendModel();
+
+        $this->assertNull($model->findByClickToken('doesnotexist'));
+    }
 }

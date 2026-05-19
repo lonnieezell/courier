@@ -23,20 +23,31 @@ use Myth\Courier\Services\TemplateService;
 
 class Services extends BaseService
 {
+    /**
+     * Manages the contact lifecycle: subscribe, unsubscribe, tag application, and re-subscription.
+     * Also wires DripService so that unsubscribing a contact automatically cancels active drip enrollments.
+     */
     public static function contactService(bool $getShared = true): ContactService
     {
         if ($getShared) {
             return static::getSharedInstance('contactService');
         }
 
-        return new ContactService(
+        $service = new ContactService(
             model(ContactModel::class),
             model(TagModel::class),
             model(DripEnrollmentModel::class),
             model(ContactTagModel::class),
         );
+        $service->setDripService(static::dripService(false));
+
+        return $service;
     }
 
+    /**
+     * Resolves audience segments into contact lists.
+     * Use to target campaigns by saved segment rules or tag combinations.
+     */
     public static function segmentService(bool $getShared = true): SegmentService
     {
         if ($getShared) {
@@ -49,6 +60,10 @@ class Services extends BaseService
         );
     }
 
+    /**
+     * Renders email body views and layouts using CI4's view() system.
+     * Used internally by MailerService; inject directly when previewing templates.
+     */
     public static function templateService(bool $getShared = true): TemplateService
     {
         if ($getShared) {
@@ -58,6 +73,10 @@ class Services extends BaseService
         return new TemplateService();
     }
 
+    /**
+     * Sends individual emails, wraps links with click-tracking tokens, and logs delivery status.
+     * Used internally by CampaignService and DripService; inject directly for one-off sends.
+     */
     public static function mailerService(bool $getShared = true): MailerService
     {
         if ($getShared) {
@@ -71,6 +90,10 @@ class Services extends BaseService
         );
     }
 
+    /**
+     * Creates and schedules blast campaigns, resolves their audience, and sends batches of emails.
+     * Use to create campaigns, schedule sends, and retrieve per-campaign delivery statistics.
+     */
     public static function campaignService(bool $getShared = true): CampaignService
     {
         if ($getShared) {
@@ -88,6 +111,10 @@ class Services extends BaseService
         );
     }
 
+    /**
+     * Manages drip sequence enrollments: enroll contacts, process due steps, and cancel enrollments.
+     * The courier:process-drips spark command calls processDue() on this service each cron tick.
+     */
     public static function dripService(bool $getShared = true): DripService
     {
         if ($getShared) {

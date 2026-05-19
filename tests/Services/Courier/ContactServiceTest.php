@@ -214,4 +214,28 @@ final class ContactServiceTest extends CIUnitTestCase
 
         $this->assertFalse($result);
     }
+
+    public function testServiceLocatorContactServiceCancelsDripEnrollmentsOnUnsubscribe(): void
+    {
+        $campaign = $this->createDripCampaign();
+        (new DripStepModel())->insert([
+            'campaign_id' => $campaign->id,
+            'position'    => 1,
+            'view'        => self::BODY_VIEW,
+            'subject'     => 'Step 1',
+            'delay_hours' => 24,
+        ]);
+
+        // Subscribe and enroll the contact manually
+        $dripService = $this->makeDripService();
+        $contact     = $this->service->subscribe(['email' => 'svc-unsub@example.com']);
+        $dripService->enroll($contact->id, $campaign->id);
+
+        // Unsubscribe via the service locator — no manual setDripService() call
+        $contactService = service('contactService', false);
+        $contactService->unsubscribeByToken($contact->unsubscribe_token);
+
+        $enrollment = $this->enrollmentModel->where('contact_id', $contact->id)->first();
+        $this->assertSame(EnrollmentStatus::Cancelled, $enrollment->status);
+    }
 }

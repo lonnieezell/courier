@@ -42,6 +42,16 @@ class SendModel extends Model
         'status'      => 'permit_empty|in_list[pending,sent,failed,bounced]',
     ];
 
+    public function findByOpenToken(string $token): ?SendDTO
+    {
+        return $this->where('open_token', $token)->first();
+    }
+
+    public function findByClickToken(string $token): ?SendDTO
+    {
+        return $this->where('click_token', $token)->first();
+    }
+
     /**
      * Inserts a new send record in 'pending' status with freshly generated
      * open and click tracking tokens, then returns the hydrated object.
