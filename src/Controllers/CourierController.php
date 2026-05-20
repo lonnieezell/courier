@@ -80,6 +80,17 @@ class CourierController extends Controller
     }
 
     /**
+     * Handles form submissions from courier_form().
+     * CSRF protection is applied automatically by CI4 for POST routes when the csrf filter is active.
+     */
+    public function capture(): ResponseInterface
+    {
+        helper('courier');
+
+        return courier_capture($this->request);
+    }
+
+    /**
      * Unsubscribes the contact identified by the token and renders a result view.
      */
     public function unsubscribe(string $token): ResponseInterface
