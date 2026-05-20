@@ -13,23 +13,10 @@ Email campaigns and drip sequences for CodeIgniter 4.
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.2+
 - CodeIgniter 4.7+
 
 ## Installation
-
-**Not registered on Packagist yet** — for now, add this to your `composer.json`:
-
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/lonnieezell/courier"
-    }
-]
-```
-
-Then require the package:
 
 ```bash
 composer require myth/courier
@@ -57,6 +44,7 @@ That's it — the following routes are then available with no further configurat
 | `GET /courier/open/{token}` | Open-tracking pixel (returns 1×1 GIF) |
 | `GET /courier/click/{token}` | Click redirect (tracks click, redirects to target URL) |
 | `GET /courier/unsubscribe/{token}` | One-click unsubscribe |
+| `POST /courier/capture` | Signup form capture (used by `courier_form()`) |
 
 **Custom prefix or manual control:** If you want a different URL prefix or to disable the routes entirely, keep `'routes'` out of `$aliases` and add the group yourself in `app/Config/Routes.php`:
 
@@ -65,6 +53,7 @@ $routes->group('my-prefix', ['namespace' => 'Myth\Courier\Controllers'], static 
     $routes->get('open/(:segment)',        'CourierController::open/$1');
     $routes->get('click/(:segment)',       'CourierController::click/$1');
     $routes->get('unsubscribe/(:segment)', 'CourierController::unsubscribe/$1');
+    $routes->post('capture',              'CourierController::capture');
 });
 ```
 
