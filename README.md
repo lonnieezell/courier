@@ -13,7 +13,7 @@ Email campaigns and drip sequences for CodeIgniter 4.
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.2+
 - CodeIgniter 4.7+
 
 ## Installation
