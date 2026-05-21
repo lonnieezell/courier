@@ -31,7 +31,7 @@ final class ProcessDripsTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';

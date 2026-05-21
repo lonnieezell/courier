@@ -40,7 +40,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     /**
      * View constant reused from existing test fixtures
      */
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';

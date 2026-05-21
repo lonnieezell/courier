@@ -34,7 +34,7 @@ final class MailerServiceTest extends CIUnitTestCase
     /**
      * Test fixture view under src/Views/tests/ — resolved via Myth\Courier namespace
      */
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';

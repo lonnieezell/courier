@@ -21,7 +21,7 @@ class SegmentService
     /**
      * Contact columns allowed as segment rule fields.
      */
-    private const array ALLOWED_FIELDS = [
+    private const ALLOWED_FIELDS = [
         'email', 'first_name', 'last_name', 'status', 'source',
         'subscribed_at', 'unsubscribed_at',
     ];
