@@ -52,7 +52,7 @@ final class DripIntegrationTest extends CIUnitTestCase
         $config->testMode = true;
 
         $this->campaignModel   = new CampaignModel();
-        $contactModel    = new ContactModel();
+        $contactModel          = new ContactModel();
         $this->enrollmentModel = new DripEnrollmentModel();
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();

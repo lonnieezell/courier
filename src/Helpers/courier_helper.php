@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\ResponseInterface;
+use Myth\Courier\Config\Courier;
 use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\Exceptions\CourierValidationException;
 
 if (! function_exists('courier_form')) {
     /**
@@ -44,11 +48,11 @@ if (! function_exists('courier_form_open')) {
         $class    = $options['class'] ?? '';
         $ajax     = $options['ajax'] ?? false;
 
-        $action     = base_url('courier/capture');
-        $classAttr  = $class !== '' ? ' class="' . esc($class, 'attr') . '"' : '';
-        $ajaxAttr   = $ajax ? ' data-courier-ajax="1"' : '';
+        $action    = base_url('courier/capture');
+        $classAttr = $class !== '' ? ' class="' . esc($class, 'attr') . '"' : '';
+        $ajaxAttr  = $ajax ? ' data-courier-ajax="1"' : '';
 
-        $html  = '<form action="' . $action . '" method="POST"' . $classAttr . $ajaxAttr . '>' . "\n";
+        $html = '<form action="' . $action . '" method="POST"' . $classAttr . $ajaxAttr . ">\n";
         $html .= csrf_field() . "\n";
         $html .= '<input type="hidden" name="courier_source" value="' . esc($source, 'attr') . '">' . "\n";
 
@@ -95,9 +99,9 @@ if (! function_exists('courier_capture')) {
      * @param array<string, mixed> $defaults
      */
     function courier_capture(
-        CodeIgniter\HTTP\IncomingRequest $request,
+        IncomingRequest $request,
         array $defaults = [],
-    ): CodeIgniter\HTTP\ResponseInterface {
+    ): ResponseInterface {
         $email     = $request->getPost('email') ?? '';
         $firstName = $request->getPost('first_name') ?? '';
         $lastName  = $request->getPost('last_name') ?? '';
@@ -111,7 +115,7 @@ if (! function_exists('courier_capture')) {
         $postTags = array_values(array_filter(
             $postTags,
             static fn ($v): bool => is_string($v)
-                && strlen($v) >= 1
+                && $v !== ''
                 && strlen($v) <= 64
                 && preg_match('/^[a-z0-9][a-z0-9\-_]*$/', $v) === 1,
         ));
@@ -132,8 +136,8 @@ if (! function_exists('courier_capture')) {
             $redirect = '/';
         }
 
-        $tags     = array_values(array_unique(array_merge($postTags, $defaults['tags'] ?? [])));
-        $isAjax   = ($defaults['ajax'] ?? false) || $request->isAJAX();
+        $tags   = array_values(array_unique(array_merge($postTags, $defaults['tags'] ?? [])));
+        $isAjax = ($defaults['ajax'] ?? false) || $request->isAJAX();
 
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors = ['email' => 'A valid email is required.'];
@@ -156,7 +160,7 @@ if (! function_exists('courier_capture')) {
 
         try {
             service('contactService')->subscribe($contactData, $tags, $drip);
-        } catch (\Myth\Courier\Exceptions\CourierValidationException $e) {
+        } catch (CourierValidationException $e) {
             $errors = ['email' => $e->getMessage()];
 
             if ($isAjax) {
@@ -184,7 +188,7 @@ if (! function_exists('courier_unsubscribe_url')) {
      */
     function courier_unsubscribe_url(ContactDTO $contact): string
     {
-        $config = config(\Myth\Courier\Config\Courier::class);
+        $config = config(Courier::class);
         $base   = rtrim($config->trackingHost ?: base_url(), '/');
 
         return $base . '/courier/unsubscribe/' . $contact->unsubscribe_token;
@@ -202,7 +206,7 @@ if (! function_exists('_courier_visible_fields')) {
         $fields = $options['fields'] ?? [];
         $button = $options['button'] ?? 'Subscribe';
 
-        $html  = '<input type="email" name="email" required placeholder="Your email">' . "\n";
+        $html = '<input type="email" name="email" required placeholder="Your email">' . "\n";
 
         if (in_array('first_name', $fields, true)) {
             $html .= '<input type="text" name="first_name" placeholder="First name">' . "\n";
@@ -212,8 +216,6 @@ if (! function_exists('_courier_visible_fields')) {
             $html .= '<input type="text" name="last_name" placeholder="Last name">' . "\n";
         }
 
-        $html .= '<button type="submit">' . esc($button) . '</button>' . "\n";
-
-        return $html;
+        return $html . ('<button type="submit">' . esc($button) . "</button>\n");
     }
 }

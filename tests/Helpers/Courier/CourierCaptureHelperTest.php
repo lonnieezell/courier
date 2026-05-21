@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Helpers\Courier;
 
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
@@ -140,7 +141,7 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $campaignId = $this->createDripCampaignWithStep();
 
         $route = [
-            ['POST', 'test/capture-drip', static function () use ($campaignId): \CodeIgniter\HTTP\ResponseInterface {
+            ['POST', 'test/capture-drip', static function () use ($campaignId): ResponseInterface {
                 helper('courier');
 
                 return courier_capture(service('request'), ['drip' => $campaignId]);
@@ -166,7 +167,7 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
     public function testDefaultsTagsMergeWithPostTags(): void
     {
         $route = [
-            ['POST', 'test/capture-tags', static function (): \CodeIgniter\HTTP\ResponseInterface {
+            ['POST', 'test/capture-tags', static function (): ResponseInterface {
                 helper('courier');
 
                 return courier_capture(service('request'), ['tags' => ['vip']]);
