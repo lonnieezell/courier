@@ -446,6 +446,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#markdownpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $markdownPath
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#testmode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -779,6 +790,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#markdownpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $markdownPath
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#testmode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -856,22 +878,30 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$throttleMs</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="c1">// ~10 emails/second max</span>
 </code></pre></div>
+<h3 id="markdownpath"><code>$markdownPath</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="x">public string $markdownPath = &#39;&#39;;</span>
+</code></pre></div>
+<p>The base directory Courier uses when resolving markdown email files. Leave empty and it defaults to <code>APPPATH</code> (your app's <code>app/</code> folder). Set an absolute path to load markdown files from a different location:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="x">public string $markdownPath = APPPATH . &#39;Emails/&#39;;</span>
+</code></pre></div>
+<p>With this set, a campaign <code>view</code> of <code>welcome.md</code> resolves to <code>app/Emails/welcome.md</code>.</p>
+<p>See <a href="../templates/#creating-a-markdown-file">Email Templates</a> for the full markdown workflow.</p>
 <h3 id="testmode"><code>$testMode</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
 </code></pre></div>
 <p>When <code>true</code>, Courier skips the actual mailer and logs what it <em>would</em> send instead. Use this in development or CI to verify your campaign setup without delivering real emails:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
 </code></pre></div>
 <p>You'll see log entries like:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>[Courier] testMode: would send to ada@example.com subject &quot;Welcome to Acme&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>[Courier] testMode: would send to ada@example.com subject &quot;Welcome to Acme&quot;
 </code></pre></div></p>
 <div class="admonition tip">
 <p class="admonition-title">Environment-specific config</p>
 <p>You can override any config value per-environment using CI4's <code>.env</code> file:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>courier.testMode = true
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>courier.batchSize = 50
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>courier.testMode = true
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>courier.batchSize = 50
 </code></pre></div></p>
 </div>
 
