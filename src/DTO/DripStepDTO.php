@@ -9,7 +9,7 @@ namespace Myth\Courier\DTO;
  */
 class DripStepDTO extends BaseDTO
 {
-    public ?int $id;
+    public ?int $id = null;
     public int $campaign_id;
     public int $position;
     public string $view;

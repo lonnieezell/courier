@@ -84,7 +84,7 @@ final class DripServiceTest extends CIUnitTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        array_map('unlink', $this->tempFiles);
+        array_map(unlink(...), $this->tempFiles);
         if (is_dir($this->campaignsDir)) {
             rmdir($this->campaignsDir);
         }

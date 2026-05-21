@@ -34,7 +34,7 @@ final class ValidateCampaignsTest extends CIUnitTestCase
     {
         parent::tearDown();
         $files = glob($this->campaignsDir . '/*.yaml');
-        array_map('unlink', $files !== false ? $files : []);
+        array_map(unlink(...), $files !== false ? $files : []);
         rmdir($this->campaignsDir);
     }
 
