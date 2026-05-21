@@ -54,6 +54,7 @@ nav:
   - Signup Forms: signup-forms.md
   - Campaigns: campaigns.md
   - Drip Sequences: drip-sequences.md
+  - File-Based Campaigns: file-based-campaigns.md
   - Email Templates: templates.md
   - CLI Commands: commands.md
   - Tracking: tracking.md
