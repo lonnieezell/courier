@@ -16,6 +16,7 @@ use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SendModel;
+use Myth\Courier\Services\CampaignFileLoader;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\MarkdownService;
@@ -39,13 +40,23 @@ final class DripServiceTest extends CIUnitTestCase
     private DripEnrollmentModel $enrollmentModel;
     private DripStepModel $stepModel;
     private SendModel $sendModel;
+    private string $campaignsDir;
+
+    /**
+     * @var list<string>
+     */
+    private array $tempFiles = [];
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
-        $config->testMode = true;
+        $this->campaignsDir = sys_get_temp_dir() . '/courier_drip_test_' . uniqid();
+        mkdir($this->campaignsDir, 0777, true);
+
+        $config                = config(CourierConfig::class);
+        $config->testMode      = true;
+        $config->campaignsPath = $this->campaignsDir;
 
         $this->campaignModel   = new CampaignModel();
         $this->contactModel    = new ContactModel();
@@ -66,7 +77,17 @@ final class DripServiceTest extends CIUnitTestCase
             $mailerService,
             $this->contactModel,
             $config,
+            new CampaignFileLoader($this->campaignsDir),
         );
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        array_map(unlink(...), $this->tempFiles);
+        if (is_dir($this->campaignsDir)) {
+            rmdir($this->campaignsDir);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -99,6 +120,42 @@ final class DripServiceTest extends CIUnitTestCase
         ]);
 
         return $this->stepModel->find($id);
+    }
+
+    private function createFileCampaign(string $slug, int $delayHours = 0): object
+    {
+        $filename = $slug . '.yaml';
+        $path     = $this->campaignsDir . '/' . $filename;
+
+        $yaml = implode("\n", [
+            "name: {$slug}",
+            'from_name: Test Sender',
+            'from_email: sender@example.com',
+            'steps:',
+            '  - position: 1',
+            '    subject: "Step 1"',
+            '    view: ' . self::BODY_VIEW,
+            "    delay_hours: {$delayHours}",
+            '  - position: 2',
+            '    subject: "Step 2"',
+            '    view: ' . self::BODY_VIEW,
+            '    delay_hours: 24',
+        ]);
+
+        file_put_contents($path, $yaml);
+        $this->tempFiles[] = $path;
+
+        $id = $this->campaignModel->insert([
+            'name'        => $slug,
+            'subject'     => 'Step 1',
+            'type'        => CampaignType::DripSequence,
+            'status'      => CampaignStatus::Active,
+            'source_file' => $filename,
+            'from_name'   => 'Test Sender',
+            'from_email'  => 'sender@example.com',
+        ]);
+
+        return $this->campaignModel->find($id);
     }
 
     private function createSubscribedContact(string $email = 'a@example.com'): object
@@ -185,6 +242,30 @@ final class DripServiceTest extends CIUnitTestCase
 
         $this->expectException(RuntimeException::class);
         $this->service->enroll($contact->id, $id);
+    }
+
+    // -----------------------------------------------------------------------
+    // enrollByName()
+    // -----------------------------------------------------------------------
+
+    public function testEnrollByNameEnrollsContactByName(): void
+    {
+        $campaign = $this->createDripCampaign();
+        $this->createStep($campaign->id);
+        $contact = $this->createSubscribedContact();
+
+        $enrollment = $this->service->enrollByName($contact->id, 'Drip Campaign');
+
+        $this->assertNotNull($enrollment);
+        $this->assertSame($campaign->id, $enrollment->campaign_id);
+    }
+
+    public function testEnrollByNameThrowsForUnknownName(): void
+    {
+        $contact = $this->createSubscribedContact();
+
+        $this->expectException(RuntimeException::class);
+        $this->service->enrollByName($contact->id, 'nonexistent-campaign');
     }
 
     // -----------------------------------------------------------------------
@@ -326,5 +407,80 @@ final class DripServiceTest extends CIUnitTestCase
 
         $this->assertSame(0, $result['processed']);
         $this->assertSame(0, $result['cancelled']);
+    }
+
+    // -----------------------------------------------------------------------
+    // File-based campaigns
+    // -----------------------------------------------------------------------
+
+    public function testEnrollFileCampaignUsesYamlStep1DelayHours(): void
+    {
+        $campaign = $this->createFileCampaign('file-drip', 48);
+        $contact  = $this->createSubscribedContact('file@example.com');
+
+        $before     = time();
+        $enrollment = $this->service->enroll($contact->id, $campaign->id);
+        $after      = time();
+
+        $this->assertNotNull($enrollment);
+        $this->assertSame(1, $enrollment->current_step);
+
+        $nextSendAt = strtotime((string) $enrollment->next_send_at);
+        $this->assertGreaterThanOrEqual($before + 48 * 3600, $nextSendAt);
+        $this->assertLessThanOrEqual($after + 48 * 3600, $nextSendAt);
+    }
+
+    public function testEnrollFileCampaignThrowsWhenYamlHasNoSteps(): void
+    {
+        $path = $this->campaignsDir . '/empty-steps.yaml';
+        file_put_contents($path, "name: empty\nfrom_name: T\nfrom_email: t@t.com\nsteps: []\n");
+        $this->tempFiles[] = $path;
+
+        $id = $this->campaignModel->insert([
+            'name'        => 'empty',
+            'subject'     => 'Empty',
+            'type'        => CampaignType::DripSequence,
+            'status'      => CampaignStatus::Active,
+            'source_file' => 'empty-steps.yaml',
+            'from_name'   => 'T',
+            'from_email'  => 't@t.com',
+        ]);
+        $contact = $this->createSubscribedContact('empty@example.com');
+
+        $this->expectException(RuntimeException::class);
+        $this->service->enroll($contact->id, $id);
+    }
+
+    public function testProcessDueFileCampaignSendsFromYamlStep(): void
+    {
+        $campaign = $this->createFileCampaign('file-drip-process', 0);
+        $contact  = $this->createSubscribedContact('filepro@example.com');
+
+        $this->service->enroll($contact->id, $campaign->id);
+
+        $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->set('next_send_at', date('Y-m-d H:i:s', strtotime('-1 hour')))
+            ->update();
+
+        $result = $this->service->processDue();
+
+        $this->assertSame(1, $result['processed']);
+        $this->assertSame(0, $result['failed']);
+
+        // Enrollment advanced to step 2 (file campaign has 2 steps)
+        $enrollment = $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->first();
+        $this->assertSame(2, (int) $enrollment->current_step);
+
+        // Send log created with null drip_step_id (no DB step row)
+        $send = $this->sendModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->first();
+        $this->assertNotNull($send);
+        $this->assertNull($send->drip_step_id);
     }
 }

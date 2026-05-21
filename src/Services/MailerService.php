@@ -51,24 +51,22 @@ class MailerService
      *
      * The caller must pre-create $sendLog via SendModel::createPending().
      * Pass $subject to override $campaign->subject (used by drip steps).
+     * Pass $bodyView to override $campaign->view (used by drip steps with per-step views).
      */
-    public function send(ContactDTO $contact, CampaignDTO $campaign, SendDTO $sendLog, ?string $subject = null): bool
+    public function send(ContactDTO $contact, CampaignDTO $campaign, SendDTO $sendLog, ?string $subject = null, ?string $bodyView = null): bool
     {
         $layout = $campaign->layout ?? $this->config->defaultLayout;
         $subject ??= $campaign->subject;
+        $viewPath = $bodyView ?? $campaign->view;
 
         $data = [
             'contact' => $contact,
             'subject' => $subject,
         ];
 
-        // Render HTML body (placeholders replaced after link wrapping)
-        $html = $this->templateService->render($campaign->view, $layout ?: null, $data);
-
-        // Wrap tracked links before injecting unsubscribe/pixel placeholders
+        $html = $this->templateService->render($viewPath, $layout ?: null, $data);
         $html = $this->wrapLinks($html, $sendLog->click_token);
 
-        // Inject per-send values
         $base           = $this->trackingBase();
         $unsubscribeUrl = $base . '/unsubscribe/' . $contact->unsubscribe_token;
         $trackingPixel  = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
@@ -76,8 +74,7 @@ class MailerService
         $html = str_replace('{courier_unsubscribe_url}', $unsubscribeUrl, $html);
         $html = str_replace('{courier_tracking_pixel}', $trackingPixel, $html);
 
-        // Plain-text alt from the content-only view (no layout, no pixel, no link wrapping)
-        $plainText = $this->templateService->renderText($campaign->view, $data);
+        $plainText = $this->templateService->renderText($viewPath, $data);
         $plainText .= "\n\nUnsubscribe: " . $unsubscribeUrl;
 
         if ($this->config->testMode) {
@@ -167,6 +164,7 @@ class MailerService
     /**
      * Convenience wrapper for drip step sends.
      * Loads the campaign, creates the pending send record, then calls send().
+     * Uses the step's view for the body so each step can have its own template.
      */
     public function sendStep(ContactDTO $contact, DripStepDTO $dripStep, ?CampaignDTO $campaign = null): bool
     {
@@ -178,6 +176,6 @@ class MailerService
 
         $sendLog = $this->sendModel->createPending($contact->id, $campaign->id, $dripStep->id);
 
-        return $this->send($contact, $campaign, $sendLog, $dripStep->subject);
+        return $this->send($contact, $campaign, $sendLog, $dripStep->subject, $dripStep->view !== '' ? $dripStep->view : null);
     }
 }

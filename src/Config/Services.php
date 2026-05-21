@@ -14,6 +14,7 @@ use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
+use Myth\Courier\Services\CampaignFileLoader;
 use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
@@ -58,6 +59,23 @@ class Services extends BaseService
         return new SegmentService(
             model(ContactModel::class),
             model(SegmentModel::class),
+        );
+    }
+
+    /**
+     * Loads and validates YAML drip campaign definition files.
+     * Resolves the configured campaigns directory at construction time.
+     */
+    public static function campaignFileLoader(bool $getShared = true): CampaignFileLoader
+    {
+        if ($getShared) {
+            return static::getSharedInstance('campaignFileLoader');
+        }
+
+        $cfg = config(CourierConfig::class);
+
+        return new CampaignFileLoader(
+            $cfg->campaignsPath !== '' ? $cfg->campaignsPath : rtrim(APPPATH, '/') . '/courier/campaigns',
         );
     }
 
@@ -145,6 +163,7 @@ class Services extends BaseService
             static::mailerService(),
             model(ContactModel::class),
             config(CourierConfig::class),
+            static::campaignFileLoader(false),
         );
     }
 }

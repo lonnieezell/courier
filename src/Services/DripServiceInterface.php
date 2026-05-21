@@ -10,6 +10,8 @@ interface DripServiceInterface
 {
     public function enroll(int $contactId, int $campaignId): ?DripEnrollmentDTO;
 
+    public function enrollByName(int $contactId, string $name): ?DripEnrollmentDTO;
+
     public function cancel(int $contactId, int $campaignId): void;
 
     public function cancelAllForContact(int $contactId): void;

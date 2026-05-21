@@ -16,7 +16,8 @@
     ],
     "require": {
         "php": "^8.2",
-        "league/commonmark": "^2.0"
+        "league/commonmark": "^2.0",
+        "symfony/yaml": "^7.4"
     },
     "require-dev": {
         "codeigniter/phpstan-codeigniter": "^1.3",

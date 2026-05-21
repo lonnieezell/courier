@@ -2,6 +2,9 @@
 
 A drip sequence is a series of emails sent to contacts automatically, each after a configurable delay from the previous one. Common use cases: welcome sequences, onboarding flows, re-engagement campaigns.
 
+!!! tip "Define campaigns as YAML files"
+    If your sequences are stable and long-lived, consider [file-based campaigns](file-based-campaigns.md) — define drip sequences as YAML files that live in version control and sync into the database with a single command.
+
 ## How it works
 
 1. You create a `drip_sequence` campaign and add steps to it (each step is one email with a delay)

@@ -1,6 +1,6 @@
 # CLI Commands
 
-Courier ships three Spark commands. They're designed to run via cron — each one is stateless, processes a bounded batch, and logs its results.
+Courier ships five Spark commands. The send and drip commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results. The campaign management commands are for authoring and deployment workflows.
 
 ## `courier:send-campaign`
 
@@ -94,6 +94,47 @@ class ProcessBounces extends TrackEvents
     }
 }
 ```
+
+## `courier:validate-campaigns`
+
+Validates all YAML drip campaign definition files without writing to the database.
+
+```bash
+php spark courier:validate-campaigns
+```
+
+```
+OK   welcome-sequence.yaml
+FAIL onboarding.yaml: step[1]: missing required field 'subject'
+```
+
+Exit code `0` means all files passed (or no files were found). Exit code `1` means at least one file failed. This makes the command safe to use as a pre-deploy gate in CI:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Validate campaign files
+  run: php spark courier:validate-campaigns
+```
+
+See [File-Based Campaigns](file-based-campaigns.md) for the full YAML format.
+
+## `courier:sync-campaigns`
+
+Syncs YAML drip campaign files into the `courier_campaigns` table. Campaigns are upserted by name — running the command twice is safe.
+
+```bash
+php spark courier:sync-campaigns
+```
+
+```
+CREATED welcome-sequence.yaml → campaign 'Welcome Sequence'
+UPDATED re-engagement.yaml → campaign 'Re-engagement Track'
+SKIP    onboarding.yaml: step[1]: missing required field 'subject'
+```
+
+Invalid files are skipped with a `SKIP` error; valid files in the same batch still sync. Steps are **not** written to the database — the YAML file is the runtime source of truth for step content and is read at send time by `courier:process-drips`.
+
+Run this command during deployment after any campaign file changes.
 
 ## Logging
 

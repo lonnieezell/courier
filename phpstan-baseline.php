@@ -64,7 +64,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
-	'count' => 3,
+	'count' => 4,
 	'path' => __DIR__ . '/src/Config/Services.php',
 ];
 $ignoreErrors[] = [
@@ -285,18 +285,6 @@ $ignoreErrors[] = [
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Parameter #1 $enrollment of method Myth\\Courier\\Models\\DripEnrollmentModel::advance() expects Myth\\Courier\\DTO\\DripEnrollmentDTO, stdClass given.',
-	'identifier' => 'argument.type',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Services/DripService.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Parameter #2 $dripStep of method Myth\\Courier\\Services\\MailerService::sendStep() expects Myth\\Courier\\DTO\\DripStepDTO, stdClass given.',
-	'identifier' => 'argument.type',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Services/DripService.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Parameter #2 $nextStep of method Myth\\Courier\\Models\\DripEnrollmentModel::advance() expects Myth\\Courier\\DTO\\DripStepDTO|null, stdClass|null given.',
 	'identifier' => 'argument.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Services/DripService.php',
