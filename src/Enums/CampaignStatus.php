@@ -6,6 +6,7 @@ namespace Myth\Courier\Enums;
 
 enum CampaignStatus: string
 {
+    case Active    = 'active';
     case Draft     = 'draft';
     case Scheduled = 'scheduled';
     case Sending   = 'sending';

@@ -48,7 +48,13 @@ class Courier extends BaseConfig
 
     /**
      * Base directory for resolving markdown email files.
-     * Leave empty to use APPPATH. Set an absolute path to override (useful in tests).
+     * Leave empty to use APPPATH . 'courier/emails/'. Set an absolute path to override (useful in tests).
      */
     public string $markdownPath = '';
+
+    /**
+     * Base directory for YAML drip campaign definition files.
+     * Leave empty to use APPPATH . 'courier/campaigns/'. Set an absolute path to override.
+     */
+    public string $campaignsPath = '';
 }

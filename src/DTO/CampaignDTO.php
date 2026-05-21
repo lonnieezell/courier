@@ -16,8 +16,9 @@ class CampaignDTO extends BaseDTO
     public string $name;
     public string $subject;
     public CampaignType $type;
-    public ?string $view   = null;
-    public ?string $layout = null;
+    public ?string $view        = null;
+    public ?string $source_file = null;
+    public ?string $layout      = null;
     public CampaignStatus $status;
     public ?int $segment_id  = null;
     public mixed $tag_filter = null;

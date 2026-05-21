@@ -25,6 +25,7 @@ class CampaignModel extends Model
         'subject',
         'type',
         'view',
+        'source_file',
         'layout',
         'status',
         'segment_id',
@@ -40,11 +41,12 @@ class CampaignModel extends Model
         'type'       => 'enum[\Myth\Courier\Enums\CampaignType]',
     ];
     protected $validationRules = [
-        'name'       => 'required|max_length[200]',
-        'subject'    => 'required|max_length[500]',
-        'type'       => 'required|in_list[blast,drip_sequence]',
-        'status'     => 'required|in_list[draft,scheduled,sending,sent,paused,cancelled]',
-        'from_name'  => 'required|max_length[100]',
-        'from_email' => 'required|max_length[200]|valid_email',
+        'name'        => 'required|max_length[200]',
+        'subject'     => 'required|max_length[500]',
+        'type'        => 'required|in_list[blast,drip_sequence]',
+        'status'      => 'required|in_list[active,draft,scheduled,sending,sent,paused,cancelled]',
+        'from_name'   => 'required|max_length[100]',
+        'from_email'  => 'required|max_length[200]|valid_email',
+        'source_file' => 'permit_empty|max_length[200]|regex_match[/^[\w\-]+\.yaml$/]',
     ];
 }
