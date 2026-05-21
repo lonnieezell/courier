@@ -64,6 +64,22 @@ Milliseconds to sleep between individual sends within a batch. `0` means no dela
 public int $throttleMs = 100; // ~10 emails/second max
 ```
 
+### `$markdownPath`
+
+```php
+public string $markdownPath = '';
+```
+
+The base directory Courier uses when resolving markdown email files. Leave empty and it defaults to `APPPATH` (your app's `app/` folder). Set an absolute path to load markdown files from a different location:
+
+```php
+public string $markdownPath = APPPATH . 'Emails/';
+```
+
+With this set, a campaign `view` of `welcome.md` resolves to `app/Emails/welcome.md`.
+
+See [Email Templates](templates.md#creating-a-markdown-file) for the full markdown workflow.
+
 ### `$testMode`
 
 ```php

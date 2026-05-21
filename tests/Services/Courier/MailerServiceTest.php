@@ -20,6 +20,7 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -83,7 +84,7 @@ final class MailerServiceTest extends CIUnitTestCase
         $this->campaign = $this->campaignModel->find($campaignId);
 
         $this->service = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
             $emailMock,
@@ -192,7 +193,7 @@ final class MailerServiceTest extends CIUnitTestCase
         $emailMock->method('send')->willReturn(false);
 
         $service = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
             $emailMock,

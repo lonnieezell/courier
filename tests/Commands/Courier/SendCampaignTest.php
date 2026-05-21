@@ -20,6 +20,7 @@ use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\SegmentService;
 use Myth\Courier\Services\TemplateService;
 
@@ -56,7 +57,7 @@ final class SendCampaignTest extends CIUnitTestCase
         );
 
         $mailerService = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
         );

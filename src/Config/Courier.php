@@ -45,4 +45,10 @@ class Courier extends BaseConfig
      * When true, emails are logged instead of sent via the mailer.
      */
     public bool $testMode = false;
+
+    /**
+     * Base directory for resolving markdown email files.
+     * Leave empty to use APPPATH. Set an absolute path to override (useful in tests).
+     */
+    public string $markdownPath = '';
 }

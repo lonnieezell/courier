@@ -1,10 +1,10 @@
 # Email Templates
 
-Courier uses CI4's standard view system for email content. Each campaign points to a view file for its body, and optionally a separate layout that wraps it.
+Courier supports two ways to write email content: **PHP view files** (full CI4 view system, great for complex HTML) and **markdown files** (simpler syntax, ideal for plain prose emails). Both work with layouts and tracking placeholders.
 
 ## How layouts work
 
-A layout is an outer HTML shell — the `<html>`, `<head>`, and structural table markup. The campaign body view provides just the inner content. Courier renders the body first, then injects it into the layout via a `$content` variable.
+A layout is an outer HTML shell — the `<html>`, `<head>`, and structural table markup. The campaign body provides just the inner content. Courier renders the body first, then injects it into the layout via a `$content` variable.
 
 ```
 layout.php          ← outer HTML, header, footer
@@ -13,12 +13,11 @@ layout.php          ← outer HTML, header, footer
 
 The default layout is at `Views/courier/layouts/default.php`. It's a simple 600px responsive email with a dark header, white body, and light footer.
 
-## Creating a body view
+## Creating a PHP view
 
 A body view is a plain PHP view file that outputs HTML email content. Keep it simple — inline styles, table-based layout if you need columns.
 
 ```php
-<?php
 <!-- app/Views/emails/may_newsletter.php -->
 
 <p>Hi <?= esc($contact->first_name ?? 'there') ?>,</p>
@@ -45,9 +44,74 @@ A body view is a plain PHP view file that outputs HTML email content. Keep it si
 
 Any additional data you pass to `CampaignService::create()` or `addDripStep()` is **not** automatically available in views — pass extra data via a custom service or use `$contact->custom_fields`.
 
+## Creating a markdown file
+
+If your email is mostly prose, markdown is often easier to write and maintain than a PHP view. Set the `view` field to a path ending in `.md` and Courier handles the rest.
+
+```php
+$campaignService->create([
+    'name'       => 'May Newsletter',
+    'subject'    => 'What\'s new at Acme',
+    'from_name'  => 'Acme',
+    'from_email' => 'hello@acme.com',
+    'view'       => 'emails/may_newsletter.md',  // ← .md extension = markdown mode
+]);
+```
+
+By default, Courier resolves markdown paths relative to `APPPATH`, so `emails/may_newsletter.md` maps to `app/emails/may_newsletter.md`. You can change this with the `$markdownPath` config option — see [Configuration](configuration.md).
+
+### Writing markdown email content
+
+Use standard [GitHub Flavored Markdown](https://github.github.com/gfm/): headings, bold, italic, links, bullet lists, and tables all work.
+
+```markdown
+Hi {first_name}!
+
+Here's what's new this month at Acme.
+
+**New features this month:**
+
+- Faster dashboard loading
+- Dark mode support
+- Improved CSV export
+
+[Read the full update](https://acme.com/blog/may-update)
+
+Talk soon,
+The Acme Team
+
+[Unsubscribe]({courier_unsubscribe_url})
+{courier_tracking_pixel}
+```
+
+### Token substitution
+
+PHP views use `$contact->first_name`. Markdown files use `{token}` placeholders instead. Courier replaces them before rendering.
+
+**Available tokens:**
+
+| Token | Source |
+|-------|--------|
+| `{first_name}` | `$contact->first_name` |
+| `{last_name}` | `$contact->last_name` |
+| `{email}` | `$contact->email` |
+| `{unsubscribe_token}` | `$contact->unsubscribe_token` |
+| `{source}` | `$contact->source` |
+| `{subject}` | The campaign or drip step subject line |
+| Any other scalar `ContactDTO` field | Automatically available |
+
+Tokens with no matching value are left as-is in the rendered output.
+
+!!! tip "Unsubscribe links in markdown"
+    You can use `{courier_unsubscribe_url}` directly in a markdown link:
+    ```markdown
+    [Unsubscribe]({courier_unsubscribe_url})
+    ```
+    Courier automatically restores the placeholder after markdown rendering so it gets replaced correctly before sending.
+
 ## Tracking placeholders
 
-Two placeholders are replaced automatically in the rendered HTML before sending:
+These work the same in both PHP views and markdown files:
 
 | Placeholder | Replaced with |
 |-------------|---------------|
@@ -55,9 +119,9 @@ Two placeholders are replaced automatically in the rendered HTML before sending:
 | `{courier_tracking_pixel}` | A 1×1 invisible image that records opens |
 
 !!! warning "Include the unsubscribe link"
-    CAN-SPAM and GDPR both require a way to opt out. Make sure `{courier_unsubscribe_url}` appears in every email. The default layout already includes it in the footer — if you write a custom layout, add it yourself.
+    CAN-SPAM and GDPR both require a way to opt out. Make sure `{courier_unsubscribe_url}` appears in every email. The default layout already includes it in the footer — if you write a custom layout or a self-contained markdown file, add it yourself.
 
-Place them in your layout (not the body view) so every campaign gets them:
+Place them in your layout so every campaign gets them automatically:
 
 ```html
 <!-- in your layout footer -->
@@ -69,14 +133,13 @@ Place them in your layout (not the body view) so every campaign gets them:
 
 ## Using a custom layout
 
-Point a campaign at your own layout view:
+Point a campaign at your own layout view — this works for both PHP views and markdown files:
 
 ```php
-<?php
 $campaignService->create([
-    ...
-    'view'   => 'App\Views\emails\may_newsletter',
-    'layout' => 'App\Views\emails\layouts\branded',
+    // ...
+    'view'   => 'emails/may_newsletter.md',          // markdown body
+    'layout' => 'App\Views\emails\layouts\branded',  // PHP layout wraps it
 ]);
 ```
 
@@ -85,23 +148,42 @@ Your layout needs to output `<?= $content ?>` where the body should appear.
 To change the default for all campaigns, update `$defaultLayout` in your config:
 
 ```php
-<?php
 public string $defaultLayout = 'App\Views\emails\layouts\branded';
 ```
 
 ## Plain-text fallback
 
-Courier generates a plain-text alternative automatically by rendering your body view without the layout and stripping HTML. It appends the unsubscribe URL at the bottom. You don't need to maintain a separate plain-text view.
+Courier generates a plain-text alternative automatically. The behavior differs slightly by template type:
+
+- **PHP views** — Courier renders the body view, strips HTML tags, and collapses whitespace.
+- **Markdown files** — The raw markdown source is used directly. It's already readable as plain text, so no stripping is needed.
+
+Either way, the unsubscribe URL is appended at the bottom. You don't need to maintain a separate plain-text file.
 
 ## Testing your templates
 
-Set `testMode = true` in your config and trigger a send — Courier logs the recipient and subject instead of sending. To preview the rendered HTML, use CI4's `TemplateService` directly:
+Set `testMode = true` in your config and trigger a send — Courier logs the recipient and subject instead of sending. To preview the rendered HTML directly, use `TemplateService`:
 
-```php
-<?php
-$html = service('templateService')->render(
-    'App\Views\emails\may_newsletter',
-    'App\Views\emails\layouts\branded',
-    ['contact' => $contact, 'subject' => 'Preview']
-);
-```
+=== "PHP view"
+    ```php
+    $html = service('templateService')->render(
+        'App\Views\emails\may_newsletter',
+        'App\Views\emails\layouts\branded',
+        ['contact' => $contact, 'subject' => 'Preview']
+    );
+    ```
+
+=== "Markdown file"
+    ```php
+    $html = service('templateService')->render(
+        'emails/may_newsletter.md',
+        'App\Views\emails\layouts\branded',
+        ['contact' => $contact, 'subject' => 'Preview']
+    );
+    ```
+
+## Next steps
+
+- [Configuration](configuration.md) — set `$markdownPath` to control where markdown files are resolved from
+- [Campaigns](campaigns.md) — create a blast or drip campaign that uses your template
+- [Tracking](tracking.md) — how open and click tracking work under the hood
