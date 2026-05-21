@@ -57,5 +57,6 @@ nav:
   - File-Based Campaigns: file-based-campaigns.md
   - Email Templates: templates.md
   - CLI Commands: commands.md
+  - Management Commands: management-commands.md
   - Tracking: tracking.md
   - Events: events.md
