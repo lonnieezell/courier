@@ -24,6 +24,7 @@ use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -34,7 +35,7 @@ final class ContactServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -66,7 +67,7 @@ final class ContactServiceTest extends CIUnitTestCase
             $this->enrollmentModel,
             new DripStepModel(),
             $this->campaignModel,
-            new MailerService(new TemplateService(), new SendModel(), $this->campaignModel),
+            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel),
             new ContactModel(),
             $config,
         );

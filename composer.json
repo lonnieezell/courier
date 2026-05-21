@@ -15,7 +15,8 @@
         }
     ],
     "require": {
-        "php": "^8.2"
+        "php": "^8.2",
+        "league/commonmark": "^2.0"
     },
     "require-dev": {
         "codeigniter/phpstan-codeigniter": "^1.3",

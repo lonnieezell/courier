@@ -26,6 +26,7 @@ use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\SegmentService;
 use Myth\Courier\Services\TemplateService;
 
@@ -39,7 +40,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     /**
      * View constant reused from existing test fixtures
      */
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -65,7 +66,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         );
 
         $mailerService = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
         );

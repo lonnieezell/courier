@@ -18,6 +18,7 @@ use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -28,7 +29,7 @@ final class DripServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -53,7 +54,7 @@ final class DripServiceTest extends CIUnitTestCase
         $this->sendModel       = new SendModel();
 
         $mailerService = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
         );

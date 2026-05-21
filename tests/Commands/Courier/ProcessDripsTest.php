@@ -20,6 +20,7 @@ use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
+use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -30,7 +31,7 @@ final class ProcessDripsTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    private const string BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
+    private const BODY_VIEW = 'Myth\Courier\Views\tests/test_body';
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
@@ -54,7 +55,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         $this->stepModel       = new DripStepModel();
 
         $mailerService = new MailerService(
-            new TemplateService(),
+            new TemplateService(new MarkdownService(sys_get_temp_dir())),
             new SendModel(),
             $this->campaignModel,
         );
@@ -122,7 +123,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         // Instead, test that run() doesn't propagate exceptions by injecting a mock via anonymous class trick.
         // We test this by verifying run() returns without throwing even when processDue() throws.
 
-        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(), new SendModel(), $this->campaignModel), $this->contactModel, config(CourierConfig::class)) extends DripService {
+        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel), $this->contactModel, config(CourierConfig::class)) extends DripService {
             public function processDue(): array
             {
                 throw new RuntimeException('Simulated failure');

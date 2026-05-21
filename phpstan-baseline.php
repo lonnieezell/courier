@@ -2,6 +2,42 @@
 
 $ignoreErrors = [];
 $ignoreErrors[] = [
+	'rawMessage' => 'Call to internal function _courier_visible_fields().',
+	'identifier' => 'function.internal',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in a ternary operator condition, mixed given.',
+	'identifier' => 'ternary.condNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in a negated boolean, mixed given.',
+	'identifier' => 'booleanNot.exprNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in ||, mixed given on the left side.',
+	'identifier' => 'booleanOr.leftNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.',
+	'identifier' => 'ternary.shortNotAllowed',
+	'count' => 4,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
+	'identifier' => 'codeigniter.factoriesClassConstFetch',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'PHPDoc tag @var with type Myth\\Courier\\Services\\DripServiceInterface is not subtype of type Myth\\Courier\\Services\\DripService.',
 	'identifier' => 'varTag.type',
 	'count' => 1,
@@ -28,7 +64,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
-	'count' => 2,
+	'count' => 3,
 	'path' => __DIR__ . '/src/Config/Services.php',
 ];
 $ignoreErrors[] = [

@@ -28,8 +28,9 @@ $finder = Finder::create()
     ]);
 
 $overrides = [
-    'declare_strict_types' => true,
-    'void_return'          => true,
+    'declare_strict_types'       => true,
+    'void_return'                => true,
+    'new_expression_parentheses' => ['use_parentheses' => true],
 ];
 
 $options = [
