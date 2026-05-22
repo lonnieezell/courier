@@ -14,6 +14,8 @@ class CourierEvents
 {
     public const CONTACT_SUBSCRIBED   = 'courier:contact.subscribed';
     public const CONTACT_UNSUBSCRIBED = 'courier:contact.unsubscribed';
+    public const CONTACT_BOUNCED      = 'courier:contact.bounced';
+    public const CONTACT_COMPLAINED   = 'courier:contact.complained';
     public const EMAIL_SENT           = 'courier:email.sent';
     public const EMAIL_FAILED         = 'courier:email.failed';
 }

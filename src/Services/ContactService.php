@@ -199,6 +199,35 @@ class ContactService
             ->delete();
     }
 
+    /**
+     * Suppresses a contact by email, setting their status to Bounced or Complained,
+     * cancelling all active drip enrollments, and firing the corresponding event.
+     * Returns false if no contact with that email exists.
+     */
+    public function suppress(string $email, ContactStatus $status): bool
+    {
+        $contact = $this->contactModel->where('email', $email)->first();
+
+        if ($contact === null) {
+            return false;
+        }
+
+        $this->contactModel->update($contact->id, ['status' => $status]);
+        $this->dripService?->cancelAllForContact($contact->id);
+
+        $event = $status === ContactStatus::Bounced
+            ? CourierEvents::CONTACT_BOUNCED
+            : CourierEvents::CONTACT_COMPLAINED;
+
+        try {
+            Events::trigger($event, $contact);
+        } catch (Throwable $e) {
+            log_message('error', 'courier:' . $event . ' listener error: ' . $e->getMessage());
+        }
+
+        return true;
+    }
+
     public function getContact(string $email): ?ContactDTO
     {
         return $this->contactModel->where('email', $email)->first();

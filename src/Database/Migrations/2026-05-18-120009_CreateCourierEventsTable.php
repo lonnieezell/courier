@@ -15,7 +15,7 @@ class CreateCourierEventsTable extends Migration
     {
         $this->forge->addField([
             'id'         => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'auto_increment' => true],
-            'send_id'    => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => false],
+            'send_id'    => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => true],
             'type'       => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false],
             'metadata'   => ['type' => 'TEXT', 'null' => true],
             'created_at' => ['type' => 'DATETIME', 'null' => true],

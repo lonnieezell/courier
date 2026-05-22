@@ -6,9 +6,12 @@ namespace Myth\Courier\Controllers;
 
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
+use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\EventModel;
 use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
+use Myth\Courier\Webhooks\WebhookDriverInterface;
 
 /**
  * Handles tracking pixels, click redirects, and unsubscribes.
@@ -92,6 +95,56 @@ class CourierController extends Controller
         helper('courier');
 
         return courier_capture($this->request);
+    }
+
+    /**
+     * Receives SNS/SES webhook notifications (bounces, complaints, subscription confirmations).
+     *
+     * Requires a WebhookDriverInterface class configured in Config\Courier::$webhookDriver.
+     * The host app must exempt POST /courier/webhook from CSRF in Config\Security::$CSRFExcludeURIs.
+     */
+    public function webhook(): ResponseInterface
+    {
+        $driverClass = config(CourierConfig::class)->webhookDriver;
+
+        if ($driverClass === '') {
+            return $this->response->setStatusCode(400)->setBody('Webhook driver not configured.');
+        }
+
+        /** @var WebhookDriverInterface $driver */
+        $driver = new $driverClass();
+
+        if (! $driver->verifySignature($this->request)) {
+            return $this->response->setStatusCode(403)->setBody('Signature verification failed.');
+        }
+
+        if ($driver->isSubscriptionConfirmation($this->request)) {
+            $driver->confirmSubscription($this->request);
+
+            return $this->response->setStatusCode(200)->setBody('Confirmed.');
+        }
+
+        $eventModel     = model(EventModel::class);
+        $contactService = service('contactService');
+
+        foreach ($driver->parseEvents($this->request) as $event) {
+            $email     = $event['email'];
+            $type      = $event['type'];
+            $messageId = $event['message_id'] ?? null;
+
+            if ($type === 'bounce') {
+                $contactService->suppress($email, ContactStatus::Bounced);
+            } elseif ($type === 'complaint') {
+                $contactService->suppress($email, ContactStatus::Complained);
+            }
+
+            $eventModel->insert([
+                'type'     => $type,
+                'metadata' => ['email' => $email, 'message_id' => $messageId],
+            ]);
+        }
+
+        return $this->response->setStatusCode(200)->setBody('OK');
     }
 
     /**
