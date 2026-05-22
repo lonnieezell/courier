@@ -8,6 +8,12 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Call to internal function _courier_success_response().',
+	'identifier' => 'function.internal',
+	'count' => 3,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Only booleans are allowed in a ternary operator condition, mixed given.',
 	'identifier' => 'ternary.condNotBoolean',
 	'count' => 1,
@@ -34,7 +40,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
-	'count' => 1,
+	'count' => 2,
 	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
 ];
 $ignoreErrors[] = [

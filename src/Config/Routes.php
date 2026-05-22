@@ -17,5 +17,5 @@ $routes->group('courier', ['namespace' => 'Myth\Courier\Controllers'], static fu
     $routes->get('open/(:segment)', 'CourierController::open/$1');
     $routes->get('click/(:segment)', 'CourierController::click/$1');
     $routes->get('unsubscribe/(:segment)', 'CourierController::unsubscribe/$1');
-    $routes->post('capture', 'CourierController::capture');
+    $routes->post('capture', 'CourierController::capture', ['filter' => 'courier_throttle']);
 });

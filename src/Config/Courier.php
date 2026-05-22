@@ -47,6 +47,16 @@ class Courier extends BaseConfig
     public bool $testMode = false;
 
     /**
+     * Max capture form submissions per IP per minute. 0 disables rate limiting.
+     */
+    public int $captureRateLimit = 15;
+
+    /**
+     * When true, courier_form renders a hidden honeypot field to reject bots.
+     */
+    public bool $honeypot = true;
+
+    /**
      * Base directory for resolving markdown email files.
      * Leave empty to use APPPATH . 'courier/emails/'. Set an absolute path to override (useful in tests).
      */

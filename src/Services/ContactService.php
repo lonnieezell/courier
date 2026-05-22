@@ -9,6 +9,7 @@ use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Events\CourierEvents;
+use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -66,6 +67,8 @@ class ContactService
                     'unsubscribed_at' => null,
                 ]);
                 $contact = $this->contactModel->find($contact->id);
+            } elseif ($contact->status === ContactStatus::Subscribed) {
+                throw new ContactAlreadySubscribedException('Contact is already subscribed.');
             } elseif ($contact->status === ContactStatus::Bounced || $contact->status === ContactStatus::Complained) {
                 throw new CourierValidationException(
                     "Contact cannot be re-subscribed: status is {$contact->status->value}",

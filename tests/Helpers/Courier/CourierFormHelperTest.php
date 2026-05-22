@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Helpers\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\ContactDTO;
 
 /**
@@ -85,6 +86,25 @@ final class CourierFormHelperTest extends CIUnitTestCase
     public function testCourierFormCloseReturnsClosingTag(): void
     {
         $this->assertSame('</form>', courier_form_close());
+    }
+
+    public function testCourierFormRendersHoneypotFieldWhenEnabled(): void
+    {
+        $html = courier_form('test-source');
+
+        $this->assertStringContainsString('name="courier_hp"', $html);
+    }
+
+    public function testCourierFormOmitsHoneypotFieldWhenDisabled(): void
+    {
+        $config           = config(CourierConfig::class);
+        $config->honeypot = false;
+
+        $html = courier_form('test-source');
+
+        $this->assertStringNotContainsString('name="courier_hp"', $html);
+
+        $config->honeypot = true;
     }
 
     public function testCourierUnsubscribeUrlContainsToken(): void

@@ -252,6 +252,69 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $this->assertArrayHasKey('email', $body['errors']);
     }
 
+    public function testPostWithHoneypotFilledReturnsSilentSuccessAjax(): void
+    {
+        $result = $this->withRoutes($this->captureRoute)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->post('courier/capture', [
+                'email'      => 'bot@example.com',
+                'courier_hp' => 'i am a bot',
+            ]);
+
+        $result->assertStatus(200);
+        $body = json_decode($result->getJSON(), true);
+        $this->assertTrue($body['success']);
+
+        $this->assertSame(0, (new ContactModel())->where('email', 'bot@example.com')->countAllResults());
+    }
+
+    public function testPostWithHoneypotFilledRedirectsSuccessfullyWhenNotAjax(): void
+    {
+        $result = $this->withRoutes($this->captureRoute)->post('courier/capture', [
+            'email'            => 'bot2@example.com',
+            'courier_hp'       => 'i am a bot',
+            'courier_redirect' => '/thanks',
+        ]);
+
+        $result->assertStatus(302);
+        $result->assertRedirectTo('/thanks');
+
+        $this->assertSame(0, (new ContactModel())->where('email', 'bot2@example.com')->countAllResults());
+    }
+
+    public function testPostAlreadySubscribedEmailReturnsSuccessAjax(): void
+    {
+        (new ContactModel())->insert([
+            'email'  => 'existing@example.com',
+            'status' => ContactStatus::Subscribed,
+        ]);
+
+        $result = $this->withRoutes($this->captureRoute)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->post('courier/capture', ['email' => 'existing@example.com']);
+
+        $result->assertStatus(200);
+
+        $body = json_decode($result->getJSON(), true);
+        $this->assertTrue($body['success']);
+    }
+
+    public function testPostAlreadySubscribedEmailRedirectsSuccessfullyWhenNotAjax(): void
+    {
+        (new ContactModel())->insert([
+            'email'  => 'existing2@example.com',
+            'status' => ContactStatus::Subscribed,
+        ]);
+
+        $result = $this->withRoutes($this->captureRoute)->post('courier/capture', [
+            'email'            => 'existing2@example.com',
+            'courier_redirect' => '/thanks',
+        ]);
+
+        $result->assertStatus(302);
+        $result->assertRedirectTo('/thanks');
+    }
+
     private function createDripCampaignWithStep(): int
     {
         $campaignModel = new CampaignModel();
