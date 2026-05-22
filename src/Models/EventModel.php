@@ -16,6 +16,7 @@ class EventModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'send_id',
+        'link_id',
         'type',
         'metadata',
     ];

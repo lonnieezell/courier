@@ -7,6 +7,7 @@ namespace Myth\Courier\Controllers;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
 use Myth\Courier\Models\EventModel;
+use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
 
 /**
@@ -48,35 +49,38 @@ class CourierController extends Controller
     }
 
     /**
-     * Records the click event and redirects to the target URL.
-     * Rejects non-http(s) URLs to prevent open redirects to dangerous schemes.
+     * Looks up the destination URL from courier_links by token, records the click event,
+     * and redirects. The URL is never supplied by the caller — it is stored server-side
+     * at send time to prevent open-redirect phishing via token reuse.
      */
     public function click(string $token): ResponseInterface
     {
+        $link = model(LinkModel::class)->findByToken($token);
+
+        if ($link === null) {
+            return redirect()->to('/');
+        }
+
+        $scheme = parse_url($link->url, PHP_URL_SCHEME);
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            return redirect()->to('/');
+        }
+
         $sendModel = model(SendModel::class);
-        $send      = $sendModel->findByClickToken($token);
+        $send      = $sendModel->find($link->send_id);
 
-        if ($send === null) {
-            return redirect()->to('/');
-        }
-
-        $url = urldecode($this->request->getGet('url') ?? '');
-
-        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
-            return redirect()->to('/');
-        }
-
-        if ($send->clicked_at === null) {
+        if ($send !== null && $send->clicked_at === null) {
             $sendModel->update($send->id, ['clicked_at' => date('Y-m-d H:i:s')]);
         }
 
         model(EventModel::class)->insert([
-            'send_id'  => $send->id,
+            'send_id'  => $link->send_id,
+            'link_id'  => $link->id,
             'type'     => 'click',
-            'metadata' => json_encode(['url' => $url, 'ip' => $this->request->getIPAddress()]),
+            'metadata' => ['ip' => $this->request->getIPAddress()],
         ]);
 
-        return redirect()->to($url);
+        return redirect()->to($link->url);
     }
 
     /**

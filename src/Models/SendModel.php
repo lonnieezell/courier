@@ -28,7 +28,6 @@ class SendModel extends Model
         'status',
         'message_id',
         'open_token',
-        'click_token',
         'sent_at',
         'opened_at',
         'clicked_at',
@@ -47,11 +46,6 @@ class SendModel extends Model
         return $this->where('open_token', $token)->first();
     }
 
-    public function findByClickToken(string $token): ?SendDTO
-    {
-        return $this->where('click_token', $token)->first();
-    }
-
     /**
      * Inserts a new send record in 'pending' status with freshly generated
      * open and click tracking tokens, then returns the hydrated object.
@@ -65,7 +59,6 @@ class SendModel extends Model
             'drip_step_id' => $stepId,
             'status'       => SendStatus::Pending,
             'open_token'   => bin2hex(random_bytes(16)),
-            'click_token'  => bin2hex(random_bytes(16)),
         ]);
 
         return $this->find($id);

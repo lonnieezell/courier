@@ -2,48 +2,6 @@
 
 $ignoreErrors = [];
 $ignoreErrors[] = [
-	'rawMessage' => 'Call to internal function _courier_visible_fields().',
-	'identifier' => 'function.internal',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Call to internal function _courier_success_response().',
-	'identifier' => 'function.internal',
-	'count' => 3,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Only booleans are allowed in a ternary operator condition, mixed given.',
-	'identifier' => 'ternary.condNotBoolean',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Only booleans are allowed in a negated boolean, mixed given.',
-	'identifier' => 'booleanNot.exprNotBoolean',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Only booleans are allowed in ||, mixed given on the left side.',
-	'identifier' => 'booleanOr.leftNotBoolean',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.',
-	'identifier' => 'ternary.shortNotAllowed',
-	'count' => 4,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
-	'identifier' => 'codeigniter.factoriesClassConstFetch',
-	'count' => 2,
-	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
-];
-$ignoreErrors[] = [
 	'rawMessage' => 'PHPDoc tag @var with type Myth\\Courier\\Services\\DripServiceInterface is not subtype of type Myth\\Courier\\Services\\DripService.',
 	'identifier' => 'varTag.type',
 	'count' => 1,
@@ -128,9 +86,21 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Call to function model with Myth\\Courier\\Models\\LinkModel::class is discouraged.',
+	'identifier' => 'codeigniter.factoriesClassConstFetch',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Controllers/CourierController.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Call to function model with Myth\\Courier\\Models\\SendModel::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
 	'count' => 2,
+	'path' => __DIR__ . '/src/Controllers/CourierController.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string> given.',
+	'identifier' => 'argument.type',
+	'count' => 1,
 	'path' => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
@@ -150,6 +120,66 @@ $ignoreErrors[] = [
 	'identifier' => 'method.notFound',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Database/Migrations/2026-05-18-120010_AddViewToCourierCampaigns.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+	'identifier' => 'property.notFound',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-05-22-120001_AlterCourierSendsDropClickToken.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBPrefix.',
+	'identifier' => 'property.notFound',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-05-22-120001_AlterCourierSendsDropClickToken.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+	'identifier' => 'property.notFound',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-05-22-120003_AlterCourierEventsAddLinkId.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
+	'identifier' => 'codeigniter.factoriesClassConstFetch',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Call to internal function _courier_success_response().',
+	'identifier' => 'function.internal',
+	'count' => 3,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Call to internal function _courier_visible_fields().',
+	'identifier' => 'function.internal',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in a negated boolean, mixed given.',
+	'identifier' => 'booleanNot.exprNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in a ternary operator condition, mixed given.',
+	'identifier' => 'ternary.condNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in ||, mixed given on the left side.',
+	'identifier' => 'booleanOr.leftNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.',
+	'identifier' => 'ternary.shortNotAllowed',
+	'count' => 4,
+	'path' => __DIR__ . '/src/Helpers/courier_helper.php',
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Only booleans are allowed in an if condition, mixed given.',
@@ -182,6 +212,18 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Models/DripStepModel.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Method Myth\\Courier\\Models\\LinkModel::findByToken() should return Myth\\Courier\\DTO\\LinkDTO|null but returns stdClass|null.',
+	'identifier' => 'return.type',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Models/LinkModel.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Only booleans are allowed in an if condition, mixed given.',
+	'identifier' => 'if.condNotBoolean',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Models/LinkModel.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Only booleans are allowed in an if condition, mixed given.',
 	'identifier' => 'if.condNotBoolean',
 	'count' => 1,
@@ -189,12 +231,6 @@ $ignoreErrors[] = [
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Method Myth\\Courier\\Models\\SendModel::createPending() should return Myth\\Courier\\DTO\\SendDTO but returns list<stdClass>|stdClass|null.',
-	'identifier' => 'return.type',
-	'count' => 1,
-	'path' => __DIR__ . '/src/Models/SendModel.php',
-];
-$ignoreErrors[] = [
-	'rawMessage' => 'Method Myth\\Courier\\Models\\SendModel::findByClickToken() should return Myth\\Courier\\DTO\\SendDTO|null but returns stdClass|null.',
 	'identifier' => 'return.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Models/SendModel.php',

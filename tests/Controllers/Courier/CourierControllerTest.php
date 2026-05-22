@@ -12,6 +12,7 @@ use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\EventModel;
+use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
 
 /**
@@ -88,15 +89,16 @@ final class CourierControllerTest extends CIUnitTestCase
         $this->assertSame($firstOpenedAt, $secondOpenedAt);
     }
 
-    public function testClickWithValidTokenRecordsEventAndRedirects(): void
+    public function testClickWithValidLinkTokenRecordsEventAndRedirects(): void
     {
-        $send   = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
-        $result = $this->withRoutes($this->courierRoutes)->get(
-            'courier/click/' . $send->click_token . '?url=' . urlencode('https://example.com'),
-        );
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok001' => 'https://example.com/page']);
+
+        $result = $this->withRoutes($this->courierRoutes)->get('courier/click/tok001');
 
         $result->assertStatus(302);
-        $result->assertRedirectTo('https://example.com');
+        $result->assertRedirectTo('https://example.com/page');
 
         $this->assertSame(
             1,
@@ -104,20 +106,48 @@ final class CourierControllerTest extends CIUnitTestCase
         );
     }
 
-    public function testClickRejectsNonHttpUrls(): void
+    public function testClickSetsClickedAtOnFirstClick(): void
     {
-        $send   = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
-        $result = $this->withRoutes($this->courierRoutes)->get(
-            'courier/click/' . $send->click_token . '?url=' . urlencode('javascript:alert(1)'),
-        );
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok002' => 'https://example.com/page']);
 
-        $result->assertStatus(302);
-        $result->assertRedirectTo('/');
+        $this->withRoutes($this->courierRoutes)->get('courier/click/tok002');
+
+        $this->assertNotNull((new SendModel())->find($send->id)->clicked_at);
+    }
+
+    public function testClickStoresLinkIdOnEvent(): void
+    {
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok003' => 'https://example.com/page']);
+        $link = $linkModel->findByToken('tok003');
+
+        $this->withRoutes($this->courierRoutes)->get('courier/click/tok003');
+
+        $event = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
+        $this->assertNotNull($event);
+        $this->assertArrayHasKey('ip', (array) $event->metadata);
+        $this->assertArrayNotHasKey('url', (array) $event->metadata);
+        $this->assertSame($link->id, (int) $event->link_id);
     }
 
     public function testClickWithInvalidTokenRedirectsToRoot(): void
     {
         $result = $this->withRoutes($this->courierRoutes)->get('courier/click/badtoken');
+
+        $result->assertStatus(302);
+        $result->assertRedirectTo('/');
+    }
+
+    public function testClickWithNonHttpUrlInDbRedirectsToRoot(): void
+    {
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok_bad' => 'javascript:alert(1)']);
+
+        $result = $this->withRoutes($this->courierRoutes)->get('courier/click/tok_bad');
 
         $result->assertStatus(302);
         $result->assertRedirectTo('/');

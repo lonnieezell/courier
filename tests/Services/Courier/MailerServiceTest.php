@@ -122,19 +122,34 @@ final class MailerServiceTest extends CIUnitTestCase
 
     public function testWrapLinksRewritesHttpLinks(): void
     {
-        $html   = '<a href="https://example.com/page">Click</a>';
-        $result = $this->service->wrapLinks($html, 'tok123');
+        $html           = '<a href="https://example.com/page">Click</a>';
+        [$result, $map] = $this->service->wrapLinks($html);
 
-        $this->assertStringContainsString('https://track.example.com/courier/click/tok123', $result);
-        $this->assertStringContainsString(urlencode('https://example.com/page'), $result);
+        $this->assertCount(1, $map);
+        $token = array_key_first($map);
+        $this->assertSame('https://example.com/page', $map[$token]);
+        $this->assertStringContainsString('https://track.example.com/courier/click/' . $token, $result);
+    }
+
+    public function testWrapLinksReturnsTokenMapWithAllLinks(): void
+    {
+        $html = '<a href="https://example.com/a">A</a>'
+              . '<a href="https://example.com/b">B</a>';
+
+        [, $map] = $this->service->wrapLinks($html);
+
+        $this->assertCount(2, $map);
+        $this->assertContains('https://example.com/a', $map);
+        $this->assertContains('https://example.com/b', $map);
     }
 
     public function testWrapLinksLeavesCourierPlaceholderAlone(): void
     {
-        $html   = '<a href="{courier_unsubscribe_url}">Unsubscribe</a>';
-        $result = $this->service->wrapLinks($html, 'tok123');
+        $html           = '<a href="{courier_unsubscribe_url}">Unsubscribe</a>';
+        [$result, $map] = $this->service->wrapLinks($html);
 
         $this->assertStringContainsString('{courier_unsubscribe_url}', $result);
+        $this->assertCount(0, $map);
     }
 
     public function testWrapLinksHandlesSingleAndDoubleQuotes(): void
@@ -142,10 +157,11 @@ final class MailerServiceTest extends CIUnitTestCase
         $html = "<a href='https://example.com/single'>A</a>"
               . '<a href="https://example.com/double">B</a>';
 
-        $result = $this->service->wrapLinks($html, 'tok456');
+        [$result, $map] = $this->service->wrapLinks($html);
 
-        $this->assertStringContainsString(urlencode('https://example.com/single'), $result);
-        $this->assertStringContainsString(urlencode('https://example.com/double'), $result);
+        $this->assertCount(2, $map);
+        $this->assertContains('https://example.com/single', $map);
+        $this->assertContains('https://example.com/double', $map);
     }
 
     public function testSendFiresEmailSentEvent(): void

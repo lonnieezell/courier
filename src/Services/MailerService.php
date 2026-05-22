@@ -14,6 +14,7 @@ use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Models\CampaignModel;
+use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
 use Psr\Log\LoggerAwareTrait;
 use Throwable;
@@ -32,6 +33,7 @@ class MailerService
         private readonly SendModel $sendModel,
         private readonly CampaignModel $campaignModel,
         private ?Email $email = null,
+        private readonly LinkModel $linkModel = new LinkModel(),
     ) {
         $this->config = config(CourierConfig::class);
         $this->email ??= service('email');
@@ -64,8 +66,9 @@ class MailerService
             'subject' => $subject,
         ];
 
-        $html = $this->templateService->render($viewPath, $layout ?: null, $data);
-        $html = $this->wrapLinks($html, $sendLog->click_token);
+        $html             = $this->templateService->render($viewPath, $layout ?: null, $data);
+        [$html, $linkMap] = $this->wrapLinks($html);
+        $this->linkModel->insertLinks($sendLog->id, $linkMap);
 
         $base           = $this->trackingBase();
         $unsubscribeUrl = $base . '/unsubscribe/' . $contact->unsubscribe_token;
@@ -141,24 +144,32 @@ class MailerService
     }
 
     /**
-     * Rewrites all http/https href attributes through the click-tracking redirect,
+     * Rewrites all http/https href attributes through per-link click-tracking tokens,
      * excluding the {courier_unsubscribe_url} placeholder.
+     *
+     * Returns the rewritten HTML and a token→url map for the caller to persist.
+     *
+     * @return array{string, array<string, string>}
      */
-    public function wrapLinks(string $html, string $clickToken): string
+    public function wrapLinks(string $html): array
     {
-        $base = $this->trackingBase();
+        $base    = $this->trackingBase();
+        $linkMap = [];
 
-        return (string) preg_replace_callback(
+        $result = (string) preg_replace_callback(
             '/href=(["\'])(https?:\/\/[^"\']+)\1/i',
-            static function (array $m) use ($base, $clickToken): string {
-                $quote       = $m[1];
-                $originalUrl = $m[2];
-                $redirect    = $base . '/click/' . $clickToken . '?url=' . urlencode($originalUrl);
+            static function (array $m) use ($base, &$linkMap): string {
+                $quote           = $m[1];
+                $originalUrl     = $m[2];
+                $token           = bin2hex(random_bytes(16));
+                $linkMap[$token] = $originalUrl;
 
-                return 'href=' . $quote . $redirect . $quote;
+                return 'href=' . $quote . $base . '/click/' . $token . $quote;
             },
             $html,
         );
+
+        return [$result, $linkMap];
     }
 
     /**
