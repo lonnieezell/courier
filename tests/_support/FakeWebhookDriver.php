@@ -13,11 +13,13 @@ use Myth\Courier\Webhooks\WebhookDriverInterface;
  */
 class FakeWebhookDriver implements WebhookDriverInterface
 {
-    public static bool $signatureValid              = true;
-    public static bool $isConfirmation              = false;
-    public static bool $confirmationCalled          = false;
+    public static bool $signatureValid     = true;
+    public static bool $isConfirmation     = false;
+    public static bool $confirmationCalled = false;
 
-    /** @var list<array{type: string, email: string, message_id: string|null}> */
+    /**
+     * @var list<array{type: string, email: string, message_id: string|null}>
+     */
     public static array $events = [];
 
     public static function reset(): void

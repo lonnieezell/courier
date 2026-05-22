@@ -7,6 +7,7 @@ namespace Tests\Controllers\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use CodeIgniter\Test\TestResponse;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\ContactModel;
@@ -40,11 +41,11 @@ final class WebhookControllerTest extends CIUnitTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $config               = config(CourierConfig::class);
+        $config                = config(CourierConfig::class);
         $config->webhookDriver = '';
     }
 
-    private function postWebhook(string $body = '{}'): \CodeIgniter\Test\TestResponse
+    private function postWebhook(string $body = '{}'): TestResponse
     {
         return $this->withRoutes($this->webhookRoute)
             ->withBody($body)

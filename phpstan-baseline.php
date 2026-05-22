@@ -82,7 +82,13 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Call to function model with Myth\\Courier\\Models\\EventModel::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
-	'count' => 2,
+	'count' => 3,
+	'path' => __DIR__ . '/src/Controllers/CourierController.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
+	'identifier' => 'codeigniter.factoriesClassConstFetch',
+	'count' => 1,
 	'path' => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
@@ -99,6 +105,12 @@ $ignoreErrors[] = [
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string> given.',
+	'identifier' => 'argument.type',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Controllers/CourierController.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string|null>|string> given.',
 	'identifier' => 'argument.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Controllers/CourierController.php',
@@ -138,6 +150,12 @@ $ignoreErrors[] = [
 	'identifier' => 'property.notFound',
 	'count' => 2,
 	'path' => __DIR__ . '/src/Database/Migrations/2026-05-22-120003_AlterCourierEventsAddLinkId.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+	'identifier' => 'property.notFound',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-05-22-120004_AlterCourierEventsNullableSendId.php',
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',

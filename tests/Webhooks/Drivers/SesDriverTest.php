@@ -27,14 +27,14 @@ final class SesDriverTest extends CIUnitTestCase
     private function notificationPayload(array $message): array
     {
         return [
-            'Type'           => 'Notification',
-            'MessageId'      => 'sns-msg-id',
-            'TopicArn'       => 'arn:aws:sns:us-east-1:123456789:my-topic',
-            'Message'        => json_encode($message, JSON_THROW_ON_ERROR),
-            'Timestamp'      => '2026-01-01T00:00:00.000Z',
+            'Type'             => 'Notification',
+            'MessageId'        => 'sns-msg-id',
+            'TopicArn'         => 'arn:aws:sns:us-east-1:123456789:my-topic',
+            'Message'          => json_encode($message, JSON_THROW_ON_ERROR),
+            'Timestamp'        => '2026-01-01T00:00:00.000Z',
             'SignatureVersion' => '2',
-            'Signature'      => 'fake',
-            'SigningCertURL' => 'https://sns.us-east-1.amazonaws.com/cert.pem',
+            'Signature'        => 'fake',
+            'SigningCertURL'   => 'https://sns.us-east-1.amazonaws.com/cert.pem',
         ];
     }
 
@@ -137,14 +137,14 @@ final class SesDriverTest extends CIUnitTestCase
     {
         $driver  = new SesDriver(static fn (string $url): string => 'fake-cert-content');
         $request = $this->makeRequest([
-            'Type'           => 'Notification',
-            'MessageId'      => 'id',
-            'TopicArn'       => 'arn:aws:sns:us-east-1:123:topic',
-            'Message'        => '{}',
-            'Timestamp'      => '2026-01-01T00:00:00.000Z',
+            'Type'             => 'Notification',
+            'MessageId'        => 'id',
+            'TopicArn'         => 'arn:aws:sns:us-east-1:123:topic',
+            'Message'          => '{}',
+            'Timestamp'        => '2026-01-01T00:00:00.000Z',
             'SignatureVersion' => '2',
-            'Signature'      => base64_encode('fake'),
-            'SigningCertURL' => 'https://evil.com/cert.pem',
+            'Signature'        => base64_encode('fake'),
+            'SigningCertURL'   => 'https://evil.com/cert.pem',
         ]);
 
         $this->assertFalse($driver->verifySignature($request));
@@ -154,14 +154,14 @@ final class SesDriverTest extends CIUnitTestCase
     {
         $driver  = new SesDriver(static fn (string $url): string => 'fake-cert-content');
         $request = $this->makeRequest([
-            'Type'           => 'Notification',
-            'MessageId'      => 'id',
-            'TopicArn'       => 'arn:aws:sns:us-east-1:123:topic',
-            'Message'        => '{}',
-            'Timestamp'      => '2026-01-01T00:00:00.000Z',
+            'Type'             => 'Notification',
+            'MessageId'        => 'id',
+            'TopicArn'         => 'arn:aws:sns:us-east-1:123:topic',
+            'Message'          => '{}',
+            'Timestamp'        => '2026-01-01T00:00:00.000Z',
             'SignatureVersion' => '2',
-            'Signature'      => base64_encode('fake'),
-            'SigningCertURL' => 'http://sns.us-east-1.amazonaws.com/cert.pem',
+            'Signature'        => base64_encode('fake'),
+            'SigningCertURL'   => 'http://sns.us-east-1.amazonaws.com/cert.pem',
         ]);
 
         $this->assertFalse($driver->verifySignature($request));

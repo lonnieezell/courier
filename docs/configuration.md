@@ -152,3 +152,31 @@ public bool $honeypot = false;
 
 !!! warning "Custom form layouts"
     If you build your own form markup and post to `/courier/capture`, the honeypot check still runs server-side. To avoid false rejections, make sure your form doesn't submit a `courier_hp` field — or disable the honeypot if you can't control the submitted fields.
+
+### `$webhookDriver`
+
+```php
+<?php
+public string $webhookDriver = '';
+```
+
+The fully-qualified class name of a `WebhookDriverInterface` implementation that handles incoming ESP webhook notifications (bounces, complaints, subscription confirmations). Leave empty to disable the `POST /courier/webhook` endpoint — it returns `400` when no driver is configured.
+
+Courier ships with a driver for AWS SES (routed through SNS):
+
+```php
+<?php
+public string $webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class;
+```
+
+To use a different ESP, implement `WebhookDriverInterface` and point this at your class.
+
+!!! warning "CSRF exemption required"
+    The webhook endpoint receives machine-to-machine POST requests from your ESP. You must add `'courier/webhook'` to `$CSRFExcludeURIs` in `app/Config/Security.php`, otherwise all webhook calls will be rejected.
+
+!!! tip ".env override"
+    ```
+    courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
+    ```
+
+See [Tracking — Bounce and complaint webhooks](tracking.md#bounce-and-complaint-webhooks) for the full setup walkthrough.

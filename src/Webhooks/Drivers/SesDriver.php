@@ -6,6 +6,7 @@ namespace Myth\Courier\Webhooks\Drivers;
 
 use CodeIgniter\HTTP\IncomingRequest;
 use Myth\Courier\Webhooks\WebhookDriverInterface;
+use Throwable;
 
 /**
  * Handles SNS/SES webhook notifications.
@@ -33,7 +34,9 @@ use Myth\Courier\Webhooks\WebhookDriverInterface;
  */
 class SesDriver implements WebhookDriverInterface
 {
-    /** @var callable(string): string|null */
+    /**
+     * @var callable(string): string|null
+     */
     private $certFetcher;
 
     /**
@@ -71,7 +74,7 @@ class SesDriver implements WebhookDriverInterface
             return false;
         }
 
-        $pubKey = openssl_get_publickey($cert);
+        $pubKey = openssl_pkey_get_public($cert);
         if ($pubKey === false) {
             return false;
         }
@@ -90,7 +93,7 @@ class SesDriver implements WebhookDriverInterface
 
     public function confirmSubscription(IncomingRequest $request): void
     {
-        $payload     = $this->decodeBody($request);
+        $payload      = $this->decodeBody($request);
         $subscribeUrl = $payload['SubscribeURL'] ?? '';
 
         if ($subscribeUrl === '') {
@@ -173,7 +176,7 @@ class SesDriver implements WebhookDriverInterface
             $fetcher = $this->certFetcher ?? static fn (string $u): string => (string) service('curlrequest')->get($u)->getBody();
 
             return ($fetcher)($url);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return '';
         }
     }
@@ -214,7 +217,9 @@ class SesDriver implements WebhookDriverInterface
         return implode('', $parts);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function decodeBody(IncomingRequest $request): array
     {
         $body = $request->getBody();
