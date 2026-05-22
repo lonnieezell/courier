@@ -6,6 +6,7 @@ use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\ResponseInterface;
 use Myth\Courier\Config\Courier;
 use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
 
 if (! function_exists('courier_form')) {
@@ -55,6 +56,10 @@ if (! function_exists('courier_form_open')) {
         $html = '<form action="' . $action . '" method="POST"' . $classAttr . $ajaxAttr . ">\n";
         $html .= csrf_field() . "\n";
         $html .= '<input type="hidden" name="courier_source" value="' . esc($source, 'attr') . '">' . "\n";
+
+        if (config(Courier::class)->honeypot) {
+            $html .= '<input type="text" name="courier_hp" style="display:none" tabindex="-1" autocomplete="off">' . "\n";
+        }
 
         if ($tags !== []) {
             $html .= '<input type="hidden" name="courier_tags" value=\'' . json_encode($tags) . '\'>' . "\n";
@@ -139,6 +144,10 @@ if (! function_exists('courier_capture')) {
         $tags   = array_values(array_unique(array_merge($postTags, $defaults['tags'] ?? [])));
         $isAjax = ($defaults['ajax'] ?? false) || $request->isAJAX();
 
+        if (config('Courier')->honeypot && ($request->getPost('courier_hp') ?? '') !== '') {
+            return _courier_success_response($isAjax, $redirect);
+        }
+
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors = ['email' => 'A valid email is required.'];
 
@@ -160,6 +169,9 @@ if (! function_exists('courier_capture')) {
 
         try {
             service('contactService')->subscribe($contactData, $tags, $drip);
+        } catch (ContactAlreadySubscribedException) {
+            // Silent success — do not reveal whether the address is already subscribed
+            return _courier_success_response($isAjax, $redirect);
         } catch (CourierValidationException $e) {
             $errors = ['email' => $e->getMessage()];
 
@@ -172,13 +184,7 @@ if (! function_exists('courier_capture')) {
             return redirect()->back()->withInput()->with('courier_errors', $errors);
         }
 
-        if ($isAjax) {
-            return service('response')
-                ->setStatusCode(200)
-                ->setJSON(['success' => true, 'message' => 'Subscribed successfully.']);
-        }
-
-        return redirect()->to($redirect);
+        return _courier_success_response($isAjax, $redirect);
     }
 }
 
@@ -192,6 +198,22 @@ if (! function_exists('courier_unsubscribe_url')) {
         $base   = rtrim($config->trackingHost ?: base_url(), '/');
 
         return $base . '/courier/unsubscribe/' . $contact->unsubscribe_token;
+    }
+}
+
+if (! function_exists('_courier_success_response')) {
+    /**
+     * @internal
+     */
+    function _courier_success_response(bool $isAjax, string $redirect): ResponseInterface
+    {
+        if ($isAjax) {
+            return service('response')
+                ->setStatusCode(200)
+                ->setJSON(['success' => true, 'message' => 'Subscribed successfully.']);
+        }
+
+        return redirect()->to($redirect);
     }
 }
 

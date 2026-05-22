@@ -13,6 +13,7 @@ use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
 use Myth\Courier\Events\CourierEvents;
+use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
@@ -118,6 +119,14 @@ final class ContactServiceTest extends CIUnitTestCase
     {
         $this->expectException(CourierValidationException::class);
         $this->service->subscribe([]);
+    }
+
+    public function testSubscribeThrowsContactAlreadySubscribedExceptionForActiveContact(): void
+    {
+        $this->service->subscribe(['email' => 'active@example.com']);
+
+        $this->expectException(ContactAlreadySubscribedException::class);
+        $this->service->subscribe(['email' => 'active@example.com']);
     }
 
     public function testSubscribeAppliesTagsCorrectly(): void
