@@ -14,7 +14,7 @@
         <link rel="prev" href="../templates/">
       
       
-        <link rel="next" href="../tracking/">
+        <link rel="next" href="../management-commands/">
       
       
         
@@ -648,6 +648,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../management-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Management Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tracking/" class="md-nav__link">
         
   
@@ -813,7 +840,8 @@
 
 
 <h1 id="cli-commands">CLI Commands</h1>
-<p>Courier ships five Spark commands. The send and drip commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results. The campaign management commands are for authoring and deployment workflows.</p>
+<p>Courier's automation commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results.</p>
+<p>For interactive management of contacts, campaigns, segments, tags, and drip enrollments, see <a href="../management-commands/">Management Commands</a>.</p>
 <h2 id="couriersend-campaign"><code>courier:send-campaign</code></h2>
 <p>Sends all scheduled blast campaigns whose <code>scheduled_at</code> time has passed.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign
@@ -904,7 +932,7 @@
 <p>Invalid files are skipped with a <code>SKIP</code> error; valid files in the same batch still sync. Steps are <strong>not</strong> written to the database — the YAML file is the runtime source of truth for step content and is read at send time by <code>courier:process-drips</code>.</p>
 <p>Run this command during deployment after any campaign file changes.</p>
 <h2 id="logging">Logging</h2>
-<p>All three commands write to CI4's log system using the <code>[Courier]</code> prefix. Check your <code>writable/logs/</code> directory if something isn't sending as expected.</p>
+<p>All automation commands write to CI4's log system using the <code>[Courier]</code> prefix. Check your <code>writable/logs/</code> directory if something isn't sending as expected.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>[courier:send-campaign] Campaign 42 failed: Connection refused
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>[courier:process-drips] processed=14 cancelled=1 failed=0
 </code></pre></div>
@@ -960,13 +988,13 @@
         
         
           
-          <a href="../tracking/" class="md-footer__link md-footer__link--next" aria-label="Next: Tracking">
+          <a href="../management-commands/" class="md-footer__link md-footer__link--next" aria-label="Next: Management Commands">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Tracking
+                Management Commands
               </div>
             </div>
             <div class="md-footer__button md-icon">
