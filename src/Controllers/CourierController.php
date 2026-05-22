@@ -107,7 +107,7 @@ class CourierController extends Controller
     {
         $driverClass = config(CourierConfig::class)->webhookDriver;
 
-        if ($driverClass === '') {
+        if ($driverClass === '' || ! class_exists($driverClass)) {
             return $this->response->setStatusCode(400)->setBody('Webhook driver not configured.');
         }
 

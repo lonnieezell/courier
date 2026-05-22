@@ -214,6 +214,7 @@ class ContactService
 
         $this->contactModel->update($contact->id, ['status' => $status]);
         $this->dripService?->cancelAllForContact($contact->id);
+        $contact = $this->contactModel->find($contact->id);
 
         $event = $status === ContactStatus::Bounced
             ? CourierEvents::CONTACT_BOUNCED

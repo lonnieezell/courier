@@ -149,4 +149,21 @@ final class SesDriverTest extends CIUnitTestCase
 
         $this->assertFalse($driver->verifySignature($request));
     }
+
+    public function testVerifySignatureRejectsHttpCertUrl(): void
+    {
+        $driver  = new SesDriver(static fn (string $url): string => 'fake-cert-content');
+        $request = $this->makeRequest([
+            'Type'           => 'Notification',
+            'MessageId'      => 'id',
+            'TopicArn'       => 'arn:aws:sns:us-east-1:123:topic',
+            'Message'        => '{}',
+            'Timestamp'      => '2026-01-01T00:00:00.000Z',
+            'SignatureVersion' => '2',
+            'Signature'      => base64_encode('fake'),
+            'SigningCertURL' => 'http://sns.us-east-1.amazonaws.com/cert.pem',
+        ]);
+
+        $this->assertFalse($driver->verifySignature($request));
+    }
 }

@@ -335,7 +335,7 @@ final class ContactServiceTest extends CIUnitTestCase
         $this->assertSame(EnrollmentStatus::Cancelled, $enrollment->status);
     }
 
-    public function testSuppressFiresContactBouncedEvent(): void
+    public function testSuppressFiresContactBouncedEventWithUpdatedStatus(): void
     {
         $this->service->subscribe(['email' => 'fire-bounce@example.com']);
 
@@ -349,6 +349,7 @@ final class ContactServiceTest extends CIUnitTestCase
 
         $this->assertNotNull($fired);
         $this->assertSame('fire-bounce@example.com', $fired->email);
+        $this->assertSame(ContactStatus::Bounced, $fired->status);
     }
 
     public function testSuppressFiresContactComplainedEvent(): void

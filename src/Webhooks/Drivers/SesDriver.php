@@ -180,9 +180,10 @@ class SesDriver implements WebhookDriverInterface
 
     private function isAllowedCertUrl(string $url): bool
     {
-        $host = parse_url($url, PHP_URL_HOST);
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host   = parse_url($url, PHP_URL_HOST);
 
-        return is_string($host) && (
+        return $scheme === 'https' && is_string($host) && (
             $host === 'amazonaws.com' || str_ends_with($host, '.amazonaws.com')
         );
     }
