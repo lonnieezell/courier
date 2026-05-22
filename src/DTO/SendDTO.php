@@ -18,7 +18,6 @@ class SendDTO extends BaseDTO
     public SendStatus $status;
     public ?string $message_id = null;
     public string $open_token;
-    public string $click_token;
     public ?string $sent_at    = null;
     public ?string $opened_at  = null;
     public ?string $clicked_at = null;

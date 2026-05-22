@@ -47,7 +47,6 @@ final class SendModelTest extends CIUnitTestCase
 
         $this->assertSame(SendStatus::Pending, $send->status);
         $this->assertSame(32, strlen($send->open_token));
-        $this->assertSame(32, strlen($send->click_token));
     }
 
     public function testCreatePendingWithNullStepId(): void
@@ -74,23 +73,5 @@ final class SendModelTest extends CIUnitTestCase
         $model = new SendModel();
 
         $this->assertNull($model->findByOpenToken('doesnotexist'));
-    }
-
-    public function testFindByClickTokenReturnsMatchingSend(): void
-    {
-        $model = new SendModel();
-        $send  = $model->createPending($this->contactId, $this->campaignId, null);
-
-        $found = $model->findByClickToken($send->click_token);
-
-        $this->assertNotNull($found);
-        $this->assertSame($send->id, $found->id);
-    }
-
-    public function testFindByClickTokenReturnsNullForMissingToken(): void
-    {
-        $model = new SendModel();
-
-        $this->assertNull($model->findByClickToken('doesnotexist'));
     }
 }
