@@ -1,6 +1,8 @@
 # CLI Commands
 
-Courier ships five Spark commands. The send and drip commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results. The campaign management commands are for authoring and deployment workflows.
+Courier's automation commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results.
+
+For interactive management of contacts, campaigns, segments, tags, and drip enrollments, see [Management Commands](management-commands.md).
 
 ## `courier:send-campaign`
 
@@ -138,7 +140,7 @@ Run this command during deployment after any campaign file changes.
 
 ## Logging
 
-All three commands write to CI4's log system using the `[Courier]` prefix. Check your `writable/logs/` directory if something isn't sending as expected.
+All automation commands write to CI4's log system using the `[Courier]` prefix. Check your `writable/logs/` directory if something isn't sending as expected.
 
 ```
 [courier:send-campaign] Campaign 42 failed: Connection refused
