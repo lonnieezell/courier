@@ -273,7 +273,7 @@ class CampaignService
 
         $this->contactModel->subscribed()->chunk(
             $chunkSize,
-            function (object $contact) use (&$batch, $chunkSize, $callback): void {
+            static function (object $contact) use (&$batch, $chunkSize, $callback): void {
                 $batch[] = $contact;
                 if (count($batch) === $chunkSize) {
                     $callback($batch);

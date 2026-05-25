@@ -20,7 +20,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Commands/SendCampaign.php',
 ];
 $ignoreErrors[] = [
-	'rawMessage' => 'Parameter #1 $campaign of method Myth\\Courier\\Services\\CampaignService::resolveAudience() expects Myth\\Courier\\DTO\\CampaignDTO, stdClass given.',
+	'rawMessage' => 'Parameter #1 $campaign of method Myth\\Courier\\Services\\CampaignService::resolveAudienceChunked() expects Myth\\Courier\\DTO\\CampaignDTO, stdClass given.',
 	'identifier' => 'argument.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Commands/SendCampaign.php',
@@ -382,11 +382,17 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Generator expects value type list<Myth\\Courier\\DTO\\ContactDTO>, non-empty-list<stdClass> given.',
 	'identifier' => 'generator.valueType',
-	'count' => 1,
+	'count' => 3,
 	'path' => __DIR__ . '/src/Services/SegmentService.php',
 ];
 $ignoreErrors[] = [
 	'rawMessage' => 'Method Myth\\Courier\\Services\\SegmentService::resolve() should return list<Myth\\Courier\\DTO\\ContactDTO> but returns list<stdClass>.',
+	'identifier' => 'return.type',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Services/SegmentService.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Method Myth\\Courier\\Services\\SegmentService::resolveBySegmentAndTagSlugs() should return list<Myth\\Courier\\DTO\\ContactDTO> but returns list<stdClass>.',
 	'identifier' => 'return.type',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Services/SegmentService.php',
@@ -455,6 +461,12 @@ $ignoreErrors[] = [
 	'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array|string> given.',
 	'identifier' => 'argument.type',
 	'count' => 1,
+	'path' => __DIR__ . '/tests/Services/Courier/CampaignServiceTest.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, list<array<string, string>>|string> given.',
+	'identifier' => 'argument.type',
+	'count' => 2,
 	'path' => __DIR__ . '/tests/Services/Courier/CampaignServiceTest.php',
 ];
 $ignoreErrors[] = [

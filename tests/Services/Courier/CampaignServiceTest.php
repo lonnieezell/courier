@@ -256,7 +256,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $campaign  = $this->makeCampaignObject();
         $collected = [];
 
-        $this->service->resolveAudienceChunked($campaign, function (array $batch) use (&$collected): void {
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
             array_push($collected, ...$batch);
         });
 
@@ -279,7 +279,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $campaign  = $this->makeCampaignObject(['segment_id' => $segmentId]);
         $collected = [];
 
-        $this->service->resolveAudienceChunked($campaign, function (array $batch) use (&$collected): void {
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
             array_push($collected, ...$batch);
         });
 
@@ -303,7 +303,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $campaign  = $this->makeCampaignObject(['tag_filter' => ['vip']]);
         $collected = [];
 
-        $this->service->resolveAudienceChunked($campaign, function (array $batch) use (&$collected): void {
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
             array_push($collected, ...$batch);
         });
 
@@ -325,7 +325,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $vipId = $tagModel->skipValidation(true)->insert(['slug' => 'vip', 'label' => 'VIP']);
 
         $matchId  = $this->contactModel->skipValidation(true)->insert(['email' => 'web-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
-        $plainId  = $this->contactModel->skipValidation(true)->insert(['email' => 'web-plain@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        $this->contactModel->skipValidation(true)->insert(['email' => 'web-plain@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
         $apiVipId = $this->contactModel->skipValidation(true)->insert(['email' => 'api-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'api']);
 
         $pivotModel->insert(['contact_id' => $matchId, 'tag_id' => $vipId]);
@@ -334,7 +334,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $campaign  = $this->makeCampaignObject(['segment_id' => $segmentId, 'tag_filter' => ['vip']]);
         $collected = [];
 
-        $this->service->resolveAudienceChunked($campaign, function (array $batch) use (&$collected): void {
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
             array_push($collected, ...$batch);
         });
 

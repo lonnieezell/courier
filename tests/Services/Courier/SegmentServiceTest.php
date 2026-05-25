@@ -62,8 +62,8 @@ final class SegmentServiceTest extends CIUnitTestCase
         $contactModel = new ContactModel();
         $pivotModel   = new ContactTagModel();
 
-        $tagId  = $tagModel->skipValidation(true)->insert(['slug' => 'news', 'label' => 'News']);
-        $subId  = $contactModel->insert(['email' => 'sub@example.com', 'status' => ContactStatus::Subscribed]);
+        $tagId   = $tagModel->skipValidation(true)->insert(['slug' => 'news', 'label' => 'News']);
+        $subId   = $contactModel->insert(['email' => 'sub@example.com', 'status' => ContactStatus::Subscribed]);
         $unsubId = $contactModel->insert(['email' => 'unsub@example.com', 'status' => ContactStatus::Unsubscribed]);
 
         $pivotModel->insert(['contact_id' => $subId, 'tag_id' => $tagId]);
