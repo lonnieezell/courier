@@ -702,6 +702,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#syncing-suppressions-to-a-crm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syncing suppressions to a CRM
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -808,6 +819,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#syncing-suppressions-to-a-crm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syncing suppressions to a CRM
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -872,6 +894,16 @@
 <td><code>ContactDTO</code></td>
 </tr>
 <tr>
+<td><code>CourierEvents::CONTACT_BOUNCED</code></td>
+<td>A hard bounce is received via webhook</td>
+<td><code>ContactDTO</code></td>
+</tr>
+<tr>
+<td><code>CourierEvents::CONTACT_COMPLAINED</code></td>
+<td>A spam complaint is received via webhook</td>
+<td><code>ContactDTO</code></td>
+</tr>
+<tr>
 <td><code>CourierEvents::EMAIL_SENT</code></td>
 <td>An email is successfully delivered (or logged in test mode)</td>
 <td><code>SendDTO</code></td>
@@ -919,6 +951,23 @@
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="p">]);</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">});</span>
 </code></pre></div>
+<h3 id="syncing-suppressions-to-a-crm">Syncing suppressions to a CRM</h3>
+<p>Bounce and complaint events fire after Courier has already updated the contact's status and cancelled their drip enrollments. The <code>$contact</code> payload reflects the new suppressed status.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nx">Events</span><span class="o">::</span><span class="na">on</span><span class="p">(</span><span class="nx">CourierEvents</span><span class="o">::</span><span class="na">CONTACT_BOUNCED</span><span class="p">,</span> <span class="k">static</span> <span class="k">function</span> <span class="p">(</span><span class="nv">$contact</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span> <span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="c1">// $contact-&gt;status is ContactStatus::Bounced at this point</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;crmService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">suppressContact</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">email</span><span class="p">,</span> <span class="nx">reason</span><span class="o">:</span> <span class="s1">&#39;bounce&#39;</span><span class="p">);</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">});</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nx">Events</span><span class="o">::</span><span class="na">on</span><span class="p">(</span><span class="nx">CourierEvents</span><span class="o">::</span><span class="na">CONTACT_COMPLAINED</span><span class="p">,</span> <span class="k">static</span> <span class="k">function</span> <span class="p">(</span><span class="nv">$contact</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span> <span class="p">{</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="c1">// $contact-&gt;status is ContactStatus::Complained at this point</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;crmService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">suppressContact</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">email</span><span class="p">,</span> <span class="nx">reason</span><span class="o">:</span> <span class="s1">&#39;complaint&#39;</span><span class="p">);</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">});</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Webhook required</p>
+<p>These events only fire when Courier receives a bounce or complaint via the webhook endpoint. They won't fire for addresses that bounce silently at the SMTP level without ESP feedback. See <a href="../tracking/#bounce-and-complaint-webhooks">Tracking — Bounce and complaint webhooks</a> for setup instructions.</p>
+</div>
 <h2 id="error-handling-in-listeners">Error handling in listeners</h2>
 <p>Courier wraps each event trigger in a <code>try/catch</code>. If your listener throws an exception, Courier logs the error and continues — it won't interrupt the send or unsubscribe flow. That said, it's still a good idea to keep listeners fast and handle their own errors gracefully.</p>
 

@@ -489,6 +489,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#webhookdriver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $webhookDriver
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -909,6 +920,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#webhookdriver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $webhookDriver
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1033,6 +1055,26 @@
 <p class="admonition-title">Custom form layouts</p>
 <p>If you build your own form markup and post to <code>/courier/capture</code>, the honeypot check still runs server-side. To avoid false rejections, make sure your form doesn't submit a <code>courier_hp</code> field — or disable the honeypot if you can't control the submitted fields.</p>
 </div>
+<h3 id="webhookdriver"><code>$webhookDriver</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>The fully-qualified class name of a <code>WebhookDriverInterface</code> implementation that handles incoming ESP webhook notifications (bounces, complaints, subscription confirmations). Leave empty to disable the <code>POST /courier/webhook</code> endpoint — it returns <code>400</code> when no driver is configured.</p>
+<p>Courier ships with a driver for AWS SES (routed through SNS):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
+</code></pre></div>
+<p>To use a different ESP, implement <code>WebhookDriverInterface</code> and point this at your class.</p>
+<div class="admonition warning">
+<p class="admonition-title">CSRF exemption required</p>
+<p>The webhook endpoint receives machine-to-machine POST requests from your ESP. You must add <code>'courier/webhook'</code> to <code>$CSRFExcludeURIs</code> in <code>app/Config/Security.php</code>, otherwise all webhook calls will be rejected.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">.env override</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
+</code></pre></div>
+</div>
+<p>See <a href="../tracking/#bounce-and-complaint-webhooks">Tracking — Bounce and complaint webhooks</a> for the full setup walkthrough.</p>
 
 
 

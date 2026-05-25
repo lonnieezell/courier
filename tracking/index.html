@@ -676,6 +676,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bounce-and-complaint-webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounce and complaint webhooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bounce and complaint webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-with-aws-ses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up with AWS SES
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom drivers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -792,6 +842,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bounce-and-complaint-webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounce and complaint webhooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bounce and complaint webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-with-aws-ses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up with AWS SES
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom drivers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -834,7 +934,7 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;https://acme.com/pricing&quot;</span><span class="p">&gt;</span>See pricing<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="cm">&lt;!-- After wrapping --&gt;</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;https://yoursite.com/courier/click/abc123token?url=https%3A%2F%2Facme.com%2Fprice&quot;</span><span class="p">&gt;</span>See pricing<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;https://yoursite.com/courier/click/abc123token&quot;</span><span class="p">&gt;</span>See pricing<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
 </code></pre></div>
 <p>When a recipient clicks, Courier records the click event and redirects them to the original URL. Only the first click is timestamped on the send record; subsequent clicks are still logged as events.</p>
 <div class="admonition note">
@@ -873,6 +973,68 @@
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1">// ]</span>
 </code></pre></div>
 <p>Raw event data (every open and click, with timestamps and metadata) is in the <code>courier_events</code> table.</p>
+<h2 id="bounce-and-complaint-webhooks">Bounce and complaint webhooks</h2>
+<p>Open and click tracking tell you what contacts do with your emails. Bounce and complaint tracking tells you when emails <em>can't</em> be delivered — or when recipients mark them as spam. Without it, you'll keep sending to bad addresses until your ESP suspends your account.</p>
+<p>Courier handles this via a webhook endpoint: <code>POST /courier/webhook</code>. Your ESP calls it whenever a bounce or complaint occurs, and Courier automatically suppresses the contact.</p>
+<h3 id="how-it-works">How it works</h3>
+<ol>
+<li>A hard bounce or spam complaint arrives at <code>POST /courier/webhook</code></li>
+<li>Courier verifies the request is genuinely from your ESP (RSA signature check for SES/SNS)</li>
+<li>The contact's status is updated to <code>bounced</code> or <code>complained</code></li>
+<li>All active drip enrollments for that contact are cancelled</li>
+<li>The <code>courier:contact.bounced</code> or <code>courier:contact.complained</code> event fires</li>
+</ol>
+<p>Soft bounces (temporary failures like a full mailbox) are logged as events but don't suppress the contact.</p>
+<h3 id="setting-up-with-aws-ses">Setting up with AWS SES</h3>
+<p>Courier ships with a driver for AWS SES, which routes notifications through SNS.</p>
+<p><strong>Step 1 — Configure the driver</strong> in <code>app/Config/Courier.php</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Step 2 — Exempt the route from CSRF</strong> in <code>app/Config/Security.php</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nv">$CSRFExcludeURIs</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="s1">&#39;courier/webhook&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">];</span>
+</code></pre></div>
+<p>SNS sends machine-to-machine POST requests with no browser session, so they'll never carry a CSRF token.</p>
+<p><strong>Step 3 — Create an SNS topic</strong> in your AWS console and subscribe your webhook URL:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>https://yoursite.com/courier/webhook
+</code></pre></div>
+<p>SNS will send a <code>SubscriptionConfirmation</code> request to that URL. Courier confirms it automatically — you don't need to do anything.</p>
+<p><strong>Step 4 — Configure SES notifications</strong> to publish bounces and complaints to your SNS topic. In the SES console, go to your verified identity → Notifications → set the Bounce and Complaint SNS topics to the one you just created.</p>
+<div class="admonition tip">
+<p class="admonition-title">.env override</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
+</code></pre></div>
+</div>
+<h3 id="custom-drivers">Custom drivers</h3>
+<p>If you're using a different ESP, implement <code>WebhookDriverInterface</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">use</span> <span class="nx">Myth\Courier\Webhooks\WebhookDriverInterface</span><span class="p">;</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">use</span> <span class="nx">CodeIgniter\HTTP\IncomingRequest</span><span class="p">;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">class</span> <span class="nc">MailgunDriver</span> <span class="k">implements</span> <span class="nx">WebhookDriverInterface</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">{</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">verifySignature</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="p">{</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="c1">// verify HMAC-SHA256 signature from Mailgun headers</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="p">}</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">isSubscriptionConfirmation</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="p">{</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span> <span class="c1">// Mailgun doesn&#39;t use subscription confirmations</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="p">}</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">confirmSubscription</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span> <span class="p">{}</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">parseEvents</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="k">array</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>    <span class="p">{</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>        <span class="c1">// return [[&#39;type&#39; =&gt; &#39;bounce&#39;|&#39;soft_bounce&#39;|&#39;complaint&#39;, &#39;email&#39; =&gt; &#39;...&#39;, &#39;message_id&#39; =&gt; &#39;...&#39;]]</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>    <span class="p">}</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="p">}</span>
+</code></pre></div>
+<p>Then set <code>$webhookDriver = MailgunDriver::class</code> in your config.</p>
 
 
 
