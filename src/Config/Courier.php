@@ -67,4 +67,11 @@ class Courier extends BaseConfig
      * Leave empty to use APPPATH . 'courier/campaigns/'. Set an absolute path to override.
      */
     public string $campaignsPath = '';
+
+    /**
+     * Fully-qualified class name of the WebhookDriverInterface implementation.
+     * Leave empty to disable the webhook endpoint (returns 400).
+     * Example: \Myth\Courier\Webhooks\Drivers\SesDriver::class
+     */
+    public string $webhookDriver = '';
 }

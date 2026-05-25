@@ -24,7 +24,7 @@ class EventModel extends Model
         'metadata' => '?json',
     ];
     protected $validationRules = [
-        'send_id' => 'required|integer',
-        'type'    => 'required|in_list[open,click,bounce,unsubscribe]',
+        'send_id' => 'permit_empty|integer',
+        'type'    => 'required|in_list[open,click,bounce,soft_bounce,complaint,unsubscribe]',
     ];
 }

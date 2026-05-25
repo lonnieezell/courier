@@ -288,6 +288,86 @@ final class ContactServiceTest extends CIUnitTestCase
         $this->assertTrue($result);
     }
 
+    public function testSuppressMarksBounced(): void
+    {
+        $contact = $this->service->subscribe(['email' => 'bounce@example.com']);
+
+        $result  = $this->service->suppress('bounce@example.com', ContactStatus::Bounced);
+        $updated = (new ContactModel())->find($contact->id);
+
+        $this->assertTrue($result);
+        $this->assertSame(ContactStatus::Bounced, $updated->status);
+    }
+
+    public function testSuppressMarksComplained(): void
+    {
+        $this->service->subscribe(['email' => 'spam@example.com']);
+
+        $result  = $this->service->suppress('spam@example.com', ContactStatus::Complained);
+        $updated = (new ContactModel())->where('email', 'spam@example.com')->first();
+
+        $this->assertTrue($result);
+        $this->assertSame(ContactStatus::Complained, $updated->status);
+    }
+
+    public function testSuppressReturnsFalseForUnknownEmail(): void
+    {
+        $this->assertFalse($this->service->suppress('nobody@example.com', ContactStatus::Bounced));
+    }
+
+    public function testSuppressCancelsDripEnrollments(): void
+    {
+        $campaign = $this->createDripCampaign();
+        (new DripStepModel())->insert([
+            'campaign_id' => $campaign->id,
+            'position'    => 1,
+            'view'        => self::BODY_VIEW,
+            'subject'     => 'Step 1',
+            'delay_hours' => 24,
+        ]);
+
+        $this->service->setDripService($this->makeDripService());
+        $contact = $this->service->subscribe(['email' => 'drip-bounce@example.com'], [], $campaign->id);
+
+        $this->service->suppress('drip-bounce@example.com', ContactStatus::Bounced);
+
+        $enrollment = $this->enrollmentModel->where('contact_id', $contact->id)->first();
+        $this->assertSame(EnrollmentStatus::Cancelled, $enrollment->status);
+    }
+
+    public function testSuppressFiresContactBouncedEventWithUpdatedStatus(): void
+    {
+        $this->service->subscribe(['email' => 'fire-bounce@example.com']);
+
+        $fired = null;
+        Events::on(CourierEvents::CONTACT_BOUNCED, static function ($c) use (&$fired): void {
+            $fired = $c;
+        });
+
+        $this->service->suppress('fire-bounce@example.com', ContactStatus::Bounced);
+        Events::removeAllListeners(CourierEvents::CONTACT_BOUNCED);
+
+        $this->assertNotNull($fired);
+        $this->assertSame('fire-bounce@example.com', $fired->email);
+        $this->assertSame(ContactStatus::Bounced, $fired->status);
+    }
+
+    public function testSuppressFiresContactComplainedEvent(): void
+    {
+        $this->service->subscribe(['email' => 'fire-complaint@example.com']);
+
+        $fired = null;
+        Events::on(CourierEvents::CONTACT_COMPLAINED, static function ($c) use (&$fired): void {
+            $fired = $c;
+        });
+
+        $this->service->suppress('fire-complaint@example.com', ContactStatus::Complained);
+        Events::removeAllListeners(CourierEvents::CONTACT_COMPLAINED);
+
+        $this->assertNotNull($fired);
+        $this->assertSame('fire-complaint@example.com', $fired->email);
+    }
+
     public function testServiceLocatorContactServiceCancelsDripEnrollmentsOnUnsubscribe(): void
     {
         $campaign = $this->createDripCampaign();
