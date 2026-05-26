@@ -37,6 +37,16 @@ class Courier extends BaseConfig
     public int $batchSize = 200;
 
     /**
+     * Minutes to wait before retrying a failed drip step send.
+     */
+    public int $retryDelayMinutes = 5;
+
+    /**
+     * Maximum send attempts per drip step before marking enrollment as failed.
+     */
+    public int $maxRetries = 3;
+
+    /**
      * Milliseconds to sleep between individual sends (0 = no throttle).
      */
     public int $throttleMs = 0;

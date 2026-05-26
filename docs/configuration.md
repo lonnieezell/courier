@@ -50,6 +50,48 @@ How many emails to send per `courier:send-campaign` or `courier:process-drips` c
 
 Lower this if you're hitting rate limits; raise it if your email provider supports higher throughput.
 
+### `$retryDelayMinutes`
+
+```php
+<?php
+public int $retryDelayMinutes = 5;
+```
+
+How long to wait before retrying a drip step send that failed. When `courier:process-drips` can't deliver a step (the mailer returns false or throws), it pushes the enrollment's `next_send_at` forward by this many minutes instead of retrying immediately.
+
+5 minutes is a sensible default — long enough to survive a brief ESP blip, short enough that recipients aren't delayed noticeably. For high-volume setups you may want a longer window to avoid hammering a struggling provider:
+
+```php
+<?php
+public int $retryDelayMinutes = 15;
+```
+
+!!! tip ".env override"
+    ```
+    courier.retryDelayMinutes = 10
+    ```
+
+### `$maxRetries`
+
+```php
+<?php
+public int $maxRetries = 3;
+```
+
+Maximum number of send attempts per drip step before Courier gives up. After this many failures, the enrollment is marked `failed` and a `courier_enrollment_failed` event fires so your app can take action.
+
+With the defaults (`retryDelayMinutes = 5`, `maxRetries = 3`), a step that keeps failing will be abandoned after roughly 15 minutes and 3 attempts. Raise this if you expect longer ESP outages:
+
+```php
+<?php
+public int $maxRetries = 5;
+```
+
+!!! tip ".env override"
+    ```
+    courier.maxRetries = 5
+    ```
+
 ### `$throttleMs`
 
 ```php

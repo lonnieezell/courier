@@ -178,6 +178,8 @@ class DripService implements DripServiceInterface
         $failed    = 0;
 
         foreach ($enrollments as $enrollment) {
+            $sendSucceeded = false;
+
             try {
                 $contact = $contactMap[$enrollment->contact_id] ?? null;
 
@@ -206,12 +208,19 @@ class DripService implements DripServiceInterface
                     : ($stepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null);
 
                 if ($this->mailerService->sendStep($contact, $step, $campaign)) {
+                    $sendSucceeded = true;
                     $this->enrollmentModel->advance($enrollment, $nextStep);
                     $processed++;
                 } else {
                     log_message('error', '[Courier] DripService: failed to send step for enrollment {id}', [
                         'id' => $enrollment->id,
                     ]);
+                    $this->enrollmentModel->recordFailure(
+                        $enrollment,
+                        'mailer returned false',
+                        $this->config->retryDelayMinutes,
+                        $this->config->maxRetries,
+                    );
                     $failed++;
                 }
             } catch (Throwable $e) {
@@ -219,6 +228,14 @@ class DripService implements DripServiceInterface
                     'id'      => $enrollment->id,
                     'message' => $e->getMessage(),
                 ]);
+                if (! $sendSucceeded) {
+                    $this->enrollmentModel->recordFailure(
+                        $enrollment,
+                        $e->getMessage(),
+                        $this->config->retryDelayMinutes,
+                        $this->config->maxRetries,
+                    );
+                }
                 $failed++;
             }
         }

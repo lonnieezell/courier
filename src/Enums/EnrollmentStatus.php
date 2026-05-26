@@ -10,4 +10,5 @@ enum EnrollmentStatus: string
     case Paused    = 'paused';
     case Completed = 'completed';
     case Cancelled = 'cancelled';
+    case Failed    = 'failed';
 }
