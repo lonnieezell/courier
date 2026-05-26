@@ -119,7 +119,7 @@ final class CourierControllerTest extends CIUnitTestCase
         $this->assertNotNull((new SendModel())->find($send->id)->clicked_at);
     }
 
-    public function testClickStoresLinkIdOnEvent(): void
+    public function testClickStoresLinkIdOnEventAndNoIpByDefault(): void
     {
         $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
         $linkModel = new LinkModel();
@@ -130,9 +130,24 @@ final class CourierControllerTest extends CIUnitTestCase
 
         $event = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
         $this->assertNotNull($event);
-        $this->assertArrayHasKey('ip', (array) $event->metadata);
-        $this->assertArrayNotHasKey('url', (array) $event->metadata);
+        $this->assertNull($event->metadata);
         $this->assertSame($link->id, (int) $event->link_id);
+    }
+
+    public function testClickStoresIpWhenTrackIpAddressEnabled(): void
+    {
+        config(CourierConfig::class)->trackIpAddress = true;
+
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok_ip' => 'https://example.com/page']);
+
+        $this->withRoutes($this->courierRoutes)->get('courier/click/tok_ip');
+
+        $event = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
+        $this->assertNotNull($event);
+        $this->assertIsArray((array) $event->metadata);
+        $this->assertArrayHasKey('ip', (array) $event->metadata);
     }
 
     public function testClickWithInvalidTokenRedirectsToRoot(): void

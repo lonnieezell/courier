@@ -77,11 +77,14 @@ class CourierController extends Controller
             $sendModel->update($send->id, ['clicked_at' => date('Y-m-d H:i:s')]);
         }
 
+        $trackIp  = config(CourierConfig::class)->trackIpAddress;
+        $metadata = $trackIp ? ['ip' => $this->request->getIPAddress()] : null;
+
         model(EventModel::class)->insert([
             'send_id'  => $link->send_id,
             'link_id'  => $link->id,
             'type'     => 'click',
-            'metadata' => ['ip' => $this->request->getIPAddress()],
+            'metadata' => $metadata,
         ]);
 
         return redirect()->to($link->url);

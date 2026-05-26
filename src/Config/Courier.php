@@ -96,6 +96,14 @@ class Courier extends BaseConfig
     public string $campaignsPath = '';
 
     /**
+     * When true, the IP address of the clicking recipient is stored in the click event metadata.
+     * IP addresses are personal data under GDPR and CCPA. Only enable this if your privacy
+     * policy discloses IP collection and your data-retention practices cover it.
+     * .env: Courier.trackIpAddress
+     */
+    public bool $trackIpAddress = false;
+
+    /**
      * Fully-qualified class name of the WebhookDriverInterface implementation.
      * Leave empty to disable the webhook endpoint (returns 400).
      * Example: \Myth\Courier\Webhooks\Drivers\SesDriver::class
