@@ -244,6 +244,105 @@ final class CampaignServiceTest extends CIUnitTestCase
     }
 
     // -------------------------------------------------------------------------
+    // resolveAudienceChunked()
+    // -------------------------------------------------------------------------
+
+    public function testResolveAudienceChunkedDeliversSubscribedContactsWhenNoFilter(): void
+    {
+        $this->insertContact('a@example.com');
+        $this->insertContact('b@example.com');
+        $this->insertContact('unsub@example.com', ContactStatus::Unsubscribed);
+
+        $campaign  = $this->makeCampaignObject();
+        $collected = [];
+
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
+            array_push($collected, ...$batch);
+        });
+
+        $this->assertCount(2, $collected);
+    }
+
+    public function testResolveAudienceChunkedDeliversSegmentContactsWhenSegmentSet(): void
+    {
+        $segmentModel = new SegmentModel();
+        $segmentId    = (int) $segmentModel->insert([
+            'name'       => 'Source web',
+            'rules'      => [['field' => 'source', 'op' => 'eq', 'value' => 'web']],
+            'match_mode' => 'all',
+        ]);
+
+        $this->contactModel->insert(['email' => 'web@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        $this->contactModel->insert(['email' => 'api@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'api']);
+        $this->insertContact('unsub@example.com', ContactStatus::Unsubscribed);
+
+        $campaign  = $this->makeCampaignObject(['segment_id' => $segmentId]);
+        $collected = [];
+
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
+            array_push($collected, ...$batch);
+        });
+
+        $this->assertCount(1, $collected);
+        $this->assertSame('web@example.com', $collected[0]->email);
+    }
+
+    public function testResolveAudienceChunkedDeliversTagFilteredContactsWhenTagSet(): void
+    {
+        $contactService = new ContactService(
+            $this->contactModel,
+            new TagModel(),
+            new DripEnrollmentModel(),
+            new ContactTagModel(),
+        );
+
+        $contactService->subscribe(['email' => 'vip@example.com'], ['vip']);
+        $contactService->subscribe(['email' => 'regular@example.com']);
+        $this->insertContact('unsub@example.com', ContactStatus::Unsubscribed);
+
+        $campaign  = $this->makeCampaignObject(['tag_filter' => ['vip']]);
+        $collected = [];
+
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
+            array_push($collected, ...$batch);
+        });
+
+        $this->assertCount(1, $collected);
+        $this->assertSame('vip@example.com', $collected[0]->email);
+    }
+
+    public function testResolveAudienceChunkedDeliversIntersectionWhenBothSegmentAndTagSet(): void
+    {
+        $segmentModel = new SegmentModel();
+        $tagModel     = new TagModel();
+        $pivotModel   = new ContactTagModel();
+
+        $segmentId = (int) $segmentModel->insert([
+            'name'       => 'Source web',
+            'rules'      => [['field' => 'source', 'op' => 'eq', 'value' => 'web']],
+            'match_mode' => 'all',
+        ]);
+        $vipId = $tagModel->skipValidation(true)->insert(['slug' => 'vip', 'label' => 'VIP']);
+
+        $matchId = $this->contactModel->skipValidation(true)->insert(['email' => 'web-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        $this->contactModel->skipValidation(true)->insert(['email' => 'web-plain@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        $apiVipId = $this->contactModel->skipValidation(true)->insert(['email' => 'api-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'api']);
+
+        $pivotModel->insert(['contact_id' => $matchId, 'tag_id' => $vipId]);
+        $pivotModel->insert(['contact_id' => $apiVipId, 'tag_id' => $vipId]);
+
+        $campaign  = $this->makeCampaignObject(['segment_id' => $segmentId, 'tag_filter' => ['vip']]);
+        $collected = [];
+
+        $this->service->resolveAudienceChunked($campaign, static function (array $batch) use (&$collected): void {
+            array_push($collected, ...$batch);
+        });
+
+        $this->assertCount(1, $collected);
+        $this->assertSame('web-vip@example.com', $collected[0]->email);
+    }
+
+    // -------------------------------------------------------------------------
     // resolveAudience()
     // -------------------------------------------------------------------------
 
@@ -329,7 +428,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $contact  = $this->insertContact('p@example.com');
         $contacts = [$contact];
 
-        $sends = $this->service->prepareBatch($campaign, $contacts, 0);
+        $sends = $this->service->prepareBatch($campaign, $contacts);
 
         $this->assertCount(1, $sends);
         $this->assertSame('pending', $sends[0]->status instanceof BackedEnum ? $sends[0]->status->value : $sends[0]->status);
@@ -341,8 +440,8 @@ final class CampaignServiceTest extends CIUnitTestCase
         $contact  = $this->insertContact('idm@example.com');
         $contacts = [$contact];
 
-        $this->service->prepareBatch($campaign, $contacts, 0);
-        $this->service->prepareBatch($campaign, $contacts, 0);
+        $this->service->prepareBatch($campaign, $contacts);
+        $this->service->prepareBatch($campaign, $contacts);
 
         $count = $this->sendModel
             ->where('contact_id', $contact->id)
@@ -362,7 +461,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $send = $this->sendModel->createPending($contact->id, $campaign->id, null);
         $this->sendModel->update($send->id, ['status' => SendStatus::Sent]);
 
-        $sends = $this->service->prepareBatch($campaign, $contacts, 0);
+        $sends = $this->service->prepareBatch($campaign, $contacts);
 
         // Still one row, status unchanged
         $count = $this->sendModel
@@ -384,7 +483,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $send = $this->sendModel->createPending($contact->id, $campaign->id, null);
         $this->sendModel->update($send->id, ['status' => SendStatus::Failed]);
 
-        $sends = $this->service->prepareBatch($campaign, $contacts, 0);
+        $sends = $this->service->prepareBatch($campaign, $contacts);
 
         $this->assertCount(1, $sends);
         $refreshed = $this->sendModel->where('id', $send->id)->first();

@@ -53,10 +53,50 @@ class SegmentService
             ->select("{$p}courier_contacts.*")
             ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
             ->join('courier_tags t', 't.id = ct.tag_id')
+            ->subscribed()
             ->whereIn('t.slug', $slugs)
             ->groupBy("{$p}courier_contacts.id")
             ->having('COUNT(DISTINCT t.id) =', $count)
             ->findAll();
+    }
+
+    /**
+     * Yields subscribed contacts with ALL the given tag slugs in chunks.
+     * Use instead of resolveByTagSlugs() when processing large lists.
+     *
+     * @param list<string> $slugs
+     *
+     * @return Generator<int, list<ContactDTO>>
+     */
+    public function resolveByTagSlugsChunked(array $slugs, int $chunkSize = 200): Generator
+    {
+        if ($slugs === []) {
+            return;
+        }
+
+        $count  = count($slugs);
+        $p      = $this->contactModel->db->getPrefix();
+        $offset = 0;
+
+        do {
+            $rows = $this->contactModel
+                ->select("{$p}courier_contacts.*")
+                ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
+                ->join('courier_tags t', 't.id = ct.tag_id')
+                ->subscribed()
+                ->whereIn('t.slug', $slugs)
+                ->groupBy("{$p}courier_contacts.id")
+                ->having('COUNT(DISTINCT t.id) =', $count)
+                ->findAll($chunkSize, $offset);
+
+            if ($rows === []) {
+                break;
+            }
+
+            yield $rows;
+
+            $offset += $chunkSize;
+        } while (count($rows) === $chunkSize);
     }
 
     /**
@@ -75,6 +115,65 @@ class SegmentService
     public function previewCount(int $segmentId): int
     {
         return $this->buildQuery($segmentId)->countAllResults();
+    }
+
+    /**
+     * Returns subscribed contacts that match both the segment rules and all the
+     * given tag slugs in a single query. Use for campaigns with both segment_id
+     * and tag_filter set.
+     *
+     * @param list<string> $slugs
+     *
+     * @return list<ContactDTO>
+     */
+    public function resolveBySegmentAndTagSlugs(int $segmentId, array $slugs): array
+    {
+        $count = count($slugs);
+        $p     = $this->contactModel->db->getPrefix();
+
+        return $this->buildQuery($segmentId)
+            ->select("{$p}courier_contacts.*")
+            ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
+            ->join('courier_tags t', 't.id = ct.tag_id')
+            ->whereIn('t.slug', $slugs)
+            ->groupBy("{$p}courier_contacts.id")
+            ->having('COUNT(DISTINCT t.id) =', $count)
+            ->findAll();
+    }
+
+    /**
+     * Yields subscribed contacts matching both the segment rules and all the
+     * given tag slugs in chunks. Use instead of resolveBySegmentAndTagSlugs()
+     * for large audiences.
+     *
+     * @param list<string> $slugs
+     *
+     * @return Generator<int, list<ContactDTO>>
+     */
+    public function resolveBySegmentAndTagSlugsChunked(int $segmentId, array $slugs, int $chunkSize = 200): Generator
+    {
+        $count  = count($slugs);
+        $p      = $this->contactModel->db->getPrefix();
+        $offset = 0;
+
+        do {
+            $rows = $this->buildQuery($segmentId)
+                ->select("{$p}courier_contacts.*")
+                ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
+                ->join('courier_tags t', 't.id = ct.tag_id')
+                ->whereIn('t.slug', $slugs)
+                ->groupBy("{$p}courier_contacts.id")
+                ->having('COUNT(DISTINCT t.id) =', $count)
+                ->findAll($chunkSize, $offset);
+
+            if ($rows === []) {
+                break;
+            }
+
+            yield $rows;
+
+            $offset += $chunkSize;
+        } while (count($rows) === $chunkSize);
     }
 
     /**
@@ -103,6 +202,7 @@ class SegmentService
 
     /**
      * Builds the base query for a segment, applying all rules.
+     * Always restricts to subscribed contacts.
      */
     private function buildQuery(int $segmentId): ContactModel
     {
@@ -110,7 +210,7 @@ class SegmentService
         $rules    = (array) ($segment->rules ?? []);
         $matchAny = ($segment->match_mode ?? 'all') === 'any';
         $db       = $this->contactModel->db;
-        $builder  = $this->contactModel->builder();
+        $builder  = $this->contactModel->subscribed()->builder();
 
         if ($rules === []) {
             return $this->contactModel;

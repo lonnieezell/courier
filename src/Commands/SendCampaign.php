@@ -47,20 +47,17 @@ class SendCampaign extends BaseCommand
                 ->findAll();
         }
 
-        $batchSize = (int) config('Courier')->batchSize;
-
         foreach ($campaigns as $campaign) {
             try {
                 $campaignModel->update($campaign->id, ['status' => CampaignStatus::Sending]);
 
-                $contacts = $campaignService->resolveAudience($campaign);
-                $offset   = 0;
-
-                do {
-                    $sends = $campaignService->prepareBatch($campaign, $contacts, $offset);
-                    $campaignService->sendBatch($sends);
-                    $offset += $batchSize;
-                } while (count($sends) === $batchSize);
+                $campaignService->resolveAudienceChunked(
+                    $campaign,
+                    static function (array $batch) use ($campaignService, $campaign): void {
+                        $sends = $campaignService->prepareBatch($campaign, $batch);
+                        $campaignService->sendBatch($sends);
+                    },
+                );
 
                 $campaignModel->update($campaign->id, [
                     'status'  => CampaignStatus::Sent,

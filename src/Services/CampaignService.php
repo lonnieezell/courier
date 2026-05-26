@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Myth\Courier\Services;
 
+use Closure;
 use DateTimeInterface;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\CampaignDTO;
@@ -232,28 +233,79 @@ class CampaignService
     }
 
     /**
-     * Prepares a batch of Send rows for the given contact slice.
-     * Audience must be resolved once externally and passed in.
-     *
+     * Streams the full audience for a campaign in memory-safe batches.
+     * The $callback receives one batch (list<ContactDTO>) per call.
+     * Only subscribed contacts are delivered; resolution logic mirrors resolveAudience().
+     */
+    public function resolveAudienceChunked(CampaignDTO $campaign, Closure $callback): void
+    {
+        $chunkSize = $this->config->batchSize;
+        $segmentId = $campaign->segment_id ?? null;
+        $tagFilter = isset($campaign->tag_filter) && is_array($campaign->tag_filter) && $campaign->tag_filter !== []
+            ? $campaign->tag_filter
+            : null;
+
+        if ($segmentId !== null && $tagFilter !== null) {
+            foreach ($this->segmentService->resolveBySegmentAndTagSlugsChunked($segmentId, $tagFilter, $chunkSize) as $chunk) {
+                $callback($chunk);
+            }
+
+            return;
+        }
+
+        if ($segmentId !== null) {
+            foreach ($this->segmentService->resolveChunked($segmentId, $chunkSize) as $chunk) {
+                $callback($chunk);
+            }
+
+            return;
+        }
+
+        if ($tagFilter !== null) {
+            foreach ($this->segmentService->resolveByTagSlugsChunked($tagFilter, $chunkSize) as $chunk) {
+                $callback($chunk);
+            }
+
+            return;
+        }
+
+        $batch = [];
+
+        $this->contactModel->subscribed()->chunk(
+            $chunkSize,
+            static function (object $contact) use (&$batch, $chunkSize, $callback): void {
+                $batch[] = $contact;
+                if (count($batch) === $chunkSize) {
+                    $callback($batch);
+                    $batch = [];
+                }
+            },
+        );
+
+        if ($batch !== []) {
+            $callback($batch);
+        }
+    }
+
+    /**
+     * Prepares Send rows for the given contact batch.
      * Idempotent:
      *   - pending/sent rows are returned as-is (no duplicate insert)
      *   - failed rows are reset to pending (retry)
      *
-     * @param list<ContactDTO> $contacts Full resolved audience (not yet sliced)
+     * @param list<ContactDTO> $contacts Batch of contacts to prepare (already paginated)
      *
-     * @return list<SendDTO> Send objects for this batch slice
+     * @return list<SendDTO>
      */
-    public function prepareBatch(CampaignDTO $campaign, array $contacts, int $offset): array
+    public function prepareBatch(CampaignDTO $campaign, array $contacts): array
     {
-        $batchSize = $this->config->batchSize;
-        $slice     = array_slice($contacts, $offset, $batchSize);
-        $sends     = [];
+        $sends = [];
 
-        if ($slice === []) {
+        if ($contacts === []) {
             return [];
         }
 
-        $contactIds   = array_map(static fn (object $c): int => $c->id, $slice);
+        $contactIds   = array_map(static fn (object $c): int => $c->id, $contacts);
         $existingRows = $this->sendModel
             ->where('campaign_id', $campaign->id)
             ->whereIn('contact_id', $contactIds)
@@ -265,7 +317,7 @@ class CampaignService
             $existingMap[(int) $row->contact_id] = $row;
         }
 
-        foreach ($slice as $contact) {
+        foreach ($contacts as $contact) {
             $existing = $existingMap[(int) $contact->id] ?? null;
 
             if ($existing !== null) {
