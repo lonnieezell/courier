@@ -30,18 +30,18 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(CourierConfig::class)->testMode = true;
-    }
-
     /**
      * @var array<int, array{0: string, 1: string, 2: string}>
      */
     private array $captureRoute = [
         ['POST', 'courier/capture', '\Myth\Courier\Controllers\CourierController::capture'],
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(CourierConfig::class)->testMode = true;
+    }
 
     public function testPostValidEmailCreatesContactAndRedirects(): void
     {

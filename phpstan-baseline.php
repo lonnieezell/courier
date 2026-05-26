@@ -90,7 +90,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
     'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 1,
+    'count'      => 2,
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
@@ -106,7 +106,7 @@ $ignoreErrors[] = [
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
-    'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string> given.',
+    'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string|null> given.',
     'identifier' => 'argument.type',
     'count'      => 1,
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
