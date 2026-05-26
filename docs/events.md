@@ -12,6 +12,7 @@ Courier fires CI4 events at key points in the contact and email lifecycle. You c
 | `CourierEvents::CONTACT_COMPLAINED` | A spam complaint is received via webhook | `ContactDTO` |
 | `CourierEvents::EMAIL_SENT` | An email is successfully delivered (or logged in test mode) | `SendDTO` |
 | `CourierEvents::EMAIL_FAILED` | An email fails to deliver | `SendDTO` |
+| `'courier_enrollment_failed'` | A drip enrollment exhausts all retry attempts | `DripEnrollmentDTO`, `string $errorMessage` |
 
 ## Registering a listener
 
@@ -81,6 +82,26 @@ Events::on(CourierEvents::CONTACT_COMPLAINED, static function ($contact): void {
 
 !!! note "Webhook required"
     These events only fire when Courier receives a bounce or complaint via the webhook endpoint. They won't fire for addresses that bounce silently at the SMTP level without ESP feedback. See [Tracking — Bounce and complaint webhooks](tracking.md#bounce-and-complaint-webhooks) for setup instructions.
+
+### Handling failed drip enrollments
+
+When a drip step can't be delivered after all retry attempts, Courier fires `courier_enrollment_failed` with the enrollment and a short error message. Use this to alert your team, tag the contact, or queue a manual follow-up:
+
+```php
+<?php
+Events::on('courier_enrollment_failed', static function ($enrollment, string $errorMessage): void {
+    // $enrollment->status is EnrollmentStatus::Failed at this point
+    log_message('error', "Drip enrollment #{$enrollment->id} failed permanently: {$errorMessage}");
+
+    // Optionally tag the contact for manual review
+    service('contactService')->addTag($enrollment->contact_id, 'drip-send-failed');
+});
+```
+
+The enrollment is already marked `failed` when this fires — it won't be retried again. If you want to give a contact another shot after fixing the underlying issue, you'll need to cancel the failed enrollment and re-enroll them manually.
+
+!!! note "Retry configuration"
+    The number of attempts and the delay between them are controlled by [`$maxRetries`](configuration.md#maxretries) and [`$retryDelayMinutes`](configuration.md#retrydelayminutes).
 
 ## Error handling in listeners
 

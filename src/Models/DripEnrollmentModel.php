@@ -54,7 +54,10 @@ class DripEnrollmentModel extends Model
             ->first();
 
         if ($nextStep === null) {
-            $this->update($enrollment->id, ['status' => EnrollmentStatus::Completed]);
+            $this->update($enrollment->id, [
+                'status'      => EnrollmentStatus::Completed,
+                'retry_count' => 0,
+            ]);
 
             return;
         }
@@ -81,7 +84,12 @@ class DripEnrollmentModel extends Model
         $newRetryCount = $enrollment->retry_count + 1;
 
         if ($newRetryCount >= $maxRetries) {
-            $this->update($enrollment->id, ['status' => EnrollmentStatus::Failed]);
+            $this->update($enrollment->id, [
+                'status'      => EnrollmentStatus::Failed,
+                'retry_count' => $newRetryCount,
+            ]);
+            $enrollment->status      = EnrollmentStatus::Failed;
+            $enrollment->retry_count = $newRetryCount;
             Events::trigger('courier_enrollment_failed', $enrollment, $errorMessage);
 
             return;

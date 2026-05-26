@@ -205,7 +205,10 @@ class DripService implements DripServiceInterface
                     ? ($fileStepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null)
                     : ($stepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null);
 
+                $sendSucceeded = false;
+
                 if ($this->mailerService->sendStep($contact, $step, $campaign)) {
+                    $sendSucceeded = true;
                     $this->enrollmentModel->advance($enrollment, $nextStep);
                     $processed++;
                 } else {
@@ -225,12 +228,14 @@ class DripService implements DripServiceInterface
                     'id'      => $enrollment->id,
                     'message' => $e->getMessage(),
                 ]);
-                $this->enrollmentModel->recordFailure(
-                    $enrollment,
-                    $e->getMessage(),
-                    $this->config->retryDelayMinutes,
-                    $this->config->maxRetries,
-                );
+                if (!$sendSucceeded) {
+                    $this->enrollmentModel->recordFailure(
+                        $enrollment,
+                        $e->getMessage(),
+                        $this->config->retryDelayMinutes,
+                        $this->config->maxRetries,
+                    );
+                }
                 $failed++;
             }
         }

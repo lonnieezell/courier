@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Models\Courier;
 
+use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Enums\CampaignStatus;
@@ -140,6 +141,56 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
         $updated = $enrollmentModel->find($enrollmentId);
 
         $this->assertSame(EnrollmentStatus::Failed, $updated->status);
+    }
+
+    public function testRecordFailureAtMaxRetriesFiresEventWithFailedStatus(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'retry_count'  => 2,
+        ]);
+
+        $capturedStatus = null;
+        Events::on('courier_enrollment_failed', static function ($enrollment) use (&$capturedStatus): void {
+            $capturedStatus = $enrollment->status;
+        });
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->recordFailure($enrollment, 'ESP error', 5, 3);
+
+        Events::removeAllListeners('courier_enrollment_failed');
+
+        $this->assertSame(EnrollmentStatus::Failed, $capturedStatus);
+    }
+
+    public function testAdvanceOnLastStepCompletionResetsRetryCount(): void
+    {
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 1,
+            'view'        => 'emails/only',
+            'subject'     => 'Only Step',
+            'delay_hours' => 0,
+        ]);
+
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'retry_count'  => 2,
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->advance($enrollment);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Completed, $updated->status);
+        $this->assertSame(0, $updated->retry_count);
     }
 
     public function testAdvanceResetsRetryCount(): void

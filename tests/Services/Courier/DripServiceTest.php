@@ -607,6 +607,61 @@ final class DripServiceTest extends CIUnitTestCase
         $this->assertSame(1, $enrollment->retry_count);
     }
 
+    public function testProcessDueAdvanceExceptionDoesNotCallRecordFailure(): void
+    {
+        $campaign = $this->createDripCampaign();
+        $this->createStep($campaign->id, 1, 24);
+        $this->createStep($campaign->id, 2, 24);
+        $contact = $this->createSubscribedContact('advancefail@example.com');
+
+        $this->service->enroll($contact->id, $campaign->id);
+        $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->set('next_send_at', date('Y-m-d H:i:s', strtotime('-1 hour')))
+            ->update();
+
+        $config                    = config(CourierConfig::class);
+        $config->testMode          = true;
+        $config->campaignsPath     = $this->campaignsDir;
+        $config->retryDelayMinutes = 5;
+        $config->maxRetries        = 3;
+
+        // Mailer succeeds but enrollment model throws on advance()
+        $throwingEnrollmentModel = new class extends DripEnrollmentModel {
+            public function advance($enrollment, $nextStep = null): void
+            {
+                throw new \RuntimeException('DB write failed during advance');
+            }
+        };
+
+        $mailerService = new MailerService(
+            new TemplateService(new MarkdownService(sys_get_temp_dir())),
+            $this->sendModel,
+            $this->campaignModel,
+        );
+
+        $service = new DripService(
+            $throwingEnrollmentModel,
+            $this->stepModel,
+            $this->campaignModel,
+            $mailerService,
+            $this->contactModel,
+            $config,
+            new CampaignFileLoader($this->campaignsDir),
+        );
+
+        $service->processDue();
+
+        // retry_count must stay 0 — a successful send must not penalise the enrollment
+        $enrollment = $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->first();
+
+        $this->assertSame(0, $enrollment->retry_count);
+        $this->assertSame(EnrollmentStatus::Active, $enrollment->status);
+    }
+
     public function testProcessDueAtMaxRetriesMarksEnrollmentFailed(): void
     {
         $campaign = $this->createDripCampaign();
