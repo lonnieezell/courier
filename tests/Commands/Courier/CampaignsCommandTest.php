@@ -53,6 +53,7 @@ final class CampaignsCommandTest extends CIUnitTestCase
                 new TemplateService(new MarkdownService(sys_get_temp_dir())),
                 new SendModel(),
                 $this->campaignModel,
+                config(CourierConfig::class),
             ),
             new SendModel(),
             new ContactModel(),

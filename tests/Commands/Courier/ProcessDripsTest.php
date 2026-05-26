@@ -58,6 +58,7 @@ final class ProcessDripsTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             new SendModel(),
             $this->campaignModel,
+            config(CourierConfig::class),
         );
 
         $this->dripService = new DripService(
@@ -123,7 +124,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         // Instead, test that run() doesn't propagate exceptions by injecting a mock via anonymous class trick.
         // We test this by verifying run() returns without throwing even when processDue() throws.
 
-        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel), $this->contactModel, config(CourierConfig::class)) extends DripService {
+        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config(CourierConfig::class)), $this->contactModel, config(CourierConfig::class)) extends DripService {
             public function processDue(): array
             {
                 throw new RuntimeException('Simulated failure');

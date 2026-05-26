@@ -69,7 +69,7 @@ final class ContactServiceTest extends CIUnitTestCase
             $this->enrollmentModel,
             new DripStepModel(),
             $this->campaignModel,
-            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel),
+            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config(CourierConfig::class)),
             new ContactModel(),
             $config,
         );

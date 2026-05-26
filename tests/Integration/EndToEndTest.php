@@ -60,7 +60,7 @@ final class EndToEndTest extends CIUnitTestCase
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();
 
-        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel);
+        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class));
 
         $this->dripService = new DripService(
             $this->enrollmentModel,

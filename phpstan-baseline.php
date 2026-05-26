@@ -400,12 +400,6 @@ $ignoreErrors[] = [
     'path'       => __DIR__ . '/src/Services/DripService.php',
 ];
 $ignoreErrors[] = [
-    'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
-    'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 1,
-    'path'       => __DIR__ . '/src/Services/MailerService.php',
-];
-$ignoreErrors[] = [
     'rawMessage' => 'Call to protected method getMessageID() of class CodeIgniter\\Email\\Email.',
     'identifier' => 'method.protected',
     'count'      => 1,

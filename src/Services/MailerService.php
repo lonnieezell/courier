@@ -26,16 +26,14 @@ class MailerService
 {
     use LoggerAwareTrait;
 
-    private CourierConfig $config;
-
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly SendModel $sendModel,
         private readonly CampaignModel $campaignModel,
+        private readonly CourierConfig $config,
         private ?Email $email = null,
         private readonly LinkModel $linkModel = new LinkModel(),
     ) {
-        $this->config = config(CourierConfig::class);
         $this->config->validate();
         $this->email ??= service('email');
     }

@@ -87,6 +87,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
             $emailMock,
         );
     }
@@ -213,6 +214,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
             $emailMock,
         );
 
@@ -257,6 +259,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
             $emailMock,
         );
 
