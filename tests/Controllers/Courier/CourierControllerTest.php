@@ -41,7 +41,8 @@ final class CourierControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(CourierConfig::class)->testMode = true;
+        config(CourierConfig::class)->testMode       = true;
+        config(CourierConfig::class)->trackIpAddress = false;
 
         $this->contactId  = (new ContactModel())->insert(['email' => 'tracking@example.com']);
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([
@@ -52,6 +53,12 @@ final class CourierControllerTest extends CIUnitTestCase
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        config(CourierConfig::class)->trackIpAddress = false;
+        parent::tearDown();
     }
 
     public function testOpenWithValidTokenRecordsEventAndReturnsGif(): void
@@ -144,10 +151,11 @@ final class CourierControllerTest extends CIUnitTestCase
 
         $this->withRoutes($this->courierRoutes)->get('courier/click/tok_ip');
 
-        $event = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
+        $event    = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
+        $metadata = (array) $event->metadata;
         $this->assertNotNull($event);
-        $this->assertIsArray((array) $event->metadata);
-        $this->assertArrayHasKey('ip', (array) $event->metadata);
+        $this->assertArrayHasKey('ip', $metadata);
+        $this->assertArrayNotHasKey('url', $metadata);
     }
 
     public function testClickWithInvalidTokenRedirectsToRoot(): void

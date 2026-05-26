@@ -195,6 +195,32 @@ public bool $honeypot = false;
 !!! warning "Custom form layouts"
     If you build your own form markup and post to `/courier/capture`, the honeypot check still runs server-side. To avoid false rejections, make sure your form doesn't submit a `courier_hp` field — or disable the honeypot if you can't control the submitted fields.
 
+### `$trackIpAddress`
+
+```php
+<?php
+public bool $trackIpAddress = false;
+```
+
+When `true`, the IP address of the recipient who clicked a tracked link is stored in the `metadata` column of `courier_events`.
+
+**Default is `false`.** IP addresses are personal data under GDPR and CCPA. Only enable this setting if:
+
+- Your privacy policy discloses that click IP addresses are collected and processed, and
+- You have a data-retention policy that covers `courier_events` rows.
+
+To enable:
+
+```php
+<?php
+public bool $trackIpAddress = true;
+```
+
+!!! tip ".env override"
+    ```
+    courier.trackIpAddress = true
+    ```
+
 ### `$webhookDriver`
 
 ```php
