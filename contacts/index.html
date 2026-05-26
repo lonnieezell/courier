@@ -1017,9 +1017,21 @@
 <h2 id="unsubscribing">Unsubscribing</h2>
 <p>Courier handles unsubscribes automatically via the tracking controller when a contact clicks their unsubscribe link. You can also unsubscribe programmatically by token:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">$success</span> <span class="o">=</span> <span class="nv">$contactService</span><span class="o">-&gt;</span><span class="na">unsubscribeByToken</span><span class="p">(</span><span class="nv">$token</span><span class="p">);</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">use</span> <span class="nx">Myth\Courier\Enums\UnsubscribeResult</span><span class="p">;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">$result</span> <span class="o">=</span> <span class="nv">$contactService</span><span class="o">-&gt;</span><span class="na">unsubscribeByToken</span><span class="p">(</span><span class="nv">$token</span><span class="p">);</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">match</span> <span class="p">(</span><span class="nv">$result</span><span class="p">)</span> <span class="p">{</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="nx">UnsubscribeResult</span><span class="o">::</span><span class="na">Success</span>  <span class="o">=&gt;</span> <span class="cm">/* contact unsubscribed */</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="nx">UnsubscribeResult</span><span class="o">::</span><span class="na">Expired</span>  <span class="o">=&gt;</span> <span class="cm">/* token is older than $unsubscribeTokenExpireDays */</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="nx">UnsubscribeResult</span><span class="o">::</span><span class="na">NotFound</span> <span class="o">=&gt;</span> <span class="cm">/* token doesn&#39;t match any send or contact */</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">};</span>
 </code></pre></div>
 <p>Unsubscribing also cancels all active drip enrollments for that contact.</p>
+<div class="admonition tip">
+<p class="admonition-title">Token expiry</p>
+<p>Each outgoing email embeds a per-send unsubscribe token that expires after <code>$unsubscribeTokenExpireDays</code> days (default: 365). Tokens from emails sent before upgrading to this version use the legacy contact-level token, which has no expiry.</p>
+</div>
 <h2 id="managing-tags">Managing tags</h2>
 <h3 id="applying-tags">Applying tags</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>

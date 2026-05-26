@@ -1141,12 +1141,13 @@
 </code></pre></div>
 <hr />
 <h2 id="unsubscribe-links">Unsubscribe links</h2>
-<p>Email layouts receive <code>$unsubscribeUrl</code> automatically. If you need the URL somewhere else — an account settings page, a transactional email, a custom template — use <code>courier_unsubscribe_url()</code>:</p>
+<p>Email layouts receive <code>$unsubscribeUrl</code> automatically. If you need the URL somewhere else — a custom template or a transactional email — use <code>courier_unsubscribe_url()</code> with the send record:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nv">$url</span> <span class="o">=</span> <span class="nx">courier_unsubscribe_url</span><span class="p">(</span><span class="nv">$contact</span><span class="p">);</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1">// https://yoursite.com/courier/unsubscribe/abc123token</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1">// $send is a SendDTO returned by SendModel::createPending()</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nv">$url</span> <span class="o">=</span> <span class="nx">courier_unsubscribe_url</span><span class="p">(</span><span class="nv">$send</span><span class="p">);</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1">// https://yoursite.com/courier/unsubscribe/abc123token</span>
 </code></pre></div>
-<p>The base URL comes from <code>$trackingHost</code> in your Courier config, falling back to CI4's <code>base_url()</code>.</p>
+<p>The base URL comes from <code>$trackingHost</code> in your Courier config, falling back to CI4's <code>base_url()</code>. The token in the URL is per-send and expires after <code>$unsubscribeTokenExpireDays</code> days.</p>
 <hr />
 <h2 id="security">Security</h2>
 <p>Courier validates and sanitises the data it receives before acting on it. A few things worth knowing:</p>

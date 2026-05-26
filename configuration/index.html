@@ -435,6 +435,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#retrydelayminutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $retryDelayMinutes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxretries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $maxRetries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#throttlems" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -483,6 +505,17 @@
     <span class="md-ellipsis">
       
         $honeypot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trackipaddress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $trackIpAddress
       
     </span>
   </a>
@@ -866,6 +899,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#retrydelayminutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $retryDelayMinutes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxretries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $maxRetries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#throttlems" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -914,6 +969,17 @@
     <span class="md-ellipsis">
       
         $honeypot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trackipaddress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $trackIpAddress
       
     </span>
   </a>
@@ -990,79 +1056,126 @@
 </code></pre></div>
 <p>How many emails to send per <code>courier:send-campaign</code> or <code>courier:process-drips</code> command run. If a campaign has 10,000 contacts, the command works through them in chunks of 200 across successive cron runs.</p>
 <p>Lower this if you're hitting rate limits; raise it if your email provider supports higher throughput.</p>
-<h3 id="throttlems"><code>$throttleMs</code></h3>
+<h3 id="retrydelayminutes"><code>$retryDelayMinutes</code></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$throttleMs</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$retryDelayMinutes</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+</code></pre></div>
+<p>How long to wait before retrying a drip step send that failed. When <code>courier:process-drips</code> can't deliver a step (the mailer returns false or throws), it pushes the enrollment's <code>next_send_at</code> forward by this many minutes instead of retrying immediately.</p>
+<p>5 minutes is a sensible default — long enough to survive a brief ESP blip, short enough that recipients aren't delayed noticeably. For high-volume setups you may want a longer window to avoid hammering a struggling provider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$retryDelayMinutes</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">.env override</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>courier.retryDelayMinutes = 10
+</code></pre></div>
+</div>
+<h3 id="maxretries"><code>$maxRetries</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$maxRetries</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</code></pre></div>
+<p>Maximum number of send attempts per drip step before Courier gives up. After this many failures, the enrollment is marked <code>failed</code> and a <code>courier_enrollment_failed</code> event fires so your app can take action.</p>
+<p>With the defaults (<code>retryDelayMinutes = 5</code>, <code>maxRetries = 3</code>), a step that keeps failing will be abandoned after roughly 15 minutes and 3 attempts. Raise this if you expect longer ESP outages:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$maxRetries</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">.env override</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>courier.maxRetries = 5
+</code></pre></div>
+</div>
+<h3 id="throttlems"><code>$throttleMs</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$throttleMs</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </code></pre></div>
 <p>Milliseconds to sleep between individual sends within a batch. <code>0</code> means no delay. Set this if your email provider has a per-second sending limit:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$throttleMs</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="c1">// ~10 emails/second max</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$throttleMs</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="c1">// ~10 emails/second max</span>
 </code></pre></div>
 <h3 id="markdownpath"><code>$markdownPath</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="x">public string $markdownPath = &#39;&#39;;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="x">public string $markdownPath = &#39;&#39;;</span>
 </code></pre></div>
 <p>The base directory Courier uses when resolving markdown email files. Leave empty and it defaults to <code>APPPATH</code> (your app's <code>app/</code> folder). Set an absolute path to load markdown files from a different location:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="x">public string $markdownPath = APPPATH . &#39;Emails/&#39;;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="x">public string $markdownPath = APPPATH . &#39;Emails/&#39;;</span>
 </code></pre></div>
 <p>With this set, a campaign <code>view</code> of <code>welcome.md</code> resolves to <code>app/Emails/welcome.md</code>.</p>
 <p>See <a href="../templates/#creating-a-markdown-file">Email Templates</a> for the full markdown workflow.</p>
 <h3 id="testmode"><code>$testMode</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
 </code></pre></div>
 <p>When <code>true</code>, Courier skips the actual mailer and logs what it <em>would</em> send instead. Use this in development or CI to verify your campaign setup without delivering real emails:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$testMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
 </code></pre></div>
 <p>You'll see log entries like:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>[Courier] testMode: would send to ada@example.com subject &quot;Welcome to Acme&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>[Courier] testMode: would send to ada@example.com subject &quot;Welcome to Acme&quot;
 </code></pre></div></p>
 <div class="admonition tip">
 <p class="admonition-title">Environment-specific config</p>
 <p>You can override any config value per-environment using CI4's <code>.env</code> file:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>courier.testMode = true
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>courier.batchSize = 50
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>courier.testMode = true
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>courier.batchSize = 50
 </code></pre></div></p>
 </div>
 <h3 id="captureratelimit"><code>$captureRateLimit</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span>
 </code></pre></div>
 <p>Maximum number of POST submissions allowed per IP address per minute on the <code>/courier/capture</code> endpoint. Requests over the limit receive a <code>429 Too Many Requests</code> response — a redirect back with a <code>courier_errors</code> flash message for standard form submissions, or a JSON error for AJAX requests.</p>
 <p>Set to <code>0</code> to disable rate limiting entirely:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// no limit</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// no limit</span>
 </code></pre></div>
 <p>For high-traffic sites or shared hosting environments where many users may share an IP, you can raise the limit:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">60</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="k">public</span> <span class="nx">int</span> <span class="nv">$captureRateLimit</span> <span class="o">=</span> <span class="mi">60</span><span class="p">;</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">.env override</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>courier.captureRateLimit = 30
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>courier.captureRateLimit = 30
 </code></pre></div>
 </div>
 <h3 id="honeypot"><code>$honeypot</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$honeypot</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$honeypot</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
 </code></pre></div>
 <p>When <code>true</code>, Courier renders a hidden <code>courier_hp</code> field in forms generated by <code>courier_form()</code> and <code>courier_form_open()</code>. Real users never see or fill this field. Bots that blindly populate all inputs get silently rejected — Courier returns a success response without saving anything.</p>
 <p>Set to <code>false</code> to opt out:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$honeypot</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$honeypot</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Custom form layouts</p>
 <p>If you build your own form markup and post to <code>/courier/capture</code>, the honeypot check still runs server-side. To avoid false rejections, make sure your form doesn't submit a <code>courier_hp</code> field — or disable the honeypot if you can't control the submitted fields.</p>
 </div>
+<h3 id="trackipaddress"><code>$trackIpAddress</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$trackIpAddress</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</code></pre></div>
+<p>When <code>true</code>, the IP address of the recipient who clicked a tracked link is stored in the <code>metadata</code> column of <code>courier_events</code>.</p>
+<p><strong>Default is <code>false</code>.</strong> IP addresses are personal data under GDPR and CCPA. Only enable this setting if:</p>
+<ul>
+<li>Your privacy policy discloses that click IP addresses are collected and processed, and</li>
+<li>You have a data-retention policy that covers <code>courier_events</code> rows.</li>
+</ul>
+<p>To enable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">public</span> <span class="nx">bool</span> <span class="nv">$trackIpAddress</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">.env override</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>courier.trackIpAddress = true
+</code></pre></div>
+</div>
 <h3 id="webhookdriver"><code>$webhookDriver</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
 </code></pre></div>
 <p>The fully-qualified class name of a <code>WebhookDriverInterface</code> implementation that handles incoming ESP webhook notifications (bounces, complaints, subscription confirmations). Leave empty to disable the <code>POST /courier/webhook</code> endpoint — it returns <code>400</code> when no driver is configured.</p>
 <p>Courier ships with a driver for AWS SES (routed through SNS):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
 </code></pre></div>
 <p>To use a different ESP, implement <code>WebhookDriverInterface</code> and point this at your class.</p>
 <div class="admonition warning">
@@ -1071,7 +1184,7 @@
 </div>
 <div class="admonition tip">
 <p class="admonition-title">.env override</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
 </code></pre></div>
 </div>
 <p>See <a href="../tracking/#bounce-and-complaint-webhooks">Tracking — Bounce and complaint webhooks</a> for the full setup walkthrough.</p>
