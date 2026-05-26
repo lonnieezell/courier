@@ -52,6 +52,11 @@ class Courier extends BaseConfig
     public int $throttleMs = 0;
 
     /**
+     * Days until a per-send unsubscribe token expires.
+     */
+    public int $unsubscribeTokenExpireDays = 365;
+
+    /**
      * When true, emails are logged instead of sent via the mailer.
      */
     public bool $testMode = false;

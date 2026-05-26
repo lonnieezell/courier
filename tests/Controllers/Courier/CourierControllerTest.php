@@ -168,4 +168,17 @@ final class CourierControllerTest extends CIUnitTestCase
 
         $result->assertStatus(404);
     }
+
+    public function testUnsubscribeWithExpiredTokenShowsExpiredViewAnd410(): void
+    {
+        $sendModel = new SendModel();
+        $send      = $sendModel->createPending($this->contactId, $this->campaignId, null);
+        $sendModel->update($send->id, ['unsubscribe_token_expires_at' => date('Y-m-d H:i:s', strtotime('-1 day'))]);
+        $send = $sendModel->find($send->id);
+
+        $result = $this->withRoutes($this->courierRoutes)->get('courier/unsubscribe/' . $send->unsubscribe_token);
+
+        $result->assertStatus(410);
+        $result->assertSee('expired');
+    }
 }

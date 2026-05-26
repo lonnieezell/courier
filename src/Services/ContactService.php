@@ -8,6 +8,7 @@ use CodeIgniter\Events\Events;
 use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
+use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
@@ -15,6 +16,7 @@ use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
+use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Throwable;
 
@@ -27,6 +29,7 @@ class ContactService
         private readonly TagModel $tagModel,
         private readonly DripEnrollmentModel $enrollmentModel,
         private readonly ContactTagModel $contactTagModel,
+        private readonly SendModel $sendModel = new SendModel(),
     ) {
     }
 
@@ -98,15 +101,27 @@ class ContactService
     }
 
     /**
-     * Unsubscribes a contact by their unique token.
+     * Unsubscribes a contact by a per-send or legacy contact-level token.
+     * Per-send tokens are checked for expiry; expired tokens return Expired.
+     * Falls back to the contact-level token for emails sent before this change.
      * Also cancels all active drip enrollments.
      */
-    public function unsubscribeByToken(string $token): bool
+    public function unsubscribeByToken(string $token): UnsubscribeResult
     {
-        $contact = $this->contactModel->where('unsubscribe_token', $token)->first();
+        $send = $this->sendModel->findByUnsubscribeToken($token);
+
+        if ($send !== null) {
+            if ($send->unsubscribe_token_expires_at < date('Y-m-d H:i:s')) {
+                return UnsubscribeResult::Expired;
+            }
+
+            $contact = $this->contactModel->find($send->contact_id);
+        } else {
+            $contact = $this->contactModel->where('unsubscribe_token', $token)->first();
+        }
 
         if ($contact === null) {
-            return false;
+            return UnsubscribeResult::NotFound;
         }
 
         $this->contactModel->update($contact->id, [
@@ -122,7 +137,7 @@ class ContactService
             log_message('error', 'courier:contact.unsubscribed listener error: ' . $e->getMessage());
         }
 
-        return true;
+        return UnsubscribeResult::Success;
     }
 
     /**

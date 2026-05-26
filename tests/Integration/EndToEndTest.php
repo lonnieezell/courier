@@ -131,9 +131,9 @@ final class EndToEndTest extends CIUnitTestCase
 
         // 5. Unsubscribe
         $contact = $this->contactModel->find($contact->id);
-        $ok      = $this->contactService->unsubscribeByToken($contact->unsubscribe_token);
+        $ok = $this->contactService->unsubscribeByToken($contact->unsubscribe_token);
 
-        $this->assertTrue($ok);
+        $this->assertSame(\Myth\Courier\Enums\UnsubscribeResult::Success, $ok);
 
         $contact = $this->contactModel->find($contact->id);
         $this->assertSame(ContactStatus::Unsubscribed, $contact->status);

@@ -71,7 +71,7 @@ class MailerService
         $this->linkModel->insertLinks($sendLog->id, $linkMap);
 
         $base           = $this->trackingBase();
-        $unsubscribeUrl = $base . '/unsubscribe/' . $contact->unsubscribe_token;
+        $unsubscribeUrl = $base . '/unsubscribe/' . $sendLog->unsubscribe_token;
         $trackingPixel  = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
 
         $html = str_replace('{courier_unsubscribe_url}', $unsubscribeUrl, $html);
