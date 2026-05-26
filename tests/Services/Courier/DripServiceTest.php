@@ -22,7 +22,6 @@ use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
-use Throwable;
 
 /**
  * @internal
@@ -494,17 +493,13 @@ final class DripServiceTest extends CIUnitTestCase
      */
     private function createServiceWithFailingMailer(): DripService
     {
-        $config                   = config(CourierConfig::class);
-        $config->testMode         = true;
-        $config->campaignsPath    = $this->campaignsDir;
+        $config                    = config(CourierConfig::class);
+        $config->testMode          = true;
+        $config->campaignsPath     = $this->campaignsDir;
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $failingMailer = new class(
-            new TemplateService(new MarkdownService(sys_get_temp_dir())),
-            $this->sendModel,
-            $this->campaignModel,
-        ) extends MailerService {
+        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 return false;
@@ -527,20 +522,16 @@ final class DripServiceTest extends CIUnitTestCase
      */
     private function createServiceWithThrowingMailer(): DripService
     {
-        $config                   = config(CourierConfig::class);
-        $config->testMode         = true;
-        $config->campaignsPath    = $this->campaignsDir;
+        $config                    = config(CourierConfig::class);
+        $config->testMode          = true;
+        $config->campaignsPath     = $this->campaignsDir;
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $throwingMailer = new class(
-            new TemplateService(new MarkdownService(sys_get_temp_dir())),
-            $this->sendModel,
-            $this->campaignModel,
-        ) extends MailerService {
+        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
-                throw new \RuntimeException('ESP connection refused');
+                throw new RuntimeException('ESP connection refused');
             }
         };
 
@@ -627,10 +618,10 @@ final class DripServiceTest extends CIUnitTestCase
         $config->maxRetries        = 3;
 
         // Mailer succeeds but enrollment model throws on advance()
-        $throwingEnrollmentModel = new class extends DripEnrollmentModel {
+        $throwingEnrollmentModel = new class () extends DripEnrollmentModel {
             public function advance($enrollment, $nextStep = null): void
             {
-                throw new \RuntimeException('DB write failed during advance');
+                throw new RuntimeException('DB write failed during advance');
             }
         };
 
