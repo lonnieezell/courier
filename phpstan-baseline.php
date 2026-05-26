@@ -30,7 +30,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
     'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 4,
+    'count'      => 5,
     'path'       => __DIR__ . '/src/Config/Services.php',
 ];
 $ignoreErrors[] = [
@@ -396,6 +396,12 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Strict comparison using === between object and null will always evaluate to false.',
     'identifier' => 'identical.alwaysFalse',
+    'count'      => 2,
+    'path'       => __DIR__ . '/src/Services/DripService.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Cannot call method isFileBased() on stdClass.',
+    'identifier' => 'method.nonObject',
     'count'      => 2,
     'path'       => __DIR__ . '/src/Services/DripService.php',
 ];
