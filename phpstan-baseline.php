@@ -350,6 +350,12 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Services/DripService.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Parameter #1 $enrollment of method Myth\\Courier\\Models\\DripEnrollmentModel::recordFailure() expects Myth\\Courier\\DTO\\DripEnrollmentDTO, stdClass given.',
+	'identifier' => 'argument.type',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Services/DripService.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Parameter #3 $campaign of method Myth\\Courier\\Services\\MailerService::sendStep() expects Myth\\Courier\\DTO\\CampaignDTO|null, stdClass|null given.',
 	'identifier' => 'argument.type',
 	'count' => 1,
@@ -448,7 +454,13 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'rawMessage' => 'Parameter #1 $enrollment of method Myth\\Courier\\Models\\DripEnrollmentModel::advance() expects Myth\\Courier\\DTO\\DripEnrollmentDTO, list<stdClass>|stdClass|null given.',
 	'identifier' => 'argument.type',
-	'count' => 2,
+	'count' => 4,
+	'path' => __DIR__ . '/tests/Models/Courier/DripEnrollmentModelTest.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Parameter #1 $enrollment of method Myth\\Courier\\Models\\DripEnrollmentModel::recordFailure() expects Myth\\Courier\\DTO\\DripEnrollmentDTO, list<stdClass>|stdClass|null given.',
+	'identifier' => 'argument.type',
+	'count' => 3,
 	'path' => __DIR__ . '/tests/Models/Courier/DripEnrollmentModelTest.php',
 ];
 $ignoreErrors[] = [

@@ -178,6 +178,8 @@ class DripService implements DripServiceInterface
         $failed    = 0;
 
         foreach ($enrollments as $enrollment) {
+            $sendSucceeded = false;
+
             try {
                 $contact = $contactMap[$enrollment->contact_id] ?? null;
 
@@ -205,8 +207,6 @@ class DripService implements DripServiceInterface
                     ? ($fileStepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null)
                     : ($stepMap[$enrollment->campaign_id][$enrollment->current_step + 1] ?? null);
 
-                $sendSucceeded = false;
-
                 if ($this->mailerService->sendStep($contact, $step, $campaign)) {
                     $sendSucceeded = true;
                     $this->enrollmentModel->advance($enrollment, $nextStep);
@@ -228,7 +228,7 @@ class DripService implements DripServiceInterface
                     'id'      => $enrollment->id,
                     'message' => $e->getMessage(),
                 ]);
-                if (!$sendSucceeded) {
+                if (! $sendSucceeded) {
                     $this->enrollmentModel->recordFailure(
                         $enrollment,
                         $e->getMessage(),
