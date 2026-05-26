@@ -111,7 +111,7 @@ class ContactService
         $send = $this->sendModel->findByUnsubscribeToken($token);
 
         if ($send !== null) {
-            if ($send->unsubscribe_token_expires_at < date('Y-m-d H:i:s')) {
+            if ($send->unsubscribe_token_expires_at !== null && $send->unsubscribe_token_expires_at < date('Y-m-d H:i:s')) {
                 return UnsubscribeResult::Expired;
             }
 
