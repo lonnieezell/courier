@@ -324,7 +324,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         ]);
         $vipId = $tagModel->skipValidation(true)->insert(['slug' => 'vip', 'label' => 'VIP']);
 
-        $matchId  = $this->contactModel->skipValidation(true)->insert(['email' => 'web-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        $matchId = $this->contactModel->skipValidation(true)->insert(['email' => 'web-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
         $this->contactModel->skipValidation(true)->insert(['email' => 'web-plain@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'web']);
         $apiVipId = $this->contactModel->skipValidation(true)->insert(['email' => 'api-vip@example.com', 'status' => ContactStatus::Subscribed, 'source' => 'api']);
 
