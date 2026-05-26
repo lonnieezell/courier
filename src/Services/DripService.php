@@ -212,6 +212,12 @@ class DripService implements DripServiceInterface
                     log_message('error', '[Courier] DripService: failed to send step for enrollment {id}', [
                         'id' => $enrollment->id,
                     ]);
+                    $this->enrollmentModel->recordFailure(
+                        $enrollment,
+                        'mailer returned false',
+                        $this->config->retryDelayMinutes,
+                        $this->config->maxRetries,
+                    );
                     $failed++;
                 }
             } catch (Throwable $e) {
@@ -219,6 +225,12 @@ class DripService implements DripServiceInterface
                     'id'      => $enrollment->id,
                     'message' => $e->getMessage(),
                 ]);
+                $this->enrollmentModel->recordFailure(
+                    $enrollment,
+                    $e->getMessage(),
+                    $this->config->retryDelayMinutes,
+                    $this->config->maxRetries,
+                );
                 $failed++;
             }
         }

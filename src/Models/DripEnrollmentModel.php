@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Myth\Courier\Models;
 
+use CodeIgniter\Events\Events;
 use CodeIgniter\Model;
 use Myth\Courier\DTO\DripEnrollmentDTO;
 use Myth\Courier\DTO\DripStepDTO;
@@ -27,6 +28,7 @@ class DripEnrollmentModel extends Model
         'campaign_id',
         'current_step',
         'next_send_at',
+        'retry_count',
         'status',
     ];
     protected array $casts = [
@@ -35,7 +37,7 @@ class DripEnrollmentModel extends Model
     protected $validationRules = [
         'contact_id'  => 'required|integer',
         'campaign_id' => 'required|integer',
-        'status'      => 'permit_empty|in_list[active,paused,completed,cancelled]',
+        'status'      => 'permit_empty|in_list[active,paused,completed,cancelled,failed]',
     ];
 
     /**
@@ -60,6 +62,34 @@ class DripEnrollmentModel extends Model
         $this->update($enrollment->id, [
             'current_step' => $nextStep->position,
             'next_send_at' => date('Y-m-d H:i:s', time() + ((int) $nextStep->delay_hours * 3600)),
+            'retry_count'  => 0,
+        ]);
+    }
+
+    /**
+     * Records a failed send attempt for an enrollment.
+     * Increments retry_count and pushes next_send_at forward by $retryDelayMinutes.
+     * When retry_count reaches $maxRetries the enrollment is marked Failed and a
+     * courier_enrollment_failed event is fired with the enrollment and error message.
+     */
+    public function recordFailure(
+        DripEnrollmentDTO $enrollment,
+        string $errorMessage,
+        int $retryDelayMinutes,
+        int $maxRetries,
+    ): void {
+        $newRetryCount = $enrollment->retry_count + 1;
+
+        if ($newRetryCount >= $maxRetries) {
+            $this->update($enrollment->id, ['status' => EnrollmentStatus::Failed]);
+            Events::trigger('courier_enrollment_failed', $enrollment, $errorMessage);
+
+            return;
+        }
+
+        $this->update($enrollment->id, [
+            'retry_count'  => $newRetryCount,
+            'next_send_at' => date('Y-m-d H:i:s', time() + ($retryDelayMinutes * 60)),
         ]);
     }
 }

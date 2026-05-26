@@ -99,4 +99,79 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
 
         $this->assertSame(EnrollmentStatus::Completed, $updated->status);
     }
+
+    public function testRecordFailureIncrementsRetryCountAndPushesNextSendAt(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'next_send_at' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $before     = time();
+        $enrollmentModel->recordFailure($enrollment, 'mailer returned false', 5, 3);
+        $after = time();
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(1, $updated->retry_count);
+        $this->assertSame(EnrollmentStatus::Active, $updated->status);
+        $nextSendAt = strtotime((string) $updated->next_send_at);
+        $this->assertGreaterThanOrEqual($before + 5 * 60, $nextSendAt);
+        $this->assertLessThanOrEqual($after + 5 * 60, $nextSendAt);
+    }
+
+    public function testRecordFailureAtMaxRetriesSetsFailedStatus(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'retry_count'  => 2,
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->recordFailure($enrollment, 'ESP error', 5, 3);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Failed, $updated->status);
+    }
+
+    public function testAdvanceResetsRetryCount(): void
+    {
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 1,
+            'view'        => 'emails/step1',
+            'subject'     => 'Step 1',
+            'delay_hours' => 0,
+        ]);
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 2,
+            'view'        => 'emails/step2',
+            'subject'     => 'Step 2',
+            'delay_hours' => 24,
+        ]);
+
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'retry_count'  => 2,
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->advance($enrollment);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(0, $updated->retry_count);
+    }
 }
