@@ -7,6 +7,7 @@ namespace Tests\Controllers\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
@@ -40,6 +41,7 @@ final class CourierControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(CourierConfig::class)->testMode = true;
 
         $this->contactId  = (new ContactModel())->insert(['email' => 'tracking@example.com']);
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([

@@ -8,6 +8,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -28,6 +29,12 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
 
     protected $refresh   = true;
     protected $namespace = 'Myth\Courier';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(CourierConfig::class)->testMode = true;
+    }
 
     /**
      * @var array<int, array{0: string, 1: string, 2: string}>

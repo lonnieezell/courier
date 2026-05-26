@@ -196,8 +196,9 @@ final class MailerServiceTest extends CIUnitTestCase
 
     public function testSendFiresEmailFailedEvent(): void
     {
-        $config           = config(CourierConfig::class);
-        $config->testMode = false;
+        $config            = config(CourierConfig::class);
+        $config->testMode  = false;
+        $config->fromEmail = 'sender@example.com';
 
         $emailMock = $this->createMock(Email::class);
         $emailMock->method('clear')->willReturnSelf();
@@ -234,8 +235,9 @@ final class MailerServiceTest extends CIUnitTestCase
 
     public function testSendEmbedsSendLevelUnsubscribeToken(): void
     {
-        $config           = config(CourierConfig::class);
-        $config->testMode = false;
+        $config            = config(CourierConfig::class);
+        $config->testMode  = false;
+        $config->fromEmail = 'sender@example.com';
 
         $capturedBody = null;
         $emailMock    = $this->createMock(Email::class);

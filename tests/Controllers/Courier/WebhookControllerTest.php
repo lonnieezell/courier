@@ -35,6 +35,7 @@ final class WebhookControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(CourierConfig::class)->testMode = true;
         FakeWebhookDriver::reset();
     }
 

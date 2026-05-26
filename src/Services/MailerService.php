@@ -36,6 +36,7 @@ class MailerService
         private readonly LinkModel $linkModel = new LinkModel(),
     ) {
         $this->config = config(CourierConfig::class);
+        $this->config->validate();
         $this->email ??= service('email');
     }
 
