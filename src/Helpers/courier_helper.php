@@ -5,7 +5,6 @@ declare(strict_types=1);
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\ResponseInterface;
 use Myth\Courier\Config\Courier;
-use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;

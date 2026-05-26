@@ -47,7 +47,7 @@ final class SendModelTest extends CIUnitTestCase
 
         $this->assertSame(SendStatus::Pending, $send->status);
         $this->assertSame(32, strlen($send->open_token));
-        $this->assertSame(32, strlen($send->unsubscribe_token));
+        $this->assertSame(32, strlen((string) $send->unsubscribe_token));
         $this->assertNotEmpty($send->unsubscribe_token_expires_at);
     }
 

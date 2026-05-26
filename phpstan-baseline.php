@@ -150,6 +150,18 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
     'identifier' => 'property.notFound',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Database/Migrations/2026-05-26-120005_AlterCourierSendsAddUnsubscribeToken.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBPrefix.',
+    'identifier' => 'property.notFound',
+    'count'      => 2,
+    'path'       => __DIR__ . '/src/Database/Migrations/2026-05-26-120005_AlterCourierSendsAddUnsubscribeToken.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+    'identifier' => 'property.notFound',
     'count'      => 2,
     'path'       => __DIR__ . '/src/Database/Migrations/2026-05-22-120003_AlterCourierEventsAddLinkId.php',
 ];
@@ -264,6 +276,18 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Method Myth\\Courier\\Models\\SendModel::findByOpenToken() should return Myth\\Courier\\DTO\\SendDTO|null but returns stdClass|null.',
     'identifier' => 'return.type',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Models/SendModel.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Method Myth\\Courier\\Models\\SendModel::findByUnsubscribeToken() should return Myth\\Courier\\DTO\\SendDTO|null but returns stdClass|null.',
+    'identifier' => 'return.type',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Models/SendModel.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
+    'identifier' => 'codeigniter.factoriesClassConstFetch',
     'count'      => 1,
     'path'       => __DIR__ . '/src/Models/SendModel.php',
 ];

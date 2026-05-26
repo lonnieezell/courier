@@ -21,8 +21,8 @@ class SendDTO extends BaseDTO
     public ?string $unsubscribe_token            = null;
     public ?string $unsubscribe_token_expires_at = null;
     public ?string $sent_at                      = null;
-    public ?string $opened_at  = null;
-    public ?string $clicked_at = null;
+    public ?string $opened_at                    = null;
+    public ?string $clicked_at                   = null;
     public string $created_at;
     public string $updated_at;
 }

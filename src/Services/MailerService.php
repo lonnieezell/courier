@@ -74,7 +74,7 @@ class MailerService
         $unsubscribeUrl = $sendLog->unsubscribe_token !== null
             ? $base . '/unsubscribe/' . $sendLog->unsubscribe_token
             : '';
-        $trackingPixel  = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
+        $trackingPixel = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
 
         $html = str_replace('{courier_unsubscribe_url}', $unsubscribeUrl, $html);
         $html = str_replace('{courier_tracking_pixel}', $trackingPixel, $html);

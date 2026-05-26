@@ -68,12 +68,12 @@ class SendModel extends Model
         $expiry = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
 
         $id = $this->insert([
-            'contact_id'                  => $contactId,
-            'campaign_id'                 => $campaignId,
-            'drip_step_id'                => $stepId,
-            'status'                      => SendStatus::Pending,
-            'open_token'                  => bin2hex(random_bytes(16)),
-            'unsubscribe_token'           => bin2hex(random_bytes(16)),
+            'contact_id'                   => $contactId,
+            'campaign_id'                  => $campaignId,
+            'drip_step_id'                 => $stepId,
+            'status'                       => SendStatus::Pending,
+            'open_token'                   => bin2hex(random_bytes(16)),
+            'unsubscribe_token'            => bin2hex(random_bytes(16)),
             'unsubscribe_token_expires_at' => $expiry,
         ]);
 
