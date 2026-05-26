@@ -66,10 +66,21 @@ Courier handles unsubscribes automatically via the tracking controller when a co
 
 ```php
 <?php
-$success = $contactService->unsubscribeByToken($token);
+use Myth\Courier\Enums\UnsubscribeResult;
+
+$result = $contactService->unsubscribeByToken($token);
+
+match ($result) {
+    UnsubscribeResult::Success  => /* contact unsubscribed */,
+    UnsubscribeResult::Expired  => /* token is older than $unsubscribeTokenExpireDays */,
+    UnsubscribeResult::NotFound => /* token doesn't match any send or contact */,
+};
 ```
 
 Unsubscribing also cancels all active drip enrollments for that contact.
+
+!!! tip "Token expiry"
+    Each outgoing email embeds a per-send unsubscribe token that expires after `$unsubscribeTokenExpireDays` days (default: 365). Tokens from emails sent before upgrading to this version use the legacy contact-level token, which has no expiry.
 
 ## Managing tags
 

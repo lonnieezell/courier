@@ -6,6 +6,7 @@ namespace Myth\Courier\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
+use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Models\ContactModel;
 
 /**
@@ -139,9 +140,13 @@ class ContactsCommand extends BaseCommand
             return;
         }
 
-        $service->unsubscribeByToken($contact->unsubscribe_token);
+        $result = $service->unsubscribeByToken($contact->unsubscribe_token);
 
-        CLI::write("Unsubscribed: {$email}", 'green');
+        match ($result) {
+            UnsubscribeResult::Success  => CLI::write("Unsubscribed: {$email}", 'green'),
+            UnsubscribeResult::Expired  => CLI::error("Token expired for: {$email}"),
+            UnsubscribeResult::NotFound => CLI::error("Token not found for: {$email}"),
+        };
     }
 
     private function actionTag(): void

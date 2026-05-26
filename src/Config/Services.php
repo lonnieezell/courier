@@ -122,6 +122,7 @@ class Services extends BaseService
             static::templateService(),
             model(SendModel::class),
             model(CampaignModel::class),
+            config(CourierConfig::class),
         );
     }
 

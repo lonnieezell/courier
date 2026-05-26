@@ -8,6 +8,7 @@ use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
 use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\ContactStatus;
+use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Models\EventModel;
 use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
@@ -76,11 +77,14 @@ class CourierController extends Controller
             $sendModel->update($send->id, ['clicked_at' => date('Y-m-d H:i:s')]);
         }
 
+        $trackIp  = config(CourierConfig::class)->trackIpAddress;
+        $metadata = $trackIp ? ['ip' => $this->request->getIPAddress()] : null;
+
         model(EventModel::class)->insert([
             'send_id'  => $link->send_id,
             'link_id'  => $link->id,
             'type'     => 'click',
-            'metadata' => ['ip' => $this->request->getIPAddress()],
+            'metadata' => $metadata,
         ]);
 
         return redirect()->to($link->url);
@@ -152,14 +156,17 @@ class CourierController extends Controller
      */
     public function unsubscribe(string $token): ResponseInterface
     {
-        $ok = service('contactService')->unsubscribeByToken($token);
+        $result = service('contactService')->unsubscribeByToken($token);
 
-        if ($ok) {
-            return $this->response->setBody(view('\Myth\Courier\Views\courier/unsubscribe_success'));
-        }
-
-        return $this->response
-            ->setStatusCode(404)
-            ->setBody(view('\Myth\Courier\Views\courier/unsubscribe_invalid'));
+        return match ($result) {
+            UnsubscribeResult::Success => $this->response
+                ->setBody(view('\Myth\Courier\Views\courier/unsubscribe_success')),
+            UnsubscribeResult::Expired => $this->response
+                ->setStatusCode(410)
+                ->setBody(view('\Myth\Courier\Views\courier/unsubscribe_expired')),
+            UnsubscribeResult::NotFound => $this->response
+                ->setStatusCode(404)
+                ->setBody(view('\Myth\Courier\Views\courier/unsubscribe_invalid')),
+        };
     }
 }

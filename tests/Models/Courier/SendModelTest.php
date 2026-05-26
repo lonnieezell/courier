@@ -47,6 +47,8 @@ final class SendModelTest extends CIUnitTestCase
 
         $this->assertSame(SendStatus::Pending, $send->status);
         $this->assertSame(32, strlen($send->open_token));
+        $this->assertSame(32, strlen((string) $send->unsubscribe_token));
+        $this->assertNotEmpty($send->unsubscribe_token_expires_at);
     }
 
     public function testCreatePendingWithNullStepId(): void
@@ -73,5 +75,23 @@ final class SendModelTest extends CIUnitTestCase
         $model = new SendModel();
 
         $this->assertNull($model->findByOpenToken('doesnotexist'));
+    }
+
+    public function testFindByUnsubscribeTokenReturnsMatchingSend(): void
+    {
+        $model = new SendModel();
+        $send  = $model->createPending($this->contactId, $this->campaignId, null);
+
+        $found = $model->findByUnsubscribeToken($send->unsubscribe_token);
+
+        $this->assertNotNull($found);
+        $this->assertSame($send->id, $found->id);
+    }
+
+    public function testFindByUnsubscribeTokenReturnsNullForMissingToken(): void
+    {
+        $model = new SendModel();
+
+        $this->assertNull($model->findByUnsubscribeToken('doesnotexist'));
     }
 }

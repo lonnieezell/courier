@@ -87,6 +87,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
             $emailMock,
         );
     }
@@ -196,8 +197,9 @@ final class MailerServiceTest extends CIUnitTestCase
 
     public function testSendFiresEmailFailedEvent(): void
     {
-        $config           = config(CourierConfig::class);
-        $config->testMode = false;
+        $config            = config(CourierConfig::class);
+        $config->testMode  = false;
+        $config->fromEmail = 'sender@example.com';
 
         $emailMock = $this->createMock(Email::class);
         $emailMock->method('clear')->willReturnSelf();
@@ -212,6 +214,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
             $emailMock,
         );
 
@@ -230,5 +233,43 @@ final class MailerServiceTest extends CIUnitTestCase
         $this->assertFalse($result);
         $this->assertNotNull($fired);
         $this->assertSame((int) $sendLog->id, (int) $fired->id);
+    }
+
+    public function testSendEmbedsSendLevelUnsubscribeToken(): void
+    {
+        $config            = config(CourierConfig::class);
+        $config->testMode  = false;
+        $config->fromEmail = 'sender@example.com';
+
+        $capturedBody = null;
+        $emailMock    = $this->createMock(Email::class);
+        $emailMock->method('clear')->willReturnSelf();
+        $emailMock->method('setFrom')->willReturnSelf();
+        $emailMock->method('setTo')->willReturnSelf();
+        $emailMock->method('setSubject')->willReturnSelf();
+        $emailMock->method('setMessage')->willReturnCallback(static function (string $body) use (&$capturedBody): bool {
+            $capturedBody = $body;
+
+            return true;
+        });
+        $emailMock->method('setAltMessage')->willReturnSelf();
+        $emailMock->method('send')->willReturn(false);
+
+        $service = new MailerService(
+            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
+            $this->sendModel,
+            $this->campaignModel,
+            config(CourierConfig::class),
+            $emailMock,
+        );
+
+        $sendLog = $this->makeSendLog();
+        $service->send($this->contact, $this->campaign, $sendLog);
+
+        $config->testMode = true;
+
+        $this->assertNotNull($capturedBody);
+        $this->assertStringContainsString($sendLog->unsubscribe_token, $capturedBody);
+        $this->assertStringNotContainsString($this->contact->unsubscribe_token, $capturedBody);
     }
 }

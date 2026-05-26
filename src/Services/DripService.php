@@ -162,7 +162,7 @@ class DripService implements DripServiceInterface
             $campaignMap[$camp->id] = $camp;
         }
 
-        $dbCampaignIds = array_filter($campaignIds, static fn ($id) => ! isset($campaignMap[$id]) || $campaignMap[$id]->source_file === null);
+        $dbCampaignIds = array_filter($campaignIds, static fn ($id) => ! isset($campaignMap[$id]) || ! $campaignMap[$id]->isFileBased());
         $stepMap       = [];
 
         if ($dbCampaignIds !== []) {
@@ -191,7 +191,7 @@ class DripService implements DripServiceInterface
                 }
 
                 $campaign    = $campaignMap[$enrollment->campaign_id] ?? null;
-                $isFileBased = $campaign !== null && $campaign->source_file !== null;
+                $isFileBased = $campaign !== null && $campaign->isFileBased();
                 $step        = $isFileBased
                     ? ($fileStepMap[$enrollment->campaign_id][$enrollment->current_step] ?? null)
                     : ($stepMap[$enrollment->campaign_id][$enrollment->current_step] ?? null);
@@ -260,7 +260,7 @@ class DripService implements DripServiceInterface
      */
     private function resolveStep1DelayHours(object $campaign, int $campaignId): int
     {
-        if ($campaign->source_file !== null) {
+        if ($campaign->isFileBased()) {
             $parsed = $this->campaignFileLoader->loadCampaignFile($campaign->source_file);
 
             foreach ($parsed['steps'] as $step) {
@@ -299,7 +299,7 @@ class DripService implements DripServiceInterface
         foreach ($campaignIds as $id) {
             $campaign = $campaignMap[$id] ?? null;
 
-            if ($campaign === null || $campaign->source_file === null) {
+            if ($campaign === null || ! $campaign->isFileBased()) {
                 continue;
             }
 

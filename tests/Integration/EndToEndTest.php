@@ -12,6 +12,7 @@ use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
+use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
@@ -59,7 +60,7 @@ final class EndToEndTest extends CIUnitTestCase
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();
 
-        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel);
+        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class));
 
         $this->dripService = new DripService(
             $this->enrollmentModel,
@@ -133,7 +134,7 @@ final class EndToEndTest extends CIUnitTestCase
         $contact = $this->contactModel->find($contact->id);
         $ok      = $this->contactService->unsubscribeByToken($contact->unsubscribe_token);
 
-        $this->assertTrue($ok);
+        $this->assertSame(UnsubscribeResult::Success, $ok);
 
         $contact = $this->contactModel->find($contact->id);
         $this->assertSame(ContactStatus::Unsubscribed, $contact->status);

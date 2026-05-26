@@ -8,6 +8,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -35,6 +36,12 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
     private array $captureRoute = [
         ['POST', 'courier/capture', '\Myth\Courier\Controllers\CourierController::capture'],
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(CourierConfig::class)->testMode = true;
+    }
 
     public function testPostValidEmailCreatesContactAndRedirects(): void
     {

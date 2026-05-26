@@ -60,6 +60,7 @@ final class SendCampaignTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
         );
 
         $campaignService = new CampaignService(

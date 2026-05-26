@@ -6,7 +6,7 @@ namespace Tests\Helpers\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use Myth\Courier\Config\Courier as CourierConfig;
-use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\DTO\SendDTO;
 
 /**
  * @internal
@@ -109,10 +109,10 @@ final class CourierFormHelperTest extends CIUnitTestCase
 
     public function testCourierUnsubscribeUrlContainsToken(): void
     {
-        $contact                    = new ContactDTO();
-        $contact->unsubscribe_token = 'abc123token';
+        $send                    = new SendDTO();
+        $send->unsubscribe_token = 'abc123token';
 
-        $url = courier_unsubscribe_url($contact);
+        $url = courier_unsubscribe_url($send);
 
         $this->assertStringContainsString('/courier/unsubscribe/abc123token', $url);
     }

@@ -194,15 +194,16 @@ Validation error response (HTTP 422):
 
 ## Unsubscribe links
 
-Email layouts receive `$unsubscribeUrl` automatically. If you need the URL somewhere else — an account settings page, a transactional email, a custom template — use `courier_unsubscribe_url()`:
+Email layouts receive `$unsubscribeUrl` automatically. If you need the URL somewhere else — a custom template or a transactional email — use `courier_unsubscribe_url()` with the send record:
 
 ```php
 <?php
-$url = courier_unsubscribe_url($contact);
+// $send is a SendDTO returned by SendModel::createPending()
+$url = courier_unsubscribe_url($send);
 // https://yoursite.com/courier/unsubscribe/abc123token
 ```
 
-The base URL comes from `$trackingHost` in your Courier config, falling back to CI4's `base_url()`.
+The base URL comes from `$trackingHost` in your Courier config, falling back to CI4's `base_url()`. The token in the URL is per-send and expires after `$unsubscribeTokenExpireDays` days.
 
 ---
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\ResponseInterface;
 use Myth\Courier\Config\Courier;
-use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
 
@@ -190,14 +190,15 @@ if (! function_exists('courier_capture')) {
 
 if (! function_exists('courier_unsubscribe_url')) {
     /**
-     * Returns the full unsubscribe URL for a contact.
+     * Returns the full unsubscribe URL for a send.
+     * Uses the per-send token so the link expires after the configured number of days.
      */
-    function courier_unsubscribe_url(ContactDTO $contact): string
+    function courier_unsubscribe_url(SendDTO $send): string
     {
         $config = config(Courier::class);
         $base   = rtrim($config->trackingHost ?: base_url(), '/');
 
-        return $base . '/courier/unsubscribe/' . $contact->unsubscribe_token;
+        return $base . '/courier/unsubscribe/' . $send->unsubscribe_token;
     }
 }
 

@@ -12,6 +12,7 @@ use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\EnrollmentStatus;
+use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Events\CourierEvents;
 use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
@@ -68,7 +69,7 @@ final class ContactServiceTest extends CIUnitTestCase
             $this->enrollmentModel,
             new DripStepModel(),
             $this->campaignModel,
-            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel),
+            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config(CourierConfig::class)),
             new ContactModel(),
             $config,
         );
@@ -215,17 +216,49 @@ final class ContactServiceTest extends CIUnitTestCase
         $updated    = $contactModel->find($contact->id);
         $enrollment = $this->enrollmentModel->where('contact_id', $contact->id)->first();
 
-        $this->assertTrue($result);
+        $this->assertSame(UnsubscribeResult::Success, $result);
         $this->assertSame(ContactStatus::Unsubscribed, $updated->status);
         $this->assertNotNull($updated->unsubscribed_at);
         $this->assertSame(EnrollmentStatus::Cancelled, $enrollment->status);
     }
 
-    public function testUnsubscribeByTokenReturnsFalseForInvalidToken(): void
+    public function testUnsubscribeByTokenReturnsNotFoundForInvalidToken(): void
     {
         $result = $this->service->unsubscribeByToken('no-such-token');
 
-        $this->assertFalse($result);
+        $this->assertSame(UnsubscribeResult::NotFound, $result);
+    }
+
+    public function testUnsubscribeByTokenReturnsSuccessForPerSendToken(): void
+    {
+        $contactModel = new ContactModel();
+        $sendModel    = new SendModel();
+
+        $campaign = $this->createDripCampaign();
+        $contact  = $this->service->subscribe(['email' => 'persend@example.com'], [], $campaign->id);
+        $send     = $sendModel->createPending($contact->id, $campaign->id, null);
+
+        $result  = $this->service->unsubscribeByToken($send->unsubscribe_token);
+        $updated = $contactModel->find($contact->id);
+
+        $this->assertSame(UnsubscribeResult::Success, $result);
+        $this->assertSame(ContactStatus::Unsubscribed, $updated->status);
+        $this->assertNotNull($updated->unsubscribed_at);
+    }
+
+    public function testUnsubscribeByTokenReturnsExpiredForExpiredSendToken(): void
+    {
+        $sendModel = new SendModel();
+        $campaign  = $this->createDripCampaign();
+        $contact   = $this->service->subscribe(['email' => 'expired@example.com'], [], $campaign->id);
+
+        $send = $sendModel->createPending($contact->id, $campaign->id, null);
+        $sendModel->update($send->id, ['unsubscribe_token_expires_at' => date('Y-m-d H:i:s', strtotime('-1 day'))]);
+        $send = $sendModel->find($send->id);
+
+        $result = $this->service->unsubscribeByToken($send->unsubscribe_token);
+
+        $this->assertSame(UnsubscribeResult::Expired, $result);
     }
 
     public function testSubscribeFiresContactSubscribedEvent(): void
@@ -285,7 +318,7 @@ final class ContactServiceTest extends CIUnitTestCase
 
         Events::removeAllListeners(CourierEvents::CONTACT_UNSUBSCRIBED);
 
-        $this->assertTrue($result);
+        $this->assertSame(UnsubscribeResult::Success, $result);
     }
 
     public function testSuppressMarksBounced(): void

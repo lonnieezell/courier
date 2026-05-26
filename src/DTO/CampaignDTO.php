@@ -28,4 +28,13 @@ class CampaignDTO extends BaseDTO
     public ?string $sent_at      = null;
     public string $created_at;
     public string $updated_at;
+
+    /**
+     * Returns true when this campaign is driven by a YAML source file
+     * rather than rows in the drip-steps table.
+     */
+    public function isFileBased(): bool
+    {
+        return $this->source_file !== null;
+    }
 }

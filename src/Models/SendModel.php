@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
+use Myth\Courier\Config\Courier;
 use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Traits\HasDTO;
@@ -28,6 +29,8 @@ class SendModel extends Model
         'status',
         'message_id',
         'open_token',
+        'unsubscribe_token',
+        'unsubscribe_token_expires_at',
         'sent_at',
         'opened_at',
         'clicked_at',
@@ -47,18 +50,31 @@ class SendModel extends Model
     }
 
     /**
+     * Finds a send record by its per-send unsubscribe token.
+     */
+    public function findByUnsubscribeToken(string $token): ?SendDTO
+    {
+        return $this->where('unsubscribe_token', $token)->first();
+    }
+
+    /**
      * Inserts a new send record in 'pending' status with freshly generated
-     * open and click tracking tokens, then returns the hydrated object.
+     * open and unsubscribe tracking tokens, then returns the hydrated object.
      * Pass null for $stepId on blast campaigns that have no drip step.
      */
     public function createPending(int $contactId, int $campaignId, ?int $stepId): SendDTO
     {
+        $days   = config(Courier::class)->unsubscribeTokenExpireDays;
+        $expiry = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
+
         $id = $this->insert([
-            'contact_id'   => $contactId,
-            'campaign_id'  => $campaignId,
-            'drip_step_id' => $stepId,
-            'status'       => SendStatus::Pending,
-            'open_token'   => bin2hex(random_bytes(16)),
+            'contact_id'                   => $contactId,
+            'campaign_id'                  => $campaignId,
+            'drip_step_id'                 => $stepId,
+            'status'                       => SendStatus::Pending,
+            'open_token'                   => bin2hex(random_bytes(16)),
+            'unsubscribe_token'            => bin2hex(random_bytes(16)),
+            'unsubscribe_token_expires_at' => $expiry,
         ]);
 
         return $this->find($id);

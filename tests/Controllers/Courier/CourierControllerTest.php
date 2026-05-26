@@ -7,6 +7,7 @@ namespace Tests\Controllers\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
@@ -40,6 +41,8 @@ final class CourierControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(CourierConfig::class)->testMode       = true;
+        config(CourierConfig::class)->trackIpAddress = false;
 
         $this->contactId  = (new ContactModel())->insert(['email' => 'tracking@example.com']);
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([
@@ -50,6 +53,12 @@ final class CourierControllerTest extends CIUnitTestCase
             'from_name'  => 'Sender',
             'from_email' => 'sender@example.com',
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        config(CourierConfig::class)->trackIpAddress = false;
+        parent::tearDown();
     }
 
     public function testOpenWithValidTokenRecordsEventAndReturnsGif(): void
@@ -117,7 +126,7 @@ final class CourierControllerTest extends CIUnitTestCase
         $this->assertNotNull((new SendModel())->find($send->id)->clicked_at);
     }
 
-    public function testClickStoresLinkIdOnEvent(): void
+    public function testClickStoresLinkIdOnEventAndNoIpByDefault(): void
     {
         $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
         $linkModel = new LinkModel();
@@ -128,9 +137,25 @@ final class CourierControllerTest extends CIUnitTestCase
 
         $event = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
         $this->assertNotNull($event);
-        $this->assertArrayHasKey('ip', (array) $event->metadata);
-        $this->assertArrayNotHasKey('url', (array) $event->metadata);
+        $this->assertNull($event->metadata);
         $this->assertSame($link->id, (int) $event->link_id);
+    }
+
+    public function testClickStoresIpWhenTrackIpAddressEnabled(): void
+    {
+        config(CourierConfig::class)->trackIpAddress = true;
+
+        $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
+        $linkModel = new LinkModel();
+        $linkModel->insertLinks($send->id, ['tok_ip' => 'https://example.com/page']);
+
+        $this->withRoutes($this->courierRoutes)->get('courier/click/tok_ip');
+
+        $event    = (new EventModel())->where('send_id', $send->id)->where('type', 'click')->first();
+        $metadata = (array) $event->metadata;
+        $this->assertNotNull($event);
+        $this->assertArrayHasKey('ip', $metadata);
+        $this->assertArrayNotHasKey('url', $metadata);
     }
 
     public function testClickWithInvalidTokenRedirectsToRoot(): void
@@ -167,5 +192,18 @@ final class CourierControllerTest extends CIUnitTestCase
         $result = $this->withRoutes($this->courierRoutes)->get('courier/unsubscribe/badtoken');
 
         $result->assertStatus(404);
+    }
+
+    public function testUnsubscribeWithExpiredTokenShowsExpiredViewAnd410(): void
+    {
+        $sendModel = new SendModel();
+        $send      = $sendModel->createPending($this->contactId, $this->campaignId, null);
+        $sendModel->update($send->id, ['unsubscribe_token_expires_at' => date('Y-m-d H:i:s', strtotime('-1 day'))]);
+        $send = $sendModel->find($send->id);
+
+        $result = $this->withRoutes($this->courierRoutes)->get('courier/unsubscribe/' . $send->unsubscribe_token);
+
+        $result->assertStatus(410);
+        $result->assertSee('expired');
     }
 }

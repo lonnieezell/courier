@@ -62,6 +62,7 @@ final class DripIntegrationTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
         );
 
         $this->dripService = new DripService(

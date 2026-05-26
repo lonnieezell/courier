@@ -30,7 +30,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
     'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 4,
+    'count'      => 5,
     'path'       => __DIR__ . '/src/Config/Services.php',
 ];
 $ignoreErrors[] = [
@@ -90,7 +90,7 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
     'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
     'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 1,
+    'count'      => 2,
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
@@ -106,7 +106,7 @@ $ignoreErrors[] = [
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
 ];
 $ignoreErrors[] = [
-    'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string> given.',
+    'rawMessage' => 'Parameter #1 $row of method CodeIgniter\\Model::insert() expects array<int|string, bool|float|int|object|string|null>|object|null, array<string, array<string, string>|int|string|null> given.',
     'identifier' => 'argument.type',
     'count'      => 1,
     'path'       => __DIR__ . '/src/Controllers/CourierController.php',
@@ -146,6 +146,18 @@ $ignoreErrors[] = [
     'identifier' => 'property.notFound',
     'count'      => 2,
     'path'       => __DIR__ . '/src/Database/Migrations/2026-05-22-120001_AlterCourierSendsDropClickToken.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+    'identifier' => 'property.notFound',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Database/Migrations/2026-05-26-120005_AlterCourierSendsAddUnsubscribeToken.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBPrefix.',
+    'identifier' => 'property.notFound',
+    'count'      => 2,
+    'path'       => __DIR__ . '/src/Database/Migrations/2026-05-26-120005_AlterCourierSendsAddUnsubscribeToken.php',
 ];
 $ignoreErrors[] = [
     'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
@@ -268,6 +280,18 @@ $ignoreErrors[] = [
     'path'       => __DIR__ . '/src/Models/SendModel.php',
 ];
 $ignoreErrors[] = [
+    'rawMessage' => 'Method Myth\\Courier\\Models\\SendModel::findByUnsubscribeToken() should return Myth\\Courier\\DTO\\SendDTO|null but returns stdClass|null.',
+    'identifier' => 'return.type',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Models/SendModel.php',
+];
+$ignoreErrors[] = [
+    'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
+    'identifier' => 'codeigniter.factoriesClassConstFetch',
+    'count'      => 1,
+    'path'       => __DIR__ . '/src/Models/SendModel.php',
+];
+$ignoreErrors[] = [
     'rawMessage' => 'Only booleans are allowed in an if condition, mixed given.',
     'identifier' => 'if.condNotBoolean',
     'count'      => 1,
@@ -376,10 +400,10 @@ $ignoreErrors[] = [
     'path'       => __DIR__ . '/src/Services/DripService.php',
 ];
 $ignoreErrors[] = [
-    'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
-    'identifier' => 'codeigniter.factoriesClassConstFetch',
-    'count'      => 1,
-    'path'       => __DIR__ . '/src/Services/MailerService.php',
+    'rawMessage' => 'Cannot call method isFileBased() on stdClass.',
+    'identifier' => 'method.nonObject',
+    'count'      => 2,
+    'path'       => __DIR__ . '/src/Services/DripService.php',
 ];
 $ignoreErrors[] = [
     'rawMessage' => 'Call to protected method getMessageID() of class CodeIgniter\\Email\\Email.',

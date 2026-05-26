@@ -68,6 +68,7 @@ final class DripServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
         );
 
         $this->service = new DripService(
@@ -499,7 +500,7 @@ final class DripServiceTest extends CIUnitTestCase
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel) extends MailerService {
+        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class)) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 return false;
@@ -528,7 +529,7 @@ final class DripServiceTest extends CIUnitTestCase
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel) extends MailerService {
+        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class)) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 throw new RuntimeException('ESP connection refused');
@@ -629,6 +630,7 @@ final class DripServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
+            config(CourierConfig::class),
         );
 
         $service = new DripService(

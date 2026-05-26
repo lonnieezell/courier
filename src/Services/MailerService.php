@@ -26,16 +26,15 @@ class MailerService
 {
     use LoggerAwareTrait;
 
-    private CourierConfig $config;
-
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly SendModel $sendModel,
         private readonly CampaignModel $campaignModel,
+        private readonly CourierConfig $config,
         private ?Email $email = null,
         private readonly LinkModel $linkModel = new LinkModel(),
     ) {
-        $this->config = config(CourierConfig::class);
+        $this->config->validate();
         $this->email ??= service('email');
     }
 
@@ -71,8 +70,10 @@ class MailerService
         $this->linkModel->insertLinks($sendLog->id, $linkMap);
 
         $base           = $this->trackingBase();
-        $unsubscribeUrl = $base . '/unsubscribe/' . $contact->unsubscribe_token;
-        $trackingPixel  = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
+        $unsubscribeUrl = $sendLog->unsubscribe_token !== null
+            ? $base . '/unsubscribe/' . $sendLog->unsubscribe_token
+            : '';
+        $trackingPixel = '<img src="' . $base . '/open/' . $sendLog->open_token . '" width="1" height="1" alt="">';
 
         $html = str_replace('{courier_unsubscribe_url}', $unsubscribeUrl, $html);
         $html = str_replace('{courier_tracking_pixel}', $trackingPixel, $html);
