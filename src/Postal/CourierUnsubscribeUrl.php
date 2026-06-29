@@ -14,7 +14,9 @@ use Myth\Postal\UnsubscribeUrlInterface;
  */
 class CourierUnsubscribeUrl implements UnsubscribeUrlInterface
 {
-    public function __construct(private readonly SendModel $sends = new SendModel()) {}
+    public function __construct(private readonly SendModel $sends = new SendModel())
+    {
+    }
 
     public function urlFor(Address $recipient): string
     {

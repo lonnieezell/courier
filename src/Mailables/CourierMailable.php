@@ -17,6 +17,5 @@ use Myth\Postal\Mailable;
 abstract class CourierMailable extends Mailable
 {
     public ContactDTO $contact;
-
     public ?CampaignDTO $campaign = null;
 }

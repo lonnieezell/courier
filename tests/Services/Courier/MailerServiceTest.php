@@ -8,6 +8,7 @@ use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Events\CourierEvents;
@@ -324,8 +325,8 @@ final class MailerServiceTest extends CIUnitTestCase
 
         $body = $stub->sentEmail->htmlBody;
         $this->assertNotNull($body);
-        $this->assertStringContainsString($sendLog->unsubscribe_token, $body);
-        $this->assertStringNotContainsString($this->contact->unsubscribe_token, $body);
+        $this->assertStringContainsString($sendLog->unsubscribe_token, (string) $body);
+        $this->assertStringNotContainsString($this->contact->unsubscribe_token, (string) $body);
     }
 
     public function testSendPrefersCampaignMailableOverView(): void
@@ -342,8 +343,8 @@ final class MailerServiceTest extends CIUnitTestCase
         // Subject comes from the Mailable, not the campaign ("Hello").
         $this->assertSame('Mailable Subject', $stub->sentEmail->subject);
         // Tracking was applied to the Mailable's HTML.
-        $this->assertStringNotContainsString('{courier_unsubscribe_url}', $stub->sentEmail->htmlBody);
-        $this->assertStringContainsString('https://track.example.com/courier/click/', $stub->sentEmail->htmlBody);
+        $this->assertStringNotContainsString('{courier_unsubscribe_url}', (string) $stub->sentEmail->htmlBody);
+        $this->assertStringContainsString('https://track.example.com/courier/click/', (string) $stub->sentEmail->htmlBody);
     }
 
     public function testSendStepPrefersStepMailable(): void
@@ -359,7 +360,15 @@ final class MailerServiceTest extends CIUnitTestCase
             'subject'     => 'Step Subject',
             'delay_hours' => 24,
         ]);
-        $step = $stepModel->find($stepId);
+
+        $step              = new DripStepDTO();
+        $step->id          = $stepId;
+        $step->campaign_id = (int) $this->campaign->id;
+        $step->position    = 1;
+        $step->view        = self::BODY_VIEW;
+        $step->mailable    = TestMailable::class;
+        $step->subject     = 'Step Subject';
+        $step->delay_hours = 24;
 
         $stub = $this->fakeMailer(SendResult::ok('msg'));
 
@@ -412,7 +421,7 @@ final class MailerServiceTest extends CIUnitTestCase
 
         $this->makeService()->sendMailable($mailable, $this->contact);
 
-        $this->assertStringNotContainsString('{courier_tracking_pixel}', $stub->sentEmail->htmlBody);
-        $this->assertStringContainsString('/courier/open/', $stub->sentEmail->htmlBody);
+        $this->assertStringNotContainsString('{courier_tracking_pixel}', (string) $stub->sentEmail->htmlBody);
+        $this->assertStringContainsString('/courier/open/', (string) $stub->sentEmail->htmlBody);
     }
 }

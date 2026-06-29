@@ -30,14 +30,13 @@ final class UnsubscribePostRouteTest extends CIUnitTestCase
 
         // Read the raw verb buckets directly: getRoutes() lazily reloads the
         // app's default routes file, which discards this isolated collection.
-        $property = (new ReflectionObject($routes))->getProperty('routes');
-        $property->setAccessible(true);
+        $property   = (new ReflectionObject($routes))->getProperty('routes');
         $postRoutes = $property->getValue($routes)['POST'] ?? [];
 
         $matched = false;
 
         foreach (array_keys($postRoutes) as $pattern) {
-            if (str_contains($pattern, 'courier/unsubscribe')) {
+            if (str_contains((string) $pattern, 'courier/unsubscribe')) {
                 $matched = true;
                 break;
             }

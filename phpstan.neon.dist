@@ -21,6 +21,7 @@ parameters:
 			- Myth\Courier\Config
 		additionalServices:
 			- Myth\Courier\Config\Services
+			- Myth\Postal\Config\Services
 	strictRules:
 		allRules: false
 		disallowedLooseComparison: true

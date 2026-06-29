@@ -16,7 +16,9 @@ use Myth\Postal\SuppressionListInterface;
  */
 class CourierSuppressionList implements SuppressionListInterface
 {
-    public function __construct(private readonly ContactModel $contacts = new ContactModel()) {}
+    public function __construct(private readonly ContactModel $contacts = new ContactModel())
+    {
+    }
 
     public function isSuppressed(Address $recipient): bool
     {
