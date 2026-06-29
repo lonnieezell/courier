@@ -11,13 +11,13 @@ class Courier extends BaseConfig
 {
     /**
      * Default from name used when sending emails.
-     * .env: Courier.fromName
+     * .env: courier.fromName
      */
     public string $fromName = '';
 
     /**
      * Default from email address used when sending emails.
-     * .env: Courier.fromEmail
+     * .env: courier.fromEmail
      */
     public string $fromEmail = '';
 
@@ -31,55 +31,55 @@ class Courier extends BaseConfig
      * Host used for tracking links, unsubscribe links, and pixel URLs.
      * Set this only if you use a custom tracking domain (e.g. 'https://track.yoursite.com').
      * Leave empty to use CI4's base_url() automatically.
-     * .env: Courier.trackingHost
+     * .env: courier.trackingHost
      */
     public string $trackingHost = '';
 
     /**
      * Maximum number of emails to send per task/queue run.
-     * .env: Courier.batchSize
+     * .env: courier.batchSize
      */
     public int $batchSize = 200;
 
     /**
      * Minutes to wait before retrying a failed drip step send.
-     * .env: Courier.retryDelayMinutes
+     * .env: courier.retryDelayMinutes
      */
     public int $retryDelayMinutes = 5;
 
     /**
      * Maximum send attempts per drip step before marking enrollment as failed.
-     * .env: Courier.maxRetries
+     * .env: courier.maxRetries
      */
     public int $maxRetries = 3;
 
     /**
      * Milliseconds to sleep between individual sends (0 = no throttle).
-     * .env: Courier.throttleMs
+     * .env: courier.throttleMs
      */
     public int $throttleMs = 0;
 
     /**
      * Days until a per-send unsubscribe token expires.
-     * .env: Courier.unsubscribeTokenExpireDays
+     * .env: courier.unsubscribeTokenExpireDays
      */
     public int $unsubscribeTokenExpireDays = 365;
 
     /**
      * When true, emails are logged instead of sent via the mailer.
-     * .env: Courier.testMode
+     * .env: courier.testMode
      */
     public bool $testMode = false;
 
     /**
      * Max capture form submissions per IP per minute. 0 disables rate limiting.
-     * .env: Courier.captureRateLimit
+     * .env: courier.captureRateLimit
      */
     public int $captureRateLimit = 15;
 
     /**
      * When true, courier_form renders a hidden honeypot field to reject bots.
-     * .env: Courier.honeypot
+     * .env: courier.honeypot
      */
     public bool $honeypot = true;
 
@@ -99,7 +99,7 @@ class Courier extends BaseConfig
      * When true, the IP address of the clicking recipient is stored in the click event metadata.
      * IP addresses are personal data under GDPR and CCPA. Only enable this if your privacy
      * policy discloses IP collection and your data-retention practices cover it.
-     * .env: Courier.trackIpAddress
+     * .env: courier.trackIpAddress
      */
     public bool $trackIpAddress = false;
 
@@ -121,7 +121,7 @@ class Courier extends BaseConfig
         }
 
         if ($this->fromEmail === '') {
-            throw new PackageException('Courier: $fromEmail must be set in production. Add "Courier.fromEmail = you@example.com" to your .env file.');
+            throw new PackageException('Courier: $fromEmail must be set in production. Add "courier.fromEmail = you@example.com" to your .env file.');
         }
     }
 }
