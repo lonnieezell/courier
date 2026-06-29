@@ -24,6 +24,7 @@ class DripStepModel extends Model
         'campaign_id',
         'position',
         'view',
+        'mailable',
         'subject',
         'delay_hours',
     ];

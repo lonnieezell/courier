@@ -25,6 +25,7 @@ class CampaignModel extends Model
         'subject',
         'type',
         'view',
+        'mailable',
         'source_file',
         'layout',
         'status',

@@ -17,6 +17,7 @@ class CampaignDTO extends BaseDTO
     public string $subject;
     public CampaignType $type;
     public ?string $view        = null;
+    public ?string $mailable    = null;
     public ?string $source_file = null;
     public ?string $layout      = null;
     public CampaignStatus $status;
