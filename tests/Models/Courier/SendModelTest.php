@@ -94,4 +94,19 @@ final class SendModelTest extends CIUnitTestCase
 
         $this->assertNull($model->findByUnsubscribeToken('doesnotexist'));
     }
+
+    public function testPersistsSendWithNullCampaignId(): void
+    {
+        $model = new SendModel();
+        $id    = (int) $model->insert([
+            'contact_id'  => $this->contactId,
+            'campaign_id' => null,
+            'status'      => SendStatus::Pending,
+            'open_token'  => bin2hex(random_bytes(16)),
+        ]);
+
+        $send = $model->find($id);
+
+        $this->assertNull($send->campaign_id);
+    }
 }

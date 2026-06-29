@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Services\Courier;
 
-use CodeIgniter\Email\Email;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Events\CourierEvents;
@@ -16,13 +16,20 @@ use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
 use Myth\Courier\Models\DripEnrollmentModel;
+use Myth\Courier\Models\DripStepModel;
+use Myth\Courier\Models\LinkModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
+use Myth\Postal\Config\Services as PostalServices;
+use Myth\Postal\Email;
+use Myth\Postal\MailerManager;
+use Myth\Postal\SendResult;
 use RuntimeException;
+use Tests\Support\Mailables\TestMailable;
 
 /**
  * @internal
@@ -52,10 +59,6 @@ final class MailerServiceTest extends CIUnitTestCase
         $config->testMode     = true;
         $config->trackingHost = 'https://track.example.com';
 
-        // Email mock — must never be called in testMode
-        $emailMock = $this->createMock(Email::class);
-        $emailMock->expects($this->never())->method('send');
-
         $this->sendModel     = new SendModel();
         $this->campaignModel = new CampaignModel();
 
@@ -83,13 +86,53 @@ final class MailerServiceTest extends CIUnitTestCase
         ]);
         $this->campaign = $this->campaignModel->find($campaignId);
 
-        $this->service = new MailerService(
+        $this->service = $this->makeService();
+    }
+
+    protected function tearDown(): void
+    {
+        PostalServices::reset();
+
+        parent::tearDown();
+    }
+
+    private function makeService(): MailerService
+    {
+        return new MailerService(
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
             config(CourierConfig::class),
-            $emailMock,
+            new LinkModel(),
         );
+    }
+
+    /**
+     * Injects a stub postal mailer that records the dispatched Email and returns
+     * a fixed SendResult, then returns it so tests can inspect what was sent.
+     */
+    private function fakeMailer(SendResult $result): object
+    {
+        $stub = new class () extends MailerManager {
+            public ?Email $sentEmail = null;
+            public SendResult $result;
+
+            public function __construct()
+            {
+            }
+
+            public function send(Email $email): SendResult
+            {
+                $this->sentEmail = $email;
+
+                return $this->result;
+            }
+        };
+        $stub->result = $result;
+
+        PostalServices::injectMock('mailer', $stub);
+
+        return $stub;
     }
 
     private function makeSendLog(): object
@@ -99,6 +142,13 @@ final class MailerServiceTest extends CIUnitTestCase
             (int) $this->campaign->id,
             null,
         );
+    }
+
+    private function enableLiveSend(): void
+    {
+        $config            = config(CourierConfig::class);
+        $config->testMode  = false;
+        $config->fromEmail = 'sender@example.com';
     }
 
     public function testSendMarksSendLogAsSent(): void
@@ -195,28 +245,59 @@ final class MailerServiceTest extends CIUnitTestCase
         $this->assertTrue($result);
     }
 
+    public function testSendDispatchesPostalEmailToContact(): void
+    {
+        $this->enableLiveSend();
+        $stub = $this->fakeMailer(SendResult::ok('msg-1'));
+
+        $sendLog = $this->makeSendLog();
+        $this->makeService()->send($this->contact, $this->campaign, $sendLog);
+
+        $this->assertInstanceOf(Email::class, $stub->sentEmail);
+        $this->assertSame('test@example.com', $stub->sentEmail->to[0]->email);
+        $this->assertSame('sender@example.com', $stub->sentEmail->from->email);
+        $this->assertSame('Hello', $stub->sentEmail->subject);
+    }
+
+    public function testSendStoresMessageIdOnSuccess(): void
+    {
+        $this->enableLiveSend();
+        $this->fakeMailer(SendResult::ok('provider-message-id'));
+
+        $sendLog = $this->makeSendLog();
+        $result  = $this->makeService()->send($this->contact, $this->campaign, $sendLog);
+
+        $this->assertTrue($result);
+
+        $updated = $this->sendModel->find($sendLog->id);
+        $this->assertSame('sent', $updated->status->value);
+        $this->assertSame('provider-message-id', $updated->message_id);
+    }
+
+    public function testSendMarksSuppressedWhenCancelled(): void
+    {
+        $this->enableLiveSend();
+        $this->fakeMailer(SendResult::cancelled('All recipients are suppressed'));
+
+        $fired = false;
+        Events::on(CourierEvents::EMAIL_SENT, static function () use (&$fired): void {
+            $fired = true;
+        });
+
+        $sendLog = $this->makeSendLog();
+        $result  = $this->makeService()->send($this->contact, $this->campaign, $sendLog);
+
+        Events::removeAllListeners(CourierEvents::EMAIL_SENT);
+
+        $this->assertFalse($result);
+        $this->assertFalse($fired);
+        $this->assertSame('suppressed', $this->sendModel->find($sendLog->id)->status->value);
+    }
+
     public function testSendFiresEmailFailedEvent(): void
     {
-        $config            = config(CourierConfig::class);
-        $config->testMode  = false;
-        $config->fromEmail = 'sender@example.com';
-
-        $emailMock = $this->createMock(Email::class);
-        $emailMock->method('clear')->willReturnSelf();
-        $emailMock->method('setFrom')->willReturnSelf();
-        $emailMock->method('setTo')->willReturnSelf();
-        $emailMock->method('setSubject')->willReturnSelf();
-        $emailMock->method('setMessage')->willReturnSelf();
-        $emailMock->method('setAltMessage')->willReturnSelf();
-        $emailMock->method('send')->willReturn(false);
-
-        $service = new MailerService(
-            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
-            $this->sendModel,
-            $this->campaignModel,
-            config(CourierConfig::class),
-            $emailMock,
-        );
+        $this->enableLiveSend();
+        $this->fakeMailer(SendResult::fail('smtp blew up'));
 
         $fired = null;
         Events::on(CourierEvents::EMAIL_FAILED, static function ($send) use (&$fired): void {
@@ -224,52 +305,123 @@ final class MailerServiceTest extends CIUnitTestCase
         });
 
         $sendLog = $this->makeSendLog();
-        $result  = $service->send($this->contact, $this->campaign, $sendLog);
+        $result  = $this->makeService()->send($this->contact, $this->campaign, $sendLog);
 
         Events::removeAllListeners(CourierEvents::EMAIL_FAILED);
-
-        $config->testMode = true;
 
         $this->assertFalse($result);
         $this->assertNotNull($fired);
         $this->assertSame((int) $sendLog->id, (int) $fired->id);
+        $this->assertSame('failed', $this->sendModel->find($sendLog->id)->status->value);
     }
 
     public function testSendEmbedsSendLevelUnsubscribeToken(): void
     {
-        $config            = config(CourierConfig::class);
-        $config->testMode  = false;
-        $config->fromEmail = 'sender@example.com';
-
-        $capturedBody = null;
-        $emailMock    = $this->createMock(Email::class);
-        $emailMock->method('clear')->willReturnSelf();
-        $emailMock->method('setFrom')->willReturnSelf();
-        $emailMock->method('setTo')->willReturnSelf();
-        $emailMock->method('setSubject')->willReturnSelf();
-        $emailMock->method('setMessage')->willReturnCallback(static function (string $body) use (&$capturedBody): bool {
-            $capturedBody = $body;
-
-            return true;
-        });
-        $emailMock->method('setAltMessage')->willReturnSelf();
-        $emailMock->method('send')->willReturn(false);
-
-        $service = new MailerService(
-            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
-            $this->sendModel,
-            $this->campaignModel,
-            config(CourierConfig::class),
-            $emailMock,
-        );
+        $this->enableLiveSend();
+        $stub = $this->fakeMailer(SendResult::fail('not actually sending'));
 
         $sendLog = $this->makeSendLog();
-        $service->send($this->contact, $this->campaign, $sendLog);
+        $this->makeService()->send($this->contact, $this->campaign, $sendLog);
 
-        $config->testMode = true;
+        $body = $stub->sentEmail->htmlBody;
+        $this->assertNotNull($body);
+        $this->assertStringContainsString($sendLog->unsubscribe_token, (string) $body);
+        $this->assertStringNotContainsString($this->contact->unsubscribe_token, (string) $body);
+    }
 
-        $this->assertNotNull($capturedBody);
-        $this->assertStringContainsString($sendLog->unsubscribe_token, $capturedBody);
-        $this->assertStringNotContainsString($this->contact->unsubscribe_token, $capturedBody);
+    public function testSendPrefersCampaignMailableOverView(): void
+    {
+        $this->enableLiveSend();
+        $this->campaignModel->update($this->campaign->id, ['mailable' => TestMailable::class]);
+        $campaign = $this->campaignModel->find($this->campaign->id);
+
+        $stub    = $this->fakeMailer(SendResult::ok('msg'));
+        $sendLog = $this->makeSendLog();
+
+        $this->makeService()->send($this->contact, $campaign, $sendLog);
+
+        // Subject comes from the Mailable, not the campaign ("Hello").
+        $this->assertSame('Mailable Subject', $stub->sentEmail->subject);
+        // Tracking was applied to the Mailable's HTML.
+        $this->assertStringNotContainsString('{courier_unsubscribe_url}', (string) $stub->sentEmail->htmlBody);
+        $this->assertStringContainsString('https://track.example.com/courier/click/', (string) $stub->sentEmail->htmlBody);
+    }
+
+    public function testSendStepPrefersStepMailable(): void
+    {
+        $this->enableLiveSend();
+
+        $stepModel = new DripStepModel();
+        $stepId    = (int) $stepModel->insert([
+            'campaign_id' => $this->campaign->id,
+            'position'    => 1,
+            'view'        => self::BODY_VIEW,
+            'mailable'    => TestMailable::class,
+            'subject'     => 'Step Subject',
+            'delay_hours' => 24,
+        ]);
+
+        $step              = new DripStepDTO();
+        $step->id          = $stepId;
+        $step->campaign_id = (int) $this->campaign->id;
+        $step->position    = 1;
+        $step->view        = self::BODY_VIEW;
+        $step->mailable    = TestMailable::class;
+        $step->subject     = 'Step Subject';
+        $step->delay_hours = 24;
+
+        $stub = $this->fakeMailer(SendResult::ok('msg'));
+
+        $this->makeService()->sendStep($this->contact, $step, $this->campaign);
+
+        $this->assertSame('Mailable Subject', $stub->sentEmail->subject);
+    }
+
+    public function testSendMailableRecordsCampaignlessSend(): void
+    {
+        $mailable          = new TestMailable();
+        $mailable->contact = $this->contact;
+
+        $result = $this->service->sendMailable($mailable, $this->contact);
+
+        $this->assertTrue($result);
+
+        $send = $this->sendModel
+            ->where('contact_id', $this->contact->id)
+            ->orderBy('id', 'DESC')
+            ->first();
+        $this->assertNull($send->campaign_id);
+        $this->assertSame('sent', $send->status->value);
+    }
+
+    public function testSendMailableMarksSuppressedWhenCancelled(): void
+    {
+        $this->enableLiveSend();
+        $this->fakeMailer(SendResult::cancelled('suppressed'));
+
+        $mailable = new TestMailable();
+
+        $result = $this->makeService()->sendMailable($mailable, $this->contact);
+
+        $this->assertFalse($result);
+
+        $send = $this->sendModel
+            ->where('contact_id', $this->contact->id)
+            ->orderBy('id', 'DESC')
+            ->first();
+        $this->assertSame('suppressed', $send->status->value);
+    }
+
+    public function testSendMailableAppliesTrackingToHtml(): void
+    {
+        $this->enableLiveSend();
+        $stub = $this->fakeMailer(SendResult::fail('hold'));
+
+        $mailable = new TestMailable();
+
+        $this->makeService()->sendMailable($mailable, $this->contact);
+
+        $this->assertStringNotContainsString('{courier_tracking_pixel}', (string) $stub->sentEmail->htmlBody);
+        $this->assertStringContainsString('/courier/open/', (string) $stub->sentEmail->htmlBody);
     }
 }

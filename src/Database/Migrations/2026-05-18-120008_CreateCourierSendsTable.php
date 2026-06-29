@@ -16,7 +16,7 @@ class CreateCourierSendsTable extends Migration
         $this->forge->addField([
             'id'           => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'auto_increment' => true],
             'contact_id'   => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => false],
-            'campaign_id'  => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => false],
+            'campaign_id'  => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => true],
             'drip_step_id' => ['type' => 'INT', 'constraint' => 10, 'unsigned' => true, 'null' => true],
             'status'       => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'pending'],
             'message_id'   => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => true],

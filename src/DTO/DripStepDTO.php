@@ -13,6 +13,7 @@ class DripStepDTO extends BaseDTO
     public int $campaign_id;
     public int $position;
     public string $view;
+    public ?string $mailable = null;
     public string $subject;
     public int $delay_hours;
     public string $created_at;

@@ -56,6 +56,7 @@ nav:
   - Drip Sequences: drip-sequences.md
   - File-Based Campaigns: file-based-campaigns.md
   - Email Templates: templates.md
+  - Mailables: mailables.md
   - CLI Commands: commands.md
   - Management Commands: management-commands.md
   - Tracking: tracking.md

@@ -38,15 +38,55 @@ public string $fromEmail = 'hello@acme.com';
 
 Everything else has sensible defaults. See [Configuration](configuration.md) for the full list.
 
+## The mailer
+
+Courier sends through [ci-postal](https://github.com/lonnieezell/postal) (`myth/postal`), which is pulled in automatically as a dependency — you don't install it separately. Postal is what actually talks to your transport (SMTP, SES, sendmail, and so on).
+
+Pick a transport by publishing postal's config and setting a default mailer:
+
+```bash
+php spark publish:config Email
+```
+
+```php
+<?php
+// app/Config/Email.php (Myth\Postal\Config\Email)
+
+public string $default = 'smtp';
+
+public array $mailers = [
+    'smtp' => [
+        'transport' => 'smtp',
+        'host'      => 'smtp.acme.com',
+        'port'      => 587,
+        'username'  => 'postmaster@acme.com',
+        'password'  => 'super-secret',
+    ],
+];
+```
+
+Courier wires two things into postal for you, with no extra setup:
+
+- **Suppression filtering** — unsubscribed, bounced, and complained contacts are dropped before dispatch.
+- **One-click unsubscribe** — a `List-Unsubscribe` header (RFC 8058) is injected per recipient.
+
+See [Tracking](tracking.md#unsubscribes) for the details.
+
+!!! tip "Try it without a real transport first"
+    Leave postal's `$default = 'log'` (or set Courier's `$testMode = true`) while you're wiring things up. Nothing leaves your server, but Courier still records every send.
+
 ## Tracking routes
 
-Courier automatically registers three routes for open pixels, click redirects, and unsubscribe links:
+Courier automatically registers routes for open pixels, click redirects, and unsubscribe links:
 
 ```
-GET /courier/open/(:segment)
-GET /courier/click/(:segment)
-GET /courier/unsubscribe/(:segment)
+GET  /courier/open/(:segment)
+GET  /courier/click/(:segment)
+GET  /courier/unsubscribe/(:segment)
+POST /courier/unsubscribe/(:segment)
 ```
+
+The `POST` variant handles RFC 8058 one-click unsubscribes triggered from the mail client's own UI.
 
 No manual wiring needed. If you're using a reverse proxy or need to verify the routes are active, run:
 

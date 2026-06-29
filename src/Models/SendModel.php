@@ -40,8 +40,8 @@ class SendModel extends Model
     ];
     protected $validationRules = [
         'contact_id'  => 'required|integer',
-        'campaign_id' => 'required|integer',
-        'status'      => 'permit_empty|in_list[pending,sent,failed,bounced]',
+        'campaign_id' => 'permit_empty|integer',
+        'status'      => 'permit_empty|in_list[pending,sent,failed,bounced,suppressed]',
     ];
 
     public function findByOpenToken(string $token): ?SendDTO
@@ -58,11 +58,26 @@ class SendModel extends Model
     }
 
     /**
+     * Finds the most recent pending send addressed to the given contact email,
+     * used to resolve a per-recipient unsubscribe URL at dispatch time.
+     */
+    public function findLatestPendingByEmail(string $email): ?SendDTO
+    {
+        return $this->select('courier_sends.*')
+            ->join('courier_contacts', 'courier_contacts.id = courier_sends.contact_id')
+            ->where('courier_contacts.email', $email)
+            ->where('courier_sends.status', SendStatus::Pending->value)
+            ->orderBy('courier_sends.id', 'DESC')
+            ->first();
+    }
+
+    /**
      * Inserts a new send record in 'pending' status with freshly generated
      * open and unsubscribe tracking tokens, then returns the hydrated object.
-     * Pass null for $stepId on blast campaigns that have no drip step.
+     * Pass null for $stepId on blast campaigns that have no drip step, and null
+     * for $campaignId on transactional (one-off) sends that belong to no campaign.
      */
-    public function createPending(int $contactId, int $campaignId, ?int $stepId): SendDTO
+    public function createPending(int $contactId, ?int $campaignId, ?int $stepId): SendDTO
     {
         $days   = config(Courier::class)->unsubscribeTokenExpireDays;
         $expiry = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));

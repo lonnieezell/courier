@@ -13,7 +13,7 @@ class SendDTO extends BaseDTO
 {
     public int $id;
     public int $contact_id;
-    public int $campaign_id;
+    public ?int $campaign_id  = null;
     public ?int $drip_step_id = null;
     public SendStatus $status;
     public ?string $message_id = null;
