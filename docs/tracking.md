@@ -48,6 +48,30 @@ You can customize the unsubscribe success and invalid-token views by publishing 
 php spark publish:views Courier
 ```
 
+### One-click unsubscribe (RFC 8058)
+
+Most inbox providers show a native "Unsubscribe" button when an email carries a `List-Unsubscribe` header. Courier injects one automatically for every single-recipient send — no template changes needed.
+
+The header points at the per-send unsubscribe URL, and Courier also emits `List-Unsubscribe-Post`, which tells the mail client it can unsubscribe with a single `POST` (the user never leaves their inbox):
+
+```
+List-Unsubscribe: <https://track.acme.com/courier/unsubscribe/abc123…>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+```
+
+That `POST` hits the `POST /courier/unsubscribe/(:segment)` route, which runs the exact same flow as a click. The `GET` link still works for anyone who opens the email in a browser.
+
+!!! note "Set an explicit header to override"
+    If a [Mailable](mailables.md) sets its own `List-Unsubscribe` header, Courier leaves it alone — your value always wins.
+
+## Suppression
+
+Sending to someone who already opted out hurts your deliverability. Courier prevents that by filtering recipients **before** dispatch.
+
+Any contact whose status is `unsubscribed`, `bounced`, or `complained` is dropped from the send. When that leaves no one to deliver to, the send is recorded with the `suppressed` status instead of `sent` or `failed` — so you can tell a skipped send apart from a real delivery failure in your stats and in the `courier_sends` table.
+
+This happens automatically for both campaign sends and [transactional Mailables](mailables.md#transactional-sends). There's nothing to call; it's wired into the mailer.
+
 ## Using a custom tracking domain
 
 By default, tracking URLs use your app's `base_url()`. If you want them to come from a separate domain (better deliverability, branded links), set `$trackingHost` in your config:
