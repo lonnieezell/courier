@@ -508,6 +508,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../mailables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mailables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../commands/" class="md-nav__link">
         
   
@@ -648,6 +675,34 @@
     <span class="md-ellipsis">
       
         Unsubscribes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unsubscribes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-click-unsubscribe-rfc-8058" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-click unsubscribe (RFC 8058)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suppression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suppression
       
     </span>
   </a>
@@ -818,6 +873,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Unsubscribes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-click-unsubscribe-rfc-8058" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-click unsubscribe (RFC 8058)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suppression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suppression
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -953,24 +1036,39 @@
 <p>You can customize the unsubscribe success and invalid-token views by publishing them:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>php<span class="w"> </span>spark<span class="w"> </span>publish:views<span class="w"> </span>Courier
 </code></pre></div>
+<h3 id="one-click-unsubscribe-rfc-8058">One-click unsubscribe (RFC 8058)</h3>
+<p>Most inbox providers show a native "Unsubscribe" button when an email carries a <code>List-Unsubscribe</code> header. Courier injects one automatically for every single-recipient send — no template changes needed.</p>
+<p>The header points at the per-send unsubscribe URL, and Courier also emits <code>List-Unsubscribe-Post</code>, which tells the mail client it can unsubscribe with a single <code>POST</code> (the user never leaves their inbox):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>List-Unsubscribe: &lt;https://track.acme.com/courier/unsubscribe/abc123…&gt;
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>List-Unsubscribe-Post: List-Unsubscribe=One-Click
+</code></pre></div>
+<p>That <code>POST</code> hits the <code>POST /courier/unsubscribe/(:segment)</code> route, which runs the exact same flow as a click. The <code>GET</code> link still works for anyone who opens the email in a browser.</p>
+<div class="admonition note">
+<p class="admonition-title">Set an explicit header to override</p>
+<p>If a <a href="../mailables/">Mailable</a> sets its own <code>List-Unsubscribe</code> header, Courier leaves it alone — your value always wins.</p>
+</div>
+<h2 id="suppression">Suppression</h2>
+<p>Sending to someone who already opted out hurts your deliverability. Courier prevents that by filtering recipients <strong>before</strong> dispatch.</p>
+<p>Any contact whose status is <code>unsubscribed</code>, <code>bounced</code>, or <code>complained</code> is dropped from the send. When that leaves no one to deliver to, the send is recorded with the <code>suppressed</code> status instead of <code>sent</code> or <code>failed</code> — so you can tell a skipped send apart from a real delivery failure in your stats and in the <code>courier_sends</code> table.</p>
+<p>This happens automatically for both campaign sends and <a href="../mailables/#transactional-sends">transactional Mailables</a>. There's nothing to call; it's wired into the mailer.</p>
 <h2 id="using-a-custom-tracking-domain">Using a custom tracking domain</h2>
 <p>By default, tracking URLs use your app's <code>base_url()</code>. If you want them to come from a separate domain (better deliverability, branded links), set <code>$trackingHost</code> in your config:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$trackingHost</span> <span class="o">=</span> <span class="s1">&#39;https://track.acme.com&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$trackingHost</span> <span class="o">=</span> <span class="s1">&#39;https://track.acme.com&#39;</span><span class="p">;</span>
 </code></pre></div>
 <p>Point that domain at your CI4 app, and make sure the <code>/courier/*</code> routes are reachable there.</p>
 <h2 id="reading-stats">Reading stats</h2>
 <p>Aggregate stats for a campaign are available via <code>CampaignService</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">$stats</span> <span class="o">=</span> <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;campaignService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">getCampaignStats</span><span class="p">(</span><span class="nv">$campaignId</span><span class="p">);</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1">// [</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1">//   &#39;total&#39;   =&gt; 2500,   // total send records</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1">//   &#39;sent&#39;    =&gt; 2487,   // successfully delivered</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1">//   &#39;failed&#39;  =&gt; 13,     // delivery failures</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1">//   &#39;opened&#39;  =&gt; 891,    // unique opens (first open only)</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1">//   &#39;clicked&#39; =&gt; 234,    // unique clicks (first click only)</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1">// ]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">$stats</span> <span class="o">=</span> <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;campaignService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">getCampaignStats</span><span class="p">(</span><span class="nv">$campaignId</span><span class="p">);</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1">// [</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1">//   &#39;total&#39;   =&gt; 2500,   // total send records</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1">//   &#39;sent&#39;    =&gt; 2487,   // successfully delivered</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1">//   &#39;failed&#39;  =&gt; 13,     // delivery failures</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1">//   &#39;opened&#39;  =&gt; 891,    // unique opens (first open only)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1">//   &#39;clicked&#39; =&gt; 234,    // unique clicks (first click only)</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1">// ]</span>
 </code></pre></div>
 <p>Raw event data (every open and click, with timestamps and metadata) is in the <code>courier_events</code> table.</p>
 <h2 id="bounce-and-complaint-webhooks">Bounce and complaint webhooks</h2>
@@ -988,51 +1086,51 @@
 <h3 id="setting-up-with-aws-ses">Setting up with AWS SES</h3>
 <p>Courier ships with a driver for AWS SES, which routes notifications through SNS.</p>
 <p><strong>Step 1 — Configure the driver</strong> in <code>app/Config/Courier.php</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nx">string</span> <span class="nv">$webhookDriver</span> <span class="o">=</span> <span class="nx">\Myth\Courier\Webhooks\Drivers\SesDriver</span><span class="o">::</span><span class="na">class</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Step 2 — Exempt the route from CSRF</strong> in <code>app/Config/Security.php</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">public</span> <span class="nv">$CSRFExcludeURIs</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="s1">&#39;courier/webhook&#39;</span><span class="p">,</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">];</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">public</span> <span class="nv">$CSRFExcludeURIs</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="s1">&#39;courier/webhook&#39;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">];</span>
 </code></pre></div>
 <p>SNS sends machine-to-machine POST requests with no browser session, so they'll never carry a CSRF token.</p>
 <p><strong>Step 3 — Create an SNS topic</strong> in your AWS console and subscribe your webhook URL:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>https://yoursite.com/courier/webhook
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>https://yoursite.com/courier/webhook
 </code></pre></div>
 <p>SNS will send a <code>SubscriptionConfirmation</code> request to that URL. Courier confirms it automatically — you don't need to do anything.</p>
 <p><strong>Step 4 — Configure SES notifications</strong> to publish bounces and complaints to your SNS topic. In the SES console, go to your verified identity → Notifications → set the Bounce and Complaint SNS topics to the one you just created.</p>
 <div class="admonition tip">
 <p class="admonition-title">.env override</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>courier.webhookDriver = \Myth\Courier\Webhooks\Drivers\SesDriver::class
 </code></pre></div>
 </div>
 <h3 id="custom-drivers">Custom drivers</h3>
 <p>If you're using a different ESP, implement <code>WebhookDriverInterface</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">use</span> <span class="nx">Myth\Courier\Webhooks\WebhookDriverInterface</span><span class="p">;</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">use</span> <span class="nx">CodeIgniter\HTTP\IncomingRequest</span><span class="p">;</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">class</span> <span class="nc">MailgunDriver</span> <span class="k">implements</span> <span class="nx">WebhookDriverInterface</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">{</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">verifySignature</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="p">{</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="c1">// verify HMAC-SHA256 signature from Mailgun headers</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="p">}</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">isSubscriptionConfirmation</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="p">{</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span> <span class="c1">// Mailgun doesn&#39;t use subscription confirmations</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="p">}</span>
-<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
-<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">confirmSubscription</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span> <span class="p">{}</span>
-<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>
-<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">parseEvents</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="k">array</span>
-<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>    <span class="p">{</span>
-<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>        <span class="c1">// return [[&#39;type&#39; =&gt; &#39;bounce&#39;|&#39;soft_bounce&#39;|&#39;complaint&#39;, &#39;email&#39; =&gt; &#39;...&#39;, &#39;message_id&#39; =&gt; &#39;...&#39;]]</span>
-<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>    <span class="p">}</span>
-<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">use</span> <span class="nx">Myth\Courier\Webhooks\WebhookDriverInterface</span><span class="p">;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">use</span> <span class="nx">CodeIgniter\HTTP\IncomingRequest</span><span class="p">;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">class</span> <span class="nc">MailgunDriver</span> <span class="k">implements</span> <span class="nx">WebhookDriverInterface</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="p">{</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">verifySignature</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="p">{</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>        <span class="c1">// verify HMAC-SHA256 signature from Mailgun headers</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="p">}</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">isSubscriptionConfirmation</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">bool</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="p">{</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span> <span class="c1">// Mailgun doesn&#39;t use subscription confirmations</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    <span class="p">}</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">confirmSubscription</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span> <span class="p">{}</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>    <span class="k">public</span> <span class="k">function</span> <span class="nf">parseEvents</span><span class="p">(</span><span class="nx">IncomingRequest</span> <span class="nv">$request</span><span class="p">)</span><span class="o">:</span> <span class="k">array</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="p">{</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>        <span class="c1">// return [[&#39;type&#39; =&gt; &#39;bounce&#39;|&#39;soft_bounce&#39;|&#39;complaint&#39;, &#39;email&#39; =&gt; &#39;...&#39;, &#39;message_id&#39; =&gt; &#39;...&#39;]]</span>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>    <span class="p">}</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="p">}</span>
 </code></pre></div>
 <p>Then set <code>$webhookDriver = MailgunDriver::class</code> in your config.</p>
 
