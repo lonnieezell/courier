@@ -40,7 +40,7 @@ class SendModel extends Model
     ];
     protected $validationRules = [
         'contact_id'  => 'required|integer',
-        'campaign_id' => 'required|integer',
+        'campaign_id' => 'permit_empty|integer',
         'status'      => 'permit_empty|in_list[pending,sent,failed,bounced]',
     ];
 
