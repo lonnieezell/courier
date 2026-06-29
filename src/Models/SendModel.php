@@ -41,7 +41,7 @@ class SendModel extends Model
     protected $validationRules = [
         'contact_id'  => 'required|integer',
         'campaign_id' => 'permit_empty|integer',
-        'status'      => 'permit_empty|in_list[pending,sent,failed,bounced]',
+        'status'      => 'permit_empty|in_list[pending,sent,failed,bounced,suppressed]',
     ];
 
     public function findByOpenToken(string $token): ?SendDTO
@@ -74,9 +74,10 @@ class SendModel extends Model
     /**
      * Inserts a new send record in 'pending' status with freshly generated
      * open and unsubscribe tracking tokens, then returns the hydrated object.
-     * Pass null for $stepId on blast campaigns that have no drip step.
+     * Pass null for $stepId on blast campaigns that have no drip step, and null
+     * for $campaignId on transactional (one-off) sends that belong to no campaign.
      */
-    public function createPending(int $contactId, int $campaignId, ?int $stepId): SendDTO
+    public function createPending(int $contactId, ?int $campaignId, ?int $stepId): SendDTO
     {
         $days   = config(Courier::class)->unsubscribeTokenExpireDays;
         $expiry = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
