@@ -58,6 +58,20 @@ class SendModel extends Model
     }
 
     /**
+     * Finds the most recent pending send addressed to the given contact email,
+     * used to resolve a per-recipient unsubscribe URL at dispatch time.
+     */
+    public function findLatestPendingByEmail(string $email): ?SendDTO
+    {
+        return $this->select('courier_sends.*')
+            ->join('courier_contacts', 'courier_contacts.id = courier_sends.contact_id')
+            ->where('courier_contacts.email', $email)
+            ->where('courier_sends.status', SendStatus::Pending->value)
+            ->orderBy('courier_sends.id', 'DESC')
+            ->first();
+    }
+
+    /**
      * Inserts a new send record in 'pending' status with freshly generated
      * open and unsubscribe tracking tokens, then returns the hydrated object.
      * Pass null for $stepId on blast campaigns that have no drip step.
