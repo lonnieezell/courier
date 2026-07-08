@@ -1033,8 +1033,10 @@
 <li>Triggers the <code>courier:contact.unsubscribed</code> event</li>
 <li>Renders a confirmation view (<code>Views/courier/unsubscribe_success.php</code>)</li>
 </ol>
-<p>You can customize the unsubscribe success and invalid-token views by publishing them:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>php<span class="w"> </span>spark<span class="w"> </span>publish:views<span class="w"> </span>Courier
+<p>You can customize the unsubscribe success and invalid-token views using CodeIgniter's view overrides folder (<code>Config\View::$appOverridesFolder</code>, <code>overrides</code> by default). Create a file at the matching path under <code>app/Views/overrides/</code> and CI4 will use it instead of Courier's bundled view — no publishing step needed, and your copy won't go stale when Courier updates its views:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_success.php
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_invalid.php
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_expired.php
 </code></pre></div>
 <h3 id="one-click-unsubscribe-rfc-8058">One-click unsubscribe (RFC 8058)</h3>
 <p>Most inbox providers show a native "Unsubscribe" button when an email carries a <code>List-Unsubscribe</code> header. Courier injects one automatically for every single-recipient send — no template changes needed.</p>

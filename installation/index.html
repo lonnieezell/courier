@@ -878,7 +878,7 @@
 <p>This creates the following tables: <code>courier_contacts</code>, <code>courier_tags</code>, <code>courier_contact_tags</code>, <code>courier_segments</code>, <code>courier_campaigns</code>, <code>courier_drip_steps</code>, <code>courier_drip_enrollments</code>, <code>courier_sends</code>, and <code>courier_events</code>.</p>
 <h2 id="configure-the-basics">Configure the basics</h2>
 <p>Publish Courier's config file so you can customize it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>php<span class="w"> </span>spark<span class="w"> </span>publish:config<span class="w"> </span>Courier
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>php<span class="w"> </span>spark<span class="w"> </span>publish
 </code></pre></div>
 <p>This copies <code>Config/Courier.php</code> into your app's <code>app/Config/</code> folder. At minimum, set your default sender details:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="cp">&lt;?php</span>
@@ -890,8 +890,16 @@
 <p>Everything else has sensible defaults. See <a href="../configuration/">Configuration</a> for the full list.</p>
 <h2 id="the-mailer">The mailer</h2>
 <p>Courier sends through <a href="https://github.com/lonnieezell/postal">ci-postal</a> (<code>myth/postal</code>), which is pulled in automatically as a dependency — you don't install it separately. Postal is what actually talks to your transport (SMTP, SES, sendmail, and so on).</p>
-<p>Pick a transport by publishing postal's config and setting a default mailer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>php<span class="w"> </span>spark<span class="w"> </span>publish:config<span class="w"> </span>Email
+<p>Pick a transport by creating <code>app/Config/Email.php</code> to override postal's config and set a default mailer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">namespace</span> <span class="nx">Config</span><span class="p">;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">use</span> <span class="nx">Myth\Postal\Config\Email</span> <span class="k">as</span> <span class="nx">BaseEmail</span><span class="p">;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">class</span> <span class="nc">Email</span> <span class="k">extends</span> <span class="nx">BaseEmail</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">{</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1">// app/Config/Email.php (Myth\Postal\Config\Email)</span>
