@@ -48,7 +48,7 @@
         <!-- Directory containing the Paths config file -->
         <const name="CONFIGPATH" value="vendor/codeigniter4/framework/app/Config/"/>
         <!-- Directory containing the front controller (index.php) -->
-        <const name="PUBLICPATH" value="./public/"/>
+        <const name="PUBLICPATH" value="vendor/codeigniter4/framework/public/"/>
         <!-- https://getcomposer.org/xdebug -->
         <env name="COMPOSER_DISABLE_XDEBUG_WARN" value="1"/>
     </php>

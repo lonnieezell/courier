@@ -42,10 +42,12 @@ When a contact clicks their unsubscribe link, Courier's controller handles it:
 4. Triggers the `courier:contact.unsubscribed` event
 5. Renders a confirmation view (`Views/courier/unsubscribe_success.php`)
 
-You can customize the unsubscribe success and invalid-token views by publishing them:
+You can customize the unsubscribe success and invalid-token views using CodeIgniter's view overrides folder (`Config\View::$appOverridesFolder`, `overrides` by default). Create a file at the matching path under `app/Views/overrides/` and CI4 will use it instead of Courier's bundled view — no publishing step needed, and your copy won't go stale when Courier updates its views:
 
-```bash
-php spark publish:views Courier
+```
+app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_success.php
+app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_invalid.php
+app/Views/overrides/Myth/Courier/Views/courier/unsubscribe_expired.php
 ```
 
 ### One-click unsubscribe (RFC 8058)

@@ -62,7 +62,7 @@ $routes->group('my-prefix', ['namespace' => 'Myth\Courier\Controllers'], static 
 Publish the config file:
 
 ```bash
-php spark publish:config Courier
+php spark publish
 ```
 
 Edit `app/Config/Courier.php`:

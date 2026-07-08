@@ -23,7 +23,7 @@ This creates the following tables: `courier_contacts`, `courier_tags`, `courier_
 Publish Courier's config file so you can customize it:
 
 ```bash
-php spark publish:config Courier
+php spark publish
 ```
 
 This copies `Config/Courier.php` into your app's `app/Config/` folder. At minimum, set your default sender details:
@@ -42,10 +42,18 @@ Everything else has sensible defaults. See [Configuration](configuration.md) for
 
 Courier sends through [ci-postal](https://github.com/lonnieezell/postal) (`myth/postal`), which is pulled in automatically as a dependency — you don't install it separately. Postal is what actually talks to your transport (SMTP, SES, sendmail, and so on).
 
-Pick a transport by publishing postal's config and setting a default mailer:
+Pick a transport by creating `app/Config/Email.php` to override postal's config and set a default mailer:
 
-```bash
-php spark publish:config Email
+```php
+<?php
+
+namespace Config;
+
+use Myth\Postal\Config\Email as BaseEmail;
+
+class Email extends BaseEmail
+{
+}
 ```
 
 ```php
