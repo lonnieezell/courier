@@ -8,7 +8,6 @@ use BackedEnum;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use DateTime;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\CampaignDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
@@ -53,7 +52,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->campaignModel = new CampaignModel();
@@ -69,7 +68,7 @@ final class CampaignServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $this->service = new CampaignService(

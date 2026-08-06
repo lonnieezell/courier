@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
-use Myth\Courier\Config\Courier;
 use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Traits\HasDTO;
@@ -79,7 +78,7 @@ class SendModel extends Model
      */
     public function createPending(int $contactId, ?int $campaignId, ?int $stepId): SendDTO
     {
-        $days   = config(Courier::class)->unsubscribeTokenExpireDays;
+        $days   = config('Courier')->unsubscribeTokenExpireDays;
         $expiry = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
 
         $id = $this->insert([

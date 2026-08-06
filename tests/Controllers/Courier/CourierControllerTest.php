@@ -7,7 +7,6 @@ namespace Tests\Controllers\Courier;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
@@ -41,8 +40,8 @@ final class CourierControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(CourierConfig::class)->testMode       = true;
-        config(CourierConfig::class)->trackIpAddress = false;
+        config('Courier')->testMode       = true;
+        config('Courier')->trackIpAddress = false;
 
         $this->contactId  = (new ContactModel())->insert(['email' => 'tracking@example.com']);
         $this->campaignId = (new CampaignModel())->skipValidation(true)->insert([
@@ -57,7 +56,7 @@ final class CourierControllerTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        config(CourierConfig::class)->trackIpAddress = false;
+        config('Courier')->trackIpAddress = false;
         parent::tearDown();
     }
 
@@ -143,7 +142,7 @@ final class CourierControllerTest extends CIUnitTestCase
 
     public function testClickStoresIpWhenTrackIpAddressEnabled(): void
     {
-        config(CourierConfig::class)->trackIpAddress = true;
+        config('Courier')->trackIpAddress = true;
 
         $send      = (new SendModel())->createPending($this->contactId, $this->campaignId, null);
         $linkModel = new LinkModel();

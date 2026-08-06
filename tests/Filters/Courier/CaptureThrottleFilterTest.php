@@ -23,7 +23,7 @@ final class CaptureThrottleFilterTest extends CIUnitTestCase
         \CodeIgniter\Config\Services::reset(true);
         cache()->clean();
         $this->filter = new CaptureThrottleFilter();
-        $this->config = config(CourierConfig::class);
+        $this->config = config('Courier');
     }
 
     protected function tearDown(): void

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\ResponseInterface;
-use Myth\Courier\Config\Courier;
 use Myth\Courier\DTO\SendDTO;
 use Myth\Courier\Exceptions\ContactAlreadySubscribedException;
 use Myth\Courier\Exceptions\CourierValidationException;
@@ -57,7 +56,7 @@ if (! function_exists('courier_form_open')) {
         $html .= csrf_field() . "\n";
         $html .= '<input type="hidden" name="courier_source" value="' . esc($source, 'attr') . '">' . "\n";
 
-        if (config(Courier::class)->honeypot) {
+        if (config('Courier')->honeypot) {
             $html .= '<input type="text" name="courier_hp" style="display:none" tabindex="-1" autocomplete="off">' . "\n";
         }
 
@@ -195,7 +194,7 @@ if (! function_exists('courier_unsubscribe_url')) {
      */
     function courier_unsubscribe_url(SendDTO $send): string
     {
-        $config = config(Courier::class);
+        $config = config('Courier');
         $base   = rtrim($config->trackingHost ?: base_url(), '/');
 
         return $base . '/courier/unsubscribe/' . $send->unsubscribe_token;

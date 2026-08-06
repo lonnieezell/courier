@@ -7,7 +7,6 @@ namespace Tests\Services\Courier;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
@@ -55,7 +54,7 @@ final class MailerServiceTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config               = config(CourierConfig::class);
+        $config               = config('Courier');
         $config->testMode     = true;
         $config->trackingHost = 'https://track.example.com';
 
@@ -102,7 +101,7 @@ final class MailerServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
             new LinkModel(),
         );
     }
@@ -146,7 +145,7 @@ final class MailerServiceTest extends CIUnitTestCase
 
     private function enableLiveSend(): void
     {
-        $config            = config(CourierConfig::class);
+        $config            = config('Courier');
         $config->testMode  = false;
         $config->fromEmail = 'sender@example.com';
     }

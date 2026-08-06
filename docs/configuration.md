@@ -1,6 +1,6 @@
 # Configuration
 
-Courier's config file lives at `app/Config/Courier.php` after you publish it. Every option has a default that works out of the box — you only need to set what you want to change.
+Courier's config file lives at `app/Config/Courier.php` after you publish it — a `Config\Courier` class extending the package's own. Every option below is inherited with a default that works out of the box, so redeclare only the ones you want to change.
 
 ## Options
 

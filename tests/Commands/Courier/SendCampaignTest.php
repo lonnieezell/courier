@@ -9,7 +9,6 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Services;
 use Myth\Courier\Commands\SendCampaign;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -44,7 +43,7 @@ final class SendCampaignTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->campaignModel = new CampaignModel();
@@ -60,7 +59,7 @@ final class SendCampaignTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $campaignService = new CampaignService(

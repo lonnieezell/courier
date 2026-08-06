@@ -8,7 +8,6 @@ use CodeIgniter\Config\Services;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Models\ContactModel;
 use ReflectionObject;
 
@@ -47,7 +46,7 @@ final class UnsubscribePostRouteTest extends CIUnitTestCase
 
     public function testPostUnsubscribeMarksContactUnsubscribed(): void
     {
-        config(CourierConfig::class)->testMode = true;
+        config('Courier')->testMode = true;
 
         $contactModel = new ContactModel();
         $contactId    = (int) $contactModel->insert(['email' => 'oneclick@example.com']);

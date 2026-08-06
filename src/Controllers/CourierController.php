@@ -6,7 +6,6 @@ namespace Myth\Courier\Controllers;
 
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Enums\UnsubscribeResult;
 use Myth\Courier\Models\EventModel;
@@ -77,7 +76,7 @@ class CourierController extends Controller
             $sendModel->update($send->id, ['clicked_at' => date('Y-m-d H:i:s')]);
         }
 
-        $trackIp  = config(CourierConfig::class)->trackIpAddress;
+        $trackIp  = config('Courier')->trackIpAddress;
         $metadata = $trackIp ? ['ip' => $this->request->getIPAddress()] : null;
 
         model(EventModel::class)->insert([
@@ -109,7 +108,7 @@ class CourierController extends Controller
      */
     public function webhook(): ResponseInterface
     {
-        $driverClass = config(CourierConfig::class)->webhookDriver;
+        $driverClass = config('Courier')->webhookDriver;
 
         if ($driverClass === '' || ! class_exists($driverClass)) {
             return $this->response->setStatusCode(400)->setBody('Webhook driver not configured.');

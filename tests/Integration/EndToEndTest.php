@@ -6,7 +6,6 @@ namespace Tests\Integration;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\CampaignDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
@@ -51,7 +50,7 @@ final class EndToEndTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->campaignModel   = new CampaignModel();
@@ -60,7 +59,7 @@ final class EndToEndTest extends CIUnitTestCase
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();
 
-        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class));
+        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier'));
 
         $this->dripService = new DripService(
             $this->enrollmentModel,

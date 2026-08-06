@@ -9,7 +9,6 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Services;
 use Myth\Courier\Commands\ProcessDrips;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -46,7 +45,7 @@ final class ProcessDripsTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->campaignModel   = new CampaignModel();
@@ -58,7 +57,7 @@ final class ProcessDripsTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             new SendModel(),
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $this->dripService = new DripService(
@@ -124,7 +123,7 @@ final class ProcessDripsTest extends CIUnitTestCase
         // Instead, test that run() doesn't propagate exceptions by injecting a mock via anonymous class trick.
         // We test this by verifying run() returns without throwing even when processDue() throws.
 
-        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config(CourierConfig::class)), $this->contactModel, config(CourierConfig::class)) extends DripService {
+        $throwingService = new class ($this->enrollmentModel, $this->stepModel, $this->campaignModel, new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config('Courier')), $this->contactModel, config('Courier')) extends DripService {
             public function processDue(): array
             {
                 throw new RuntimeException('Simulated failure');

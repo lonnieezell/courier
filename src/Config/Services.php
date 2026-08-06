@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Myth\Courier\Config;
 
 use CodeIgniter\Config\BaseService;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\ContactTagModel;
@@ -72,7 +71,7 @@ class Services extends BaseService
             return static::getSharedInstance('campaignFileLoader');
         }
 
-        $cfg = config(CourierConfig::class);
+        $cfg = config('Courier');
 
         return new CampaignFileLoader(
             $cfg->campaignsPath !== '' ? $cfg->campaignsPath : rtrim(APPPATH, '/') . '/courier/campaigns',
@@ -89,7 +88,7 @@ class Services extends BaseService
             return static::getSharedInstance('markdownService');
         }
 
-        $cfg      = config(CourierConfig::class);
+        $cfg      = config('Courier');
         $basePath = $cfg->markdownPath !== '' ? $cfg->markdownPath : APPPATH;
 
         return new MarkdownService($basePath);
@@ -122,7 +121,7 @@ class Services extends BaseService
             static::templateService(),
             model(SendModel::class),
             model(CampaignModel::class),
-            config(CourierConfig::class),
+            config('Courier'),
         );
     }
 
@@ -143,7 +142,7 @@ class Services extends BaseService
             static::mailerService(),
             model(SendModel::class),
             model(ContactModel::class),
-            config(CourierConfig::class),
+            config('Courier'),
         );
     }
 
@@ -163,7 +162,7 @@ class Services extends BaseService
             model(CampaignModel::class),
             static::mailerService(),
             model(ContactModel::class),
-            config(CourierConfig::class),
+            config('Courier'),
             static::campaignFileLoader(false),
         );
     }

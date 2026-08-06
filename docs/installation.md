@@ -26,14 +26,23 @@ Publish Courier's config file so you can customize it:
 php spark publish
 ```
 
-This copies `Config/Courier.php` into your app's `app/Config/` folder. At minimum, set your default sender details:
+This writes `app/Config/Courier.php`, a `Config\Courier` class extending the package's config. Because it lives in your application's namespace, CI4 loads it in place of the package default — so anything you redeclare there wins. Publishing again leaves an existing file untouched.
+
+Redeclare only what you want to change. At minimum, set your default sender details:
 
 ```php
 <?php
 // app/Config/Courier.php
 
-public string $fromName  = 'Acme Newsletter';
-public string $fromEmail = 'hello@acme.com';
+namespace Config;
+
+use Myth\Courier\Config\Courier as CourierConfig;
+
+class Courier extends CourierConfig
+{
+    public string $fromName  = 'Acme Newsletter';
+    public string $fromEmail = 'hello@acme.com';
+}
 ```
 
 Everything else has sensible defaults. See [Configuration](configuration.md) for the full list.

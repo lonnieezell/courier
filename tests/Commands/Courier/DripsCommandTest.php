@@ -10,7 +10,6 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Services;
 use Myth\Courier\Commands\DripsCommand;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -46,7 +45,7 @@ final class DripsCommandTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->contactModel    = new ContactModel();
@@ -62,7 +61,7 @@ final class DripsCommandTest extends CIUnitTestCase
                 new TemplateService(new MarkdownService(sys_get_temp_dir())),
                 new SendModel(),
                 $this->campaignModel,
-                config(CourierConfig::class),
+                config('Courier'),
             ),
             $this->contactModel,
             $config,

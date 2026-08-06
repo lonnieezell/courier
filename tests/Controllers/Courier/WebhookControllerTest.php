@@ -8,7 +8,6 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use CodeIgniter\Test\TestResponse;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\EventModel;
@@ -35,14 +34,14 @@ final class WebhookControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(CourierConfig::class)->testMode = true;
+        config('Courier')->testMode = true;
         FakeWebhookDriver::reset();
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        $config                = config(CourierConfig::class);
+        $config                = config('Courier');
         $config->webhookDriver = '';
     }
 
@@ -63,8 +62,8 @@ final class WebhookControllerTest extends CIUnitTestCase
 
     public function testWebhookReturns403WhenSignatureInvalid(): void
     {
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$signatureValid          = false;
+        config('Courier')->webhookDriver   = FakeWebhookDriver::class;
+        FakeWebhookDriver::$signatureValid = false;
 
         $result = $this->postWebhook();
 
@@ -73,8 +72,8 @@ final class WebhookControllerTest extends CIUnitTestCase
 
     public function testWebhookConfirmsSubscriptionAndReturns200(): void
     {
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$isConfirmation          = true;
+        config('Courier')->webhookDriver   = FakeWebhookDriver::class;
+        FakeWebhookDriver::$isConfirmation = true;
 
         $result = $this->postWebhook();
 
@@ -87,8 +86,8 @@ final class WebhookControllerTest extends CIUnitTestCase
         $contactModel = new ContactModel();
         $contactModel->insert(['email' => 'bounce@example.com']);
 
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$events                  = [
+        config('Courier')->webhookDriver = FakeWebhookDriver::class;
+        FakeWebhookDriver::$events       = [
             ['type' => 'bounce', 'email' => 'bounce@example.com', 'message_id' => null],
         ];
 
@@ -105,8 +104,8 @@ final class WebhookControllerTest extends CIUnitTestCase
         $contactModel = new ContactModel();
         $contactModel->insert(['email' => 'spam@example.com']);
 
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$events                  = [
+        config('Courier')->webhookDriver = FakeWebhookDriver::class;
+        FakeWebhookDriver::$events       = [
             ['type' => 'complaint', 'email' => 'spam@example.com', 'message_id' => null],
         ];
 
@@ -120,8 +119,8 @@ final class WebhookControllerTest extends CIUnitTestCase
 
     public function testWebhookSoftBounceLogsEventAndReturns200(): void
     {
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$events                  = [
+        config('Courier')->webhookDriver = FakeWebhookDriver::class;
+        FakeWebhookDriver::$events       = [
             ['type' => 'soft_bounce', 'email' => 'soft@example.com', 'message_id' => null],
         ];
 
@@ -138,8 +137,8 @@ final class WebhookControllerTest extends CIUnitTestCase
         $contactModel = new ContactModel();
         $contactModel->insert(['email' => 'softonly@example.com']);
 
-        config(CourierConfig::class)->webhookDriver = FakeWebhookDriver::class;
-        FakeWebhookDriver::$events                  = [
+        config('Courier')->webhookDriver = FakeWebhookDriver::class;
+        FakeWebhookDriver::$events       = [
             ['type' => 'soft_bounce', 'email' => 'softonly@example.com', 'message_id' => null],
         ];
 

@@ -6,7 +6,6 @@ namespace Tests\Services\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -54,7 +53,7 @@ final class DripServiceTest extends CIUnitTestCase
         $this->campaignsDir = sys_get_temp_dir() . '/courier_drip_test_' . uniqid();
         mkdir($this->campaignsDir, 0777, true);
 
-        $config                = config(CourierConfig::class);
+        $config                = config('Courier');
         $config->testMode      = true;
         $config->campaignsPath = $this->campaignsDir;
 
@@ -68,7 +67,7 @@ final class DripServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $this->service = new DripService(
@@ -494,13 +493,13 @@ final class DripServiceTest extends CIUnitTestCase
      */
     private function createServiceWithFailingMailer(): DripService
     {
-        $config                    = config(CourierConfig::class);
+        $config                    = config('Courier');
         $config->testMode          = true;
         $config->campaignsPath     = $this->campaignsDir;
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class)) extends MailerService {
+        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 return false;
@@ -523,13 +522,13 @@ final class DripServiceTest extends CIUnitTestCase
      */
     private function createServiceWithThrowingMailer(): DripService
     {
-        $config                    = config(CourierConfig::class);
+        $config                    = config('Courier');
         $config->testMode          = true;
         $config->campaignsPath     = $this->campaignsDir;
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config(CourierConfig::class)) extends MailerService {
+        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 throw new RuntimeException('ESP connection refused');
@@ -612,7 +611,7 @@ final class DripServiceTest extends CIUnitTestCase
             ->set('next_send_at', date('Y-m-d H:i:s', strtotime('-1 hour')))
             ->update();
 
-        $config                    = config(CourierConfig::class);
+        $config                    = config('Courier');
         $config->testMode          = true;
         $config->campaignsPath     = $this->campaignsDir;
         $config->retryDelayMinutes = 5;
@@ -630,7 +629,7 @@ final class DripServiceTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $service = new DripService(

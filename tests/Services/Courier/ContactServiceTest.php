@@ -7,7 +7,6 @@ namespace Tests\Services\Courier;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
@@ -62,14 +61,14 @@ final class ContactServiceTest extends CIUnitTestCase
 
     private function makeDripService(): DripService
     {
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         return new DripService(
             $this->enrollmentModel,
             new DripStepModel(),
             $this->campaignModel,
-            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config(CourierConfig::class)),
+            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config('Courier')),
             new ContactModel(),
             $config,
         );

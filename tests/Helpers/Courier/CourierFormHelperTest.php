@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Helpers\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\DTO\SendDTO;
 
 /**
@@ -97,7 +96,7 @@ final class CourierFormHelperTest extends CIUnitTestCase
 
     public function testCourierFormOmitsHoneypotFieldWhenDisabled(): void
     {
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->honeypot = false;
 
         $html = courier_form('test-source');

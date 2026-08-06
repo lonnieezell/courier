@@ -14,6 +14,9 @@ parameters:
 		- Faker\Generator
 	scanDirectories:
 		- vendor/codeigniter4/framework/system/Helpers
+		# The published Config\Courier stub: known to PHPStan, but not analysed
+		# as package source — it is a template for the host application.
+		- stubs
 	dynamicConstantNames:
 		- CodeIgniter\CodeIgniter::CI_VERSION
 	codeigniter:

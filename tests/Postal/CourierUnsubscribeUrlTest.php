@@ -6,7 +6,6 @@ namespace Tests\Postal;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Models\ContactModel;
 use Myth\Courier\Models\SendModel;
@@ -29,7 +28,7 @@ final class CourierUnsubscribeUrlTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        config(CourierConfig::class)->trackingHost = 'https://track.example.com';
+        config('Courier')->trackingHost = 'https://track.example.com';
 
         $this->contactId = (int) (new ContactModel())->insert([
             'email' => 'reader@example.com',

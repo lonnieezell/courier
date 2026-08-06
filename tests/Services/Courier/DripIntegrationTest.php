@@ -6,7 +6,6 @@ namespace Tests\Services\Courier;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Myth\Courier\Config\Courier as CourierConfig;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\EnrollmentStatus;
@@ -49,7 +48,7 @@ final class DripIntegrationTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $config           = config(CourierConfig::class);
+        $config           = config('Courier');
         $config->testMode = true;
 
         $this->campaignModel   = new CampaignModel();
@@ -62,7 +61,7 @@ final class DripIntegrationTest extends CIUnitTestCase
             new TemplateService(new MarkdownService(sys_get_temp_dir())),
             $this->sendModel,
             $this->campaignModel,
-            config(CourierConfig::class),
+            config('Courier'),
         );
 
         $this->dripService = new DripService(
