@@ -12,7 +12,7 @@ use Myth\Postal\SuppressionListInterface;
 /**
  * Suppresses recipients whose contact record is no longer mailable —
  * unsubscribed, bounced, or marked as a complaint. Bound into postal via
- * Config\Email::$suppressionList so the mailer filters them before dispatch.
+ * Config\Mailer::$suppressionList so the mailer filters them before dispatch.
  */
 class CourierSuppressionList implements SuppressionListInterface
 {

@@ -51,36 +51,34 @@ Everything else has sensible defaults. See [Configuration](configuration.md) for
 
 Courier sends through [ci-postal](https://github.com/lonnieezell/postal) (`myth/postal`), which is pulled in automatically as a dependency — you don't install it separately. Postal is what actually talks to your transport (SMTP, SES, sendmail, and so on).
 
-Pick a transport by creating `app/Config/Email.php` to override postal's config and set a default mailer:
+The same `php spark publish` above also writes `app/Config/Mailer.php`, postal's config. Pick a transport there and set a default mailer:
 
 ```php
 <?php
+// app/Config/Mailer.php
 
 namespace Config;
 
-use Myth\Postal\Config\Email as BaseEmail;
+use Myth\Postal\Config\Mailer as PostalMailer;
 
-class Email extends BaseEmail
+class Mailer extends PostalMailer
 {
+    public string $default = 'smtp';
+
+    public array $mailers = [
+        'smtp' => [
+            'transport' => 'smtp',
+            'host'      => 'smtp.acme.com',
+            'port'      => 587,
+            'username'  => 'postmaster@acme.com',
+            'password'  => 'super-secret',
+        ],
+    ];
 }
 ```
 
-```php
-<?php
-// app/Config/Email.php (Myth\Postal\Config\Email)
-
-public string $default = 'smtp';
-
-public array $mailers = [
-    'smtp' => [
-        'transport' => 'smtp',
-        'host'      => 'smtp.acme.com',
-        'port'      => 587,
-        'username'  => 'postmaster@acme.com',
-        'password'  => 'super-secret',
-    ],
-];
-```
+!!! note
+    Postal's config class was named `Email` before `v1.0.0-beta.2`. It was renamed to `Mailer` because the old short name collided with CI4's own `Config\Email`, which stopped application overrides from ever being read. If you are upgrading, rename your `app/Config/Email.php` accordingly.
 
 Courier wires two things into postal for you, with no extra setup:
 

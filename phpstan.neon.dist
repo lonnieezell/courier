@@ -22,6 +22,9 @@ parameters:
 	codeigniter:
 		additionalConfigNamespaces:
 			- Myth\Courier\Config
+			# Courier resolves postal's Config\Mailer by short name, both in the
+			# registrar binding and its test.
+			- Myth\Postal\Config
 		additionalServices:
 			- Myth\Courier\Config\Services
 			- Myth\Postal\Config\Services

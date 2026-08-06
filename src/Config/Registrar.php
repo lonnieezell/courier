@@ -21,10 +21,15 @@ class Registrar
 
     /**
      * Binds Courier's suppression list and unsubscribe URL resolver into
-     * postal's Config\Email so the mailer filters suppressed recipients and
+     * postal's Config\Mailer so the mailer filters suppressed recipients and
      * injects List-Unsubscribe headers automatically.
+     *
+     * CI4 matches a registrar method to the config class' short name, so this
+     * must stay named for postal's config class. It was Email() until postal
+     * renamed Config\Email to Config\Mailer; a stale name here does not error,
+     * it just stops binding.
      */
-    public static function Email(): array
+    public static function Mailer(): array
     {
         return [
             'suppressionList' => CourierSuppressionList::class,

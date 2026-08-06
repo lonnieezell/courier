@@ -10,7 +10,7 @@ use Myth\Postal\UnsubscribeUrlInterface;
 
 /**
  * Resolves the per-recipient unsubscribe URL postal injects into the
- * List-Unsubscribe header. Bound into postal via Config\Email::$unsubscribeUrl.
+ * List-Unsubscribe header. Bound into postal via Config\Mailer::$unsubscribeUrl.
  */
 class CourierUnsubscribeUrl implements UnsubscribeUrlInterface
 {
