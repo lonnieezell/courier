@@ -77,6 +77,20 @@ Workflows run on `develop` branch PRs/pushes. PHPUnit runs against PHP 8.2–8.5
 
 Level 5 with strict rules enabled (`phpstan.neon.dist`). When adding new Config namespaces or Services, register them under `parameters.codeigniter.additionalConfigNamespaces` / `additionalServices` in `phpstan.neon.dist`.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`lonnieezell/courier`), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root (created lazily by `/domain-modeling`). See `docs/agents/domain.md`.
+
 ## Code Search
 
 Use `semble search` to find code by describing what it does or naming a symbol/identifier, instead of grep:

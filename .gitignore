@@ -112,3 +112,5 @@ nb-configuration.xml
 /.php-cs-fixer.php
 /docs/assets/__pycache__/
 /docs/review/
+/docs/agents/
+/tmp/
