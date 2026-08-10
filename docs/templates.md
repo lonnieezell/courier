@@ -66,6 +66,9 @@ By default, Courier resolves markdown paths relative to `APPPATH`, so `emails/ma
 
 Use standard [GitHub Flavored Markdown](https://github.github.com/gfm/): headings, bold, italic, links, bullet lists, and tables all work.
 
+!!! note "Where the markdown flavor comes from"
+    Conversion is handled by postal, so the enabled syntax follows its `$markdownExtensions` setting. GitHub Flavored Markdown is on by default. To change it, create an `app/Config/Postal.php` extending `Myth\Postal\Config\Postal` — postal resolves that config by short name, so your version wins.
+
 ```markdown
 Hi {first_name}!
 
@@ -102,9 +105,17 @@ Heads up: reports are archived after 90 days.
 </mail-panel>
 ```
 
-`<mail-button>` renders a table-based button, and `<mail-panel>` renders a highlighted callout box — both with inline styles that survive the major email clients. A component tag has to start on its own line. Component links are click-tracked like any other link, and the plain-text alternative keeps the inner text without the surrounding tags.
+`<mail-button>` renders a table-based button, and `<mail-panel>` renders a bordered callout box for setting text apart from the body copy. Both use inline styles, which is what the major email clients need. A component tag has to start on its own line.
 
-Components are rendered at postal's default styling. To restyle them, publish postal's component views — see the [Postal documentation](https://github.com/lonnieezell/postal).
+Components fit the rest of the pipeline: their links are click-tracked like any other link, and the plain-text alternative keeps the inner text without the surrounding tags.
+
+You can point a button at a tracking placeholder, which is often the tidiest way to give an email a real unsubscribe control:
+
+```markdown
+<mail-button url="{courier_unsubscribe_url}">Unsubscribe</mail-button>
+```
+
+Components render at postal's default styling. To restyle them, publish postal's component views — see the [Postal documentation](https://github.com/lonnieezell/postal).
 
 ### Token substitution
 
