@@ -25,7 +25,6 @@ use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -68,7 +67,7 @@ final class ContactServiceTest extends CIUnitTestCase
             $this->enrollmentModel,
             new DripStepModel(),
             $this->campaignModel,
-            new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), new SendModel(), $this->campaignModel, config('Courier')),
+            new MailerService(new TemplateService(sys_get_temp_dir()), new SendModel(), $this->campaignModel, config('Courier')),
             new ContactModel(),
             $config,
         );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use InvalidArgumentException;
+use Myth\Postal\Markdown\LayoutRenderer;
 use Throwable;
 
 /**
@@ -12,7 +13,10 @@ use Throwable;
  */
 class TemplateService
 {
-    public function __construct(private readonly MarkdownService $markdownService)
+    /**
+     * @param string $markdownPath Absolute path to resolve markdown body files from.
+     */
+    public function __construct(private readonly string $markdownPath)
     {
     }
 
@@ -30,7 +34,10 @@ class TemplateService
     public function render(string $viewPath, ?string $layoutPath, array $data = []): string
     {
         if (str_ends_with($viewPath, '.md')) {
-            $body = $this->markdownService->renderFile($viewPath, $this->buildTokens($data));
+            $html = service('markdown')->toHtml($this->loadMarkdown($viewPath, $data));
+
+            // CommonMark URL-encodes { and } in link hrefs; restore so MailerService can replace them
+            $body = (string) preg_replace('/%7B([a-zA-Z0-9_]+)%7D/i', '{$1}', $html);
         } else {
             $body = $this->renderView($viewPath, $data);
         }
@@ -39,14 +46,12 @@ class TemplateService
             return $body;
         }
 
-        $data['content'] = $body;
-
-        return $this->renderView($layoutPath, $data);
+        return $this->renderLayout($body, $layoutPath, $data);
     }
 
     /**
      * Renders a view for plain-text use.
-     * For markdown paths returns the raw markdown (already readable as plain text).
+     * For markdown paths strips the markdown syntax from the source.
      * For PHP views strips HTML tags and normalises whitespace.
      *
      * @param array<string, mixed> $data
@@ -56,7 +61,7 @@ class TemplateService
     public function renderText(string $viewPath, array $data = []): string
     {
         if (str_ends_with($viewPath, '.md')) {
-            return $this->markdownService->renderFileAsText($viewPath, $this->buildTokens($data));
+            return service('markdown')->toText($this->loadMarkdown($viewPath, $data));
         }
 
         $html = $this->renderView($viewPath, $data);
@@ -67,6 +72,60 @@ class TemplateService
         $text = (string) preg_replace('/[ \t]+/', ' ', $text);
 
         return trim($text);
+    }
+
+    /**
+     * Wraps the rendered body in a layout via postal's LayoutRenderer, which
+     * also inlines the layout's stylesheet for email-client compatibility.
+     *
+     * LayoutRenderer only hands $content to the layout view, so $data is primed
+     * on the shared renderer first to keep layouts' access to $subject, $contact
+     * and friends.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @throws InvalidArgumentException
+     */
+    private function renderLayout(string $body, string $layoutPath, array $data): string
+    {
+        try {
+            service('renderer')->setData($data, 'raw');
+
+            return (new LayoutRenderer())->render($body, $layoutPath);
+        } catch (Throwable $e) {
+            throw new InvalidArgumentException(
+                "Courier: could not render view \"{$layoutPath}\": " . $e->getMessage(),
+                0,
+                $e,
+            );
+        }
+    }
+
+    /**
+     * Loads a markdown body file from the configured base path and substitutes
+     * its {token} placeholders, returning the raw markdown source.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @throws InvalidArgumentException when the file does not exist
+     */
+    private function loadMarkdown(string $path, array $data): string
+    {
+        $fullPath = rtrim($this->markdownPath, '/\\') . DIRECTORY_SEPARATOR . ltrim($path, '/\\');
+
+        if (! is_file($fullPath)) {
+            throw new InvalidArgumentException(
+                "Courier: markdown file not found: \"{$path}\"",
+            );
+        }
+
+        $markdown = (string) file_get_contents($fullPath);
+
+        foreach ($this->buildTokens($data) as $key => $value) {
+            $markdown = str_replace('{' . $key . '}', $value, $markdown);
+        }
+
+        return $markdown;
     }
 
     /**

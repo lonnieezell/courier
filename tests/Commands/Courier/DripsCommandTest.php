@@ -21,7 +21,6 @@ use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 
 /**
@@ -58,7 +57,7 @@ final class DripsCommandTest extends CIUnitTestCase
             $stepModel,
             $this->campaignModel,
             new MailerService(
-                new TemplateService(new MarkdownService(sys_get_temp_dir())),
+                new TemplateService(sys_get_temp_dir()),
                 new SendModel(),
                 $this->campaignModel,
                 config('Courier'),

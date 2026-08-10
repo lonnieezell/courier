@@ -18,7 +18,6 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Services\CampaignFileLoader;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use RuntimeException;
 
@@ -64,7 +63,7 @@ final class DripServiceTest extends CIUnitTestCase
         $this->sendModel       = new SendModel();
 
         $mailerService = new MailerService(
-            new TemplateService(new MarkdownService(sys_get_temp_dir())),
+            new TemplateService(sys_get_temp_dir()),
             $this->sendModel,
             $this->campaignModel,
             config('Courier'),
@@ -499,7 +498,7 @@ final class DripServiceTest extends CIUnitTestCase
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $failingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
+        $failingMailer = new class (new TemplateService(sys_get_temp_dir()), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 return false;
@@ -528,7 +527,7 @@ final class DripServiceTest extends CIUnitTestCase
         $config->retryDelayMinutes = 5;
         $config->maxRetries        = 3;
 
-        $throwingMailer = new class (new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
+        $throwingMailer = new class (new TemplateService(sys_get_temp_dir()), $this->sendModel, $this->campaignModel, config('Courier')) extends MailerService {
             public function sendStep($contact, $dripStep, $campaign = null): bool
             {
                 throw new RuntimeException('ESP connection refused');
@@ -626,7 +625,7 @@ final class DripServiceTest extends CIUnitTestCase
         };
 
         $mailerService = new MailerService(
-            new TemplateService(new MarkdownService(sys_get_temp_dir())),
+            new TemplateService(sys_get_temp_dir()),
             $this->sendModel,
             $this->campaignModel,
             config('Courier'),

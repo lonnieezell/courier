@@ -21,7 +21,6 @@ use Myth\Courier\Models\SendModel;
 use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 use Myth\Postal\Config\Services as PostalServices;
 use Myth\Postal\Email;
@@ -98,7 +97,7 @@ final class MailerServiceTest extends CIUnitTestCase
     private function makeService(): MailerService
     {
         return new MailerService(
-            new TemplateService(new MarkdownService(__DIR__ . '/../../_support/Views/')),
+            new TemplateService(__DIR__ . '/../../_support/Views/'),
             $this->sendModel,
             $this->campaignModel,
             config('Courier'),
