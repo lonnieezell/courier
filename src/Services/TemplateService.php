@@ -34,10 +34,9 @@ class TemplateService
     public function render(string $viewPath, ?string $layoutPath, array $data = []): string
     {
         if (str_ends_with($viewPath, '.md')) {
-            $html = service('markdown')->toHtml($this->loadMarkdown($viewPath, $data));
-
-            // CommonMark URL-encodes { and } in link hrefs; restore so MailerService can replace them
-            $body = (string) preg_replace('/%7B([a-zA-Z0-9_]+)%7D/i', '{$1}', $html);
+            $body = $this->restoreTokens(
+                service('markdown')->toHtml($this->loadMarkdown($viewPath, $data)),
+            );
         } else {
             $body = $this->renderView($viewPath, $data);
         }
@@ -61,7 +60,9 @@ class TemplateService
     public function renderText(string $viewPath, array $data = []): string
     {
         if (str_ends_with($viewPath, '.md')) {
-            return service('markdown')->toText($this->loadMarkdown($viewPath, $data));
+            // toText() strips markdown syntax but leaves raw HTML, including
+            // Mail Component tags, which must not reach the plain-text part.
+            return trim(strip_tags(service('markdown')->toText($this->loadMarkdown($viewPath, $data))));
         }
 
         $html = $this->renderView($viewPath, $data);
@@ -72,6 +73,35 @@ class TemplateService
         $text = (string) preg_replace('/[ \t]+/', ' ', $text);
 
         return trim($text);
+    }
+
+    /**
+     * Normalises the encodings the markdown pipeline introduces, so that
+     * MailerService's placeholder replacement and link wrapping see the URLs
+     * and {courier_*} tokens the campaign author actually wrote.
+     *
+     * Two encoders are at play: CommonMark URL-encodes braces in link hrefs
+     * ("%7B..%7D"), and Mail Components escape their attributes with
+     * esc($url, 'attr'), which HTML-entity-encodes both the braces and the URL
+     * scheme ("https&#x3A;&#x2F;&#x2F;.."). Decoding hrefs also keeps the
+     * layout-less path consistent with the layout path, where the CSS inliner's
+     * DOM round-trip already decodes them.
+     */
+    private function restoreTokens(string $html): string
+    {
+        $html = (string) preg_replace_callback(
+            '/href="([^"]*)"/',
+            static fn (array $m): string => 'href="'
+                . html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
+                . '"',
+            $html,
+        );
+
+        return (string) preg_replace(
+            ['/%7B([a-zA-Z0-9_]+)%7D/i', '/&#x7B;([a-zA-Z0-9_]+)&#x7D;/i'],
+            '{$1}',
+            $html,
+        );
     }
 
     /**

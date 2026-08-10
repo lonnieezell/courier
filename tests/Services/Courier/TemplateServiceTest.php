@@ -162,9 +162,53 @@ final class TemplateServiceTest extends CIUnitTestCase
         $this->assertStringNotContainsString('<mail-button', $html);
         $this->assertStringNotContainsString('<mail-panel', $html);
         $this->assertStringContainsString('<a href=', $html);
-        $this->assertStringContainsString('example.com&#x2F;read', $html);
         $this->assertStringContainsString('Read the update', $html);
         $this->assertStringContainsString('Heads up, this is a callout.', $html);
+    }
+
+    public function testCourierTokenSurvivesInsideMailComponentAttribute(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Nora';
+
+        // Components escape attributes with esc($url, 'attr'), which encodes the
+        // braces; MailerService's later str_replace still has to find the token.
+        $html = $this->service->render('test_component_unsubscribe.md', null, ['contact' => $contact]);
+
+        $this->assertStringContainsString('{courier_unsubscribe_url}', $html);
+
+        $finalHtml = str_replace('{courier_unsubscribe_url}', 'https://example.com/u/abc', $html);
+
+        $this->assertStringContainsString('https://example.com/u/abc', $finalHtml);
+        $this->assertStringNotContainsString('courier_unsubscribe_url', $finalHtml);
+    }
+
+    public function testRenderTextMarkdownStripsMailComponentMarkup(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Omar';
+
+        $text = $this->service->renderText('test_components.md', ['contact' => $contact]);
+
+        $this->assertStringContainsString('Hello Omar!', $text);
+        $this->assertStringContainsString('Read the update', $text);
+        $this->assertStringContainsString('Heads up, this is a callout.', $text);
+        $this->assertStringNotContainsString('<mail-button', $text);
+        $this->assertStringNotContainsString('<mail-panel', $text);
+    }
+
+    public function testMailComponentLinkStaysTrackableWithoutALayout(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Quinn';
+
+        // Components escape hrefs with esc($url, 'attr'); MailerService::wrapLinks()
+        // only matches an unencoded http(s) URL, and a layout must not be what
+        // decides whether a link gets click-tracked.
+        $html = $this->service->render('test_components.md', null, ['contact' => $contact]);
+
+        $this->assertMatchesRegularExpression('/href=(["\'])(https?:\/\/[^"\']+)\1/i', $html);
+        $this->assertStringContainsString('href="https://example.com/read"', $html);
     }
 
     public function testRenderMarkdownExposesAllContactScalarsAndDataKeys(): void
