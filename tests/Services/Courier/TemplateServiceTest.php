@@ -137,6 +137,20 @@ final class TemplateServiceTest extends CIUnitTestCase
         $this->assertStringContainsString('data-subject="Weekly Digest"', $html);
     }
 
+    public function testTrackingPlaceholdersInDefaultLayoutSurviveCssInlining(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Mia';
+
+        $html = $this->service->render('test_body.md', config('Courier')->defaultLayout, [
+            'contact' => $contact,
+        ]);
+
+        // MailerService::applyTracking() str_replaces these on the fully-rendered HTML
+        $this->assertStringContainsString('{courier_unsubscribe_url}', $html);
+        $this->assertStringContainsString('{courier_tracking_pixel}', $html);
+    }
+
     public function testRenderMarkdownRendersMailComponents(): void
     {
         $contact             = new stdClass();
