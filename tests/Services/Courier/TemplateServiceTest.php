@@ -19,8 +19,7 @@ final class TemplateServiceTest extends CIUnitTestCase
      */
     private const BODY_VIEW = 'Myth\\Courier\\Views\\tests/test_body';
 
-    private const LAYOUT_VIEW = 'Myth\\Courier\\Views\\tests/test_layout';
-
+    private const LAYOUT_VIEW        = 'Myth\\Courier\\Views\\tests/test_layout';
     private const STYLED_LAYOUT_VIEW = 'Myth\\Courier\\Views\\tests/test_styled_layout';
     private const DATA_LAYOUT_VIEW   = 'Myth\\Courier\\Views\\tests/test_data_layout';
     private const FIXTURE_DIR        = __DIR__ . '/../../_support/Views/';
