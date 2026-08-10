@@ -211,6 +211,16 @@ final class TemplateServiceTest extends CIUnitTestCase
         $this->assertStringContainsString('href="https://example.com/read"', $html);
     }
 
+    public function testAmpersandsInLinkUrlsStayEscaped(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Rae';
+
+        $html = $this->service->render('test_query_link.md', null, ['contact' => $contact]);
+
+        $this->assertStringContainsString('href="https://example.com/?a=1&amp;b=2"', $html);
+    }
+
     public function testRenderMarkdownExposesAllContactScalarsAndDataKeys(): void
     {
         $contact                    = new stdClass();

@@ -91,9 +91,13 @@ class TemplateService
     {
         $html = (string) preg_replace_callback(
             '/href="([^"]*)"/',
-            static fn (array $m): string => 'href="'
-                . html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
-                . '"',
+            // The "&" is re-escaped afterwards so decoding a scheme does not
+            // also unescape the separators in a query string.
+            static fn (array $m): string => 'href="' . str_replace(
+                '&',
+                '&amp;',
+                html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            ) . '"',
             $html,
         );
 
