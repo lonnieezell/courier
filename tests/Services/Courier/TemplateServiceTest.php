@@ -211,6 +211,19 @@ final class TemplateServiceTest extends CIUnitTestCase
         $this->assertStringContainsString('href="https://example.com/read"', $html);
     }
 
+    public function testRenderTextKeepsProseContainingAngleBrackets(): void
+    {
+        $contact             = new stdClass();
+        $contact->first_name = 'Sam';
+
+        $text = $this->service->renderText('test_angle_prose.md', ['contact' => $contact]);
+
+        // Dropping component tags must not swallow prose that merely looks like a tag
+        $this->assertStringContainsString('Upgrade if x<y then check the dashboard.', $text);
+        $this->assertStringContainsString('Go', $text);
+        $this->assertStringNotContainsString('<mail-button', $text);
+    }
+
     public function testAmpersandsInLinkUrlsStayEscaped(): void
     {
         $contact             = new stdClass();

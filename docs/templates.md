@@ -13,6 +13,8 @@ layout.php          ← outer HTML, header, footer
 
 The default layout is at `Views/courier/layouts/default.php`. It's a simple 600px responsive email with a dark header, white body, and light footer.
 
+Courier inlines the layout's stylesheet automatically: any rules in a `<style>` block are copied onto the matching elements as `style="…"` attributes before the email goes out, which is what most email clients need. You can keep writing ordinary CSS in your layout and let Courier do the inlining.
+
 ## Creating a PHP view
 
 A body view is a plain PHP view file that outputs HTML email content. Keep it simple — inline styles, table-based layout if you need columns.
@@ -83,6 +85,26 @@ The Acme Team
 [Unsubscribe]({courier_unsubscribe_url})
 {courier_tracking_pixel}
 ```
+
+### Mail components
+
+Markdown bodies can use the mail components that ship with `myth/postal`, so you can drop in a styled call-to-action or a callout without hand-writing inline-styled HTML.
+
+```markdown
+Hi {first_name}!
+
+Your report for this month is ready.
+
+<mail-button url="https://acme.com/reports/may">View the report</mail-button>
+
+<mail-panel>
+Heads up: reports are archived after 90 days.
+</mail-panel>
+```
+
+`<mail-button>` renders a table-based button, and `<mail-panel>` renders a highlighted callout box — both with inline styles that survive the major email clients. A component tag has to start on its own line. Component links are click-tracked like any other link, and the plain-text alternative keeps the inner text without the surrounding tags.
+
+Components are rendered at postal's default styling. To restyle them, publish postal's component views — see the [Postal documentation](https://github.com/lonnieezell/postal).
 
 ### Token substitution
 
@@ -156,7 +178,7 @@ public string $defaultLayout = 'App\Views\emails\layouts\branded';
 Courier generates a plain-text alternative automatically. The behavior differs slightly by template type:
 
 - **PHP views** — Courier renders the body view, strips HTML tags, and collapses whitespace.
-- **Markdown files** — The raw markdown source is used directly. It's already readable as plain text, so no stripping is needed.
+- **Markdown files** — Courier strips the markdown syntax from the source, so headings, `**bold**`, and `` `code` `` markers don't show up as literal characters in the text part. Links are rendered as `text (url)`.
 
 Either way, the unsubscribe URL is appended at the bottom. You don't need to maintain a separate plain-text file.
 

@@ -60,9 +60,13 @@ class TemplateService
     public function renderText(string $viewPath, array $data = []): string
     {
         if (str_ends_with($viewPath, '.md')) {
-            // toText() strips markdown syntax but leaves raw HTML, including
-            // Mail Component tags, which must not reach the plain-text part.
-            return trim(strip_tags(service('markdown')->toText($this->loadMarkdown($viewPath, $data))));
+            $text = service('markdown')->toText($this->loadMarkdown($viewPath, $data));
+
+            // toText() strips markdown syntax but leaves raw HTML, so the Mail
+            // Component tags have to be dropped here or they reach the
+            // plain-text part. Only those tags are removed: strip_tags() would
+            // also swallow prose such as "if x<y then".
+            return trim((string) preg_replace('#</?mail-[a-z0-9-]*+[^>]*+>#i', '', $text));
         }
 
         $html = $this->renderView($viewPath, $data);
