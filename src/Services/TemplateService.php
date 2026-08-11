@@ -80,36 +80,15 @@ class TemplateService
     }
 
     /**
-     * Normalises the encodings the markdown pipeline introduces, so that
-     * MailerService's placeholder replacement and link wrapping see the URLs
-     * and {courier_*} tokens the campaign author actually wrote.
+     * Restores {courier_*} placeholders that CommonMark URL-encoded while
+     * converting, so MailerService's later str_replace still finds them.
      *
-     * Two encoders are at play: CommonMark URL-encodes braces in link hrefs
-     * ("%7B..%7D"), and Mail Components escape their attributes with
-     * esc($url, 'attr'), which HTML-entity-encodes both the braces and the URL
-     * scheme ("https&#x3A;&#x2F;&#x2F;.."). Decoding hrefs also keeps the
-     * layout-less path consistent with the layout path, where the CSS inliner's
-     * DOM round-trip already decodes them.
+     * A link written as [Unsubscribe]({courier_unsubscribe_url}) comes out of
+     * the converter as href="%7Bcourier_unsubscribe_url%7D".
      */
     private function restoreTokens(string $html): string
     {
-        $html = (string) preg_replace_callback(
-            '/href="([^"]*)"/',
-            // The "&" is re-escaped afterwards so decoding a scheme does not
-            // also unescape the separators in a query string.
-            static fn (array $m): string => 'href="' . str_replace(
-                '&',
-                '&amp;',
-                html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-            ) . '"',
-            $html,
-        );
-
-        return (string) preg_replace(
-            ['/%7B([a-zA-Z0-9_]+)%7D/i', '/&#x7B;([a-zA-Z0-9_]+)&#x7D;/i'],
-            '{$1}',
-            $html,
-        );
+        return (string) preg_replace('/%7B([a-zA-Z0-9_]+)%7D/i', '{$1}', $html);
     }
 
     /**
