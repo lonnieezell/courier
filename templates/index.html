@@ -603,6 +603,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mail-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mail components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#token-substitution" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -905,6 +916,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mail-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mail components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#token-substitution" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1008,6 +1030,7 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  └─ body view.php  ← your campaign&#39;s content
 </code></pre></div>
 <p>The default layout is at <code>Views/courier/layouts/default.php</code>. It's a simple 600px responsive email with a dark header, white body, and light footer.</p>
+<p>Courier inlines the layout's stylesheet automatically: any rules in a <code>&lt;style&gt;</code> block are copied onto the matching elements as <code>style="…"</code> attributes before the email goes out, which is what most email clients need. You can keep writing ordinary CSS in your layout and let Courier do the inlining.</p>
 <h2 id="creating-a-php-view">Creating a PHP view</h2>
 <p>A body view is a plain PHP view file that outputs HTML email content. Keep it simple — inline styles, table-based layout if you need columns.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="x">&lt;!-- app/Views/emails/may_newsletter.php --&gt;</span>
@@ -1062,6 +1085,10 @@
 <p>By default, Courier resolves markdown paths relative to <code>APPPATH</code>, so <code>emails/may_newsletter.md</code> maps to <code>app/emails/may_newsletter.md</code>. You can change this with the <code>$markdownPath</code> config option — see <a href="../configuration/">Configuration</a>.</p>
 <h3 id="writing-markdown-email-content">Writing markdown email content</h3>
 <p>Use standard <a href="https://github.github.com/gfm/">GitHub Flavored Markdown</a>: headings, bold, italic, links, bullet lists, and tables all work.</p>
+<div class="admonition note">
+<p class="admonition-title">Where the markdown flavor comes from</p>
+<p>Conversion is handled by postal, so the enabled syntax follows its <code>$markdownExtensions</code> setting. GitHub Flavored Markdown is on by default. To change it, create an <code>app/Config/Postal.php</code> extending <code>Myth\Postal\Config\Postal</code> — postal resolves that config by short name, so your version wins.</p>
+</div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hi {first_name}!
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Here&#39;s what&#39;s new this month at Acme.
@@ -1080,6 +1107,24 @@
 <a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>[<span class="nt">Unsubscribe</span>](<span class="na">{courier_unsubscribe_url}</span>)
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>{courier_tracking_pixel}
 </code></pre></div>
+<h3 id="mail-components">Mail components</h3>
+<p>Markdown bodies can use the mail components that ship with <code>myth/postal</code>, so you can drop in a styled call-to-action or a callout without hand-writing inline-styled HTML.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Hi {first_name}!
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Your report for this month is ready.
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>&lt;mail-button url=&quot;https://acme.com/reports/may&quot;&gt;View the report&lt;/mail-button&gt;
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>&lt;mail-panel&gt;
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>Heads up: reports are archived after 90 days.
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>&lt;/mail-panel&gt;
+</code></pre></div>
+<p><code>&lt;mail-button&gt;</code> renders a table-based button, and <code>&lt;mail-panel&gt;</code> renders a bordered callout box for setting text apart from the body copy. Both use inline styles, which is what the major email clients need. A component tag has to start on its own line.</p>
+<p>Components fit the rest of the pipeline: their links are click-tracked like any other link, and the plain-text alternative keeps the inner text without the surrounding tags.</p>
+<p>You can point a button at a tracking placeholder, which is often the tidiest way to give an email a real unsubscribe control:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&lt;mail-button url=&quot;{courier_unsubscribe_url}&quot;&gt;Unsubscribe&lt;/mail-button&gt;
+</code></pre></div>
+<p>Components render at postal's default styling. To restyle them, publish postal's component views — see the <a href="https://github.com/lonnieezell/postal">Postal documentation</a>.</p>
 <h3 id="token-substitution">Token substitution</h3>
 <p>PHP views use <code>$contact-&gt;first_name</code>. Markdown files use <code>{token}</code> placeholders instead. Courier replaces them before rendering.</p>
 <p><strong>Available tokens:</strong></p>
@@ -1125,7 +1170,7 @@
 <div class="admonition tip">
 <p class="admonition-title">Unsubscribe links in markdown</p>
 <p>You can use <code>{courier_unsubscribe_url}</code> directly in a markdown link:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[<span class="nt">Unsubscribe</span>](<span class="na">{courier_unsubscribe_url}</span>)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>[<span class="nt">Unsubscribe</span>](<span class="na">{courier_unsubscribe_url}</span>)
 </code></pre></div>
 Courier automatically restores the placeholder after markdown rendering so it gets replaced correctly before sending.</p>
 </div>
@@ -1154,29 +1199,29 @@ Courier automatically restores the placeholder after markdown rendering so it ge
 <p>CAN-SPAM and GDPR both require a way to opt out. Make sure <code>{courier_unsubscribe_url}</code> appears in every email. The default layout already includes it in the footer — if you write a custom layout or a self-contained markdown file, add it yourself.</p>
 </div>
 <p>Place them in your layout so every campaign gets them automatically:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cm">&lt;!-- in your layout footer --&gt;</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;{courier_unsubscribe_url}&quot;</span><span class="p">&gt;</span>Unsubscribe<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="cm">&lt;!-- at the very end of &lt;body&gt; --&gt;</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>{courier_tracking_pixel}
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cm">&lt;!-- in your layout footer --&gt;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;{courier_unsubscribe_url}&quot;</span><span class="p">&gt;</span>Unsubscribe<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="cm">&lt;!-- at the very end of &lt;body&gt; --&gt;</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>{courier_tracking_pixel}
 </code></pre></div>
 <h2 id="using-a-custom-layout">Using a custom layout</h2>
 <p>Point a campaign at your own layout view — this works for both PHP views and markdown files:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="x">$campaignService-&gt;create([</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="x">    // ...</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="x">    &#39;view&#39;   =&gt; &#39;emails/may_newsletter.md&#39;,          // markdown body</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="x">    &#39;layout&#39; =&gt; &#39;App\Views\emails\layouts\branded&#39;,  // PHP layout wraps it</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="x">]);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="x">$campaignService-&gt;create([</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="x">    // ...</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="x">    &#39;view&#39;   =&gt; &#39;emails/may_newsletter.md&#39;,          // markdown body</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="x">    &#39;layout&#39; =&gt; &#39;App\Views\emails\layouts\branded&#39;,  // PHP layout wraps it</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="x">]);</span>
 </code></pre></div>
 <p>Your layout needs to output <code>&lt;?= $content ?&gt;</code> where the body should appear.</p>
 <p>To change the default for all campaigns, update <code>$defaultLayout</code> in your config:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="x">public string $defaultLayout = &#39;App\Views\emails\layouts\branded&#39;;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="x">public string $defaultLayout = &#39;App\Views\emails\layouts\branded&#39;;</span>
 </code></pre></div>
 <h2 id="plain-text-fallback">Plain-text fallback</h2>
 <p>Courier generates a plain-text alternative automatically. The behavior differs slightly by template type:</p>
 <ul>
 <li><strong>PHP views</strong> — Courier renders the body view, strips HTML tags, and collapses whitespace.</li>
-<li><strong>Markdown files</strong> — The raw markdown source is used directly. It's already readable as plain text, so no stripping is needed.</li>
+<li><strong>Markdown files</strong> — Courier strips the markdown syntax from the source, so headings, <code>**bold**</code>, and <code>`code`</code> markers don't show up as literal characters in the text part. Links are rendered as <code>text (url)</code>.</li>
 </ul>
 <p>Either way, the unsubscribe URL is appended at the bottom. You don't need to maintain a separate plain-text file.</p>
 <h2 id="testing-your-templates">Testing your templates</h2>
@@ -1184,19 +1229,19 @@ Courier automatically restores the placeholder after markdown rendering so it ge
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">PHP view</label><label for="__tabbed_1_2">Markdown file</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="x">$html = service(&#39;templateService&#39;)-&gt;render(</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="x">    &#39;App\Views\emails\may_newsletter&#39;,</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="x">    &#39;App\Views\emails\layouts\branded&#39;,</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="x">    [&#39;contact&#39; =&gt; $contact, &#39;subject&#39; =&gt; &#39;Preview&#39;]</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="x">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="x">$html = service(&#39;templateService&#39;)-&gt;render(</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="x">    &#39;App\Views\emails\may_newsletter&#39;,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="x">    &#39;App\Views\emails\layouts\branded&#39;,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="x">    [&#39;contact&#39; =&gt; $contact, &#39;subject&#39; =&gt; &#39;Preview&#39;]</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="x">);</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="x">$html = service(&#39;templateService&#39;)-&gt;render(</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="x">    &#39;emails/may_newsletter.md&#39;,</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="x">    &#39;App\Views\emails\layouts\branded&#39;,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="x">    [&#39;contact&#39; =&gt; $contact, &#39;subject&#39; =&gt; &#39;Preview&#39;]</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="x">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="x">$html = service(&#39;templateService&#39;)-&gt;render(</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="x">    &#39;emails/may_newsletter.md&#39;,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="x">    &#39;App\Views\emails\layouts\branded&#39;,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="x">    [&#39;contact&#39; =&gt; $contact, &#39;subject&#39; =&gt; &#39;Preview&#39;]</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="x">);</span>
 </code></pre></div>
 </div>
 </div>
