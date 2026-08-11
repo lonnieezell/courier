@@ -244,7 +244,7 @@ public int $captureRateLimit = 30; // raise the limit
 public int $captureRateLimit = 0;  // disable entirely
 ```
 
-See [`$captureRateLimit`](configuration.md#captureRateLimit) in the configuration reference.
+See [`$captureRateLimit`](configuration.md#captureratelimit) in the configuration reference.
 
 ### Bot detection (honeypot)
 

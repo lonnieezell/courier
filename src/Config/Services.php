@@ -18,7 +18,6 @@ use Myth\Courier\Services\CampaignService;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\SegmentService;
 use Myth\Courier\Services\TemplateService;
 
@@ -79,22 +78,6 @@ class Services extends BaseService
     }
 
     /**
-     * Resolves markdown files and renders them as HTML or plain text.
-     * Used internally by TemplateService.
-     */
-    public static function markdownService(bool $getShared = true): MarkdownService
-    {
-        if ($getShared) {
-            return static::getSharedInstance('markdownService');
-        }
-
-        $cfg      = config('Courier');
-        $basePath = $cfg->markdownPath !== '' ? $cfg->markdownPath : APPPATH;
-
-        return new MarkdownService($basePath);
-    }
-
-    /**
      * Renders email body views and layouts using CI4's view() system or markdown files.
      * Used internally by MailerService; inject directly when previewing templates.
      */
@@ -104,7 +87,9 @@ class Services extends BaseService
             return static::getSharedInstance('templateService');
         }
 
-        return new TemplateService(static::markdownService(false));
+        $cfg = config('Courier');
+
+        return new TemplateService($cfg->markdownPath !== '' ? $cfg->markdownPath : APPPATH);
     }
 
     /**

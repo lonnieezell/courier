@@ -13,6 +13,8 @@ layout.php          ← outer HTML, header, footer
 
 The default layout is at `Views/courier/layouts/default.php`. It's a simple 600px responsive email with a dark header, white body, and light footer.
 
+Courier inlines the layout's stylesheet automatically: any rules in a `<style>` block are copied onto the matching elements as `style="…"` attributes before the email goes out, which is what most email clients need. You can keep writing ordinary CSS in your layout and let Courier do the inlining.
+
 ## Creating a PHP view
 
 A body view is a plain PHP view file that outputs HTML email content. Keep it simple — inline styles, table-based layout if you need columns.
@@ -64,6 +66,9 @@ By default, Courier resolves markdown paths relative to `APPPATH`, so `emails/ma
 
 Use standard [GitHub Flavored Markdown](https://github.github.com/gfm/): headings, bold, italic, links, bullet lists, and tables all work.
 
+!!! note "Where the markdown flavor comes from"
+    Conversion is handled by postal, so the enabled syntax follows its `$markdownExtensions` setting. GitHub Flavored Markdown is on by default. To change it, create an `app/Config/Postal.php` extending `Myth\Postal\Config\Postal` — postal resolves that config by short name, so your version wins.
+
 ```markdown
 Hi {first_name}!
 
@@ -83,6 +88,34 @@ The Acme Team
 [Unsubscribe]({courier_unsubscribe_url})
 {courier_tracking_pixel}
 ```
+
+### Mail components
+
+Markdown bodies can use the mail components that ship with `myth/postal`, so you can drop in a styled call-to-action or a callout without hand-writing inline-styled HTML.
+
+```markdown
+Hi {first_name}!
+
+Your report for this month is ready.
+
+<mail-button url="https://acme.com/reports/may">View the report</mail-button>
+
+<mail-panel>
+Heads up: reports are archived after 90 days.
+</mail-panel>
+```
+
+`<mail-button>` renders a table-based button, and `<mail-panel>` renders a bordered callout box for setting text apart from the body copy. Both use inline styles, which is what the major email clients need. A component tag has to start on its own line.
+
+Components fit the rest of the pipeline: their links are click-tracked like any other link, and the plain-text alternative keeps the inner text without the surrounding tags.
+
+You can point a button at a tracking placeholder, which is often the tidiest way to give an email a real unsubscribe control:
+
+```markdown
+<mail-button url="{courier_unsubscribe_url}">Unsubscribe</mail-button>
+```
+
+Components render at postal's default styling. To restyle them, publish postal's component views — see the [Postal documentation](https://github.com/lonnieezell/postal).
 
 ### Token substitution
 
@@ -156,7 +189,7 @@ public string $defaultLayout = 'App\Views\emails\layouts\branded';
 Courier generates a plain-text alternative automatically. The behavior differs slightly by template type:
 
 - **PHP views** — Courier renders the body view, strips HTML tags, and collapses whitespace.
-- **Markdown files** — The raw markdown source is used directly. It's already readable as plain text, so no stripping is needed.
+- **Markdown files** — Courier strips the markdown syntax from the source, so headings, `**bold**`, and `` `code` `` markers don't show up as literal characters in the text part. Links are rendered as `text (url)`.
 
 Either way, the unsubscribe URL is appended at the bottom. You don't need to maintain a separate plain-text file.
 

@@ -470,6 +470,18 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Views/tests/test_layout.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Variable $content might not be defined.',
+	'identifier' => 'variable.undefined',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Views/tests/test_data_layout.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Variable $content might not be defined.',
+	'identifier' => 'variable.undefined',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Views/tests/test_styled_layout.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Call to method PHPUnit\\Framework\\Assert::assertTrue() with true will always evaluate to true.',
 	'identifier' => 'method.alreadyNarrowedType',
 	'count' => 1,

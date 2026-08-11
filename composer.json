@@ -16,8 +16,7 @@
     ],
     "require": {
         "php": "^8.2",
-        "league/commonmark": "^2.0",
-        "myth/postal": "^1.0.0-beta.2",
+        "myth/postal": "^1.0.0-beta.3",
         "symfony/yaml": "^7.4"
     },
     "require-dev": {

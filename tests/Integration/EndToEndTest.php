@@ -22,7 +22,6 @@ use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\DripService;
 use Myth\Courier\Services\MailerService;
-use Myth\Courier\Services\MarkdownService;
 use Myth\Courier\Services\TemplateService;
 
 /**
@@ -59,7 +58,7 @@ final class EndToEndTest extends CIUnitTestCase
         $this->stepModel       = new DripStepModel();
         $this->sendModel       = new SendModel();
 
-        $mailerService = new MailerService(new TemplateService(new MarkdownService(sys_get_temp_dir())), $this->sendModel, $this->campaignModel, config('Courier'));
+        $mailerService = new MailerService(new TemplateService(sys_get_temp_dir()), $this->sendModel, $this->campaignModel, config('Courier'));
 
         $this->dripService = new DripService(
             $this->enrollmentModel,
