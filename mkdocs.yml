@@ -1,6 +1,13 @@
 site_name: Courier
 site_description: Email marketing for CodeIgniter 4 — contacts, campaigns, drip sequences, and tracking.
 
+# Agent-facing notes live under docs/ for editing convenience, but they are not
+# part of the published site. MkDocs builds every page it finds regardless of
+# nav, so without this they would be reachable by URL after gh-deploy.
+exclude_docs: |
+  agents/
+  review/
+
 theme:
   name: material
   icon:
