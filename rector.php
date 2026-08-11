@@ -16,9 +16,7 @@ use Rector\CodeQuality\Rector\BooleanAnd\SimplifyEmptyArrayCheckRector;
 use Rector\CodeQuality\Rector\Class_\CompleteDynamicPropertiesRector;
 use Rector\CodeQuality\Rector\Empty_\SimplifyEmptyCheckOnEmptyArrayRector;
 use Rector\CodeQuality\Rector\Expression\InlineIfToExplicitIfRector;
-use Rector\CodeQuality\Rector\Foreach_\UnusedForeachValueToArrayKeysRector;
 use Rector\CodeQuality\Rector\FuncCall\ChangeArrayPushToArrayAssignRector;
-use Rector\CodeQuality\Rector\FuncCall\SimplifyRegexPatternRector;
 use Rector\CodeQuality\Rector\FuncCall\SimplifyStrposLowerRector;
 use Rector\CodeQuality\Rector\FuncCall\SingleInArrayToCompareRector;
 use Rector\CodeQuality\Rector\FunctionLike\SimplifyUselessVariableRector;
@@ -31,7 +29,6 @@ use Rector\CodeQuality\Rector\Ternary\TernaryEmptyArrayArrayDimFetchToCoalesceRe
 use Rector\CodeQuality\Rector\Ternary\UnnecessaryTernaryExpressionRector;
 use Rector\CodingStyle\Rector\ClassMethod\FuncGetArgsToVariadicParamRector;
 use Rector\CodingStyle\Rector\ClassMethod\MakeInheritedMethodVisibilitySameAsParentRector;
-use Rector\CodingStyle\Rector\FuncCall\CountArrayToEmptyArrayComparisonRector;
 use Rector\CodingStyle\Rector\FuncCall\VersionCompareFuncCallToConstantRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector;
@@ -121,7 +118,6 @@ return static function (RectorConfig $rectorConfig): void {
 
     $rectorConfig->rule(SimplifyUselessVariableRector::class);
     $rectorConfig->rule(RemoveAlwaysElseRector::class);
-    $rectorConfig->rule(CountArrayToEmptyArrayComparisonRector::class);
     $rectorConfig->rule(ChangeNestedForeachIfsToEarlyContinueRector::class);
     $rectorConfig->rule(ChangeIfElseValueAssignToEarlyReturnRector::class);
     $rectorConfig->rule(SimplifyStrposLowerRector::class);
@@ -131,10 +127,8 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->rule(PreparedValueToEarlyReturnRector::class);
     $rectorConfig->rule(ShortenElseIfRector::class);
     $rectorConfig->rule(SimplifyIfElseToTernaryRector::class);
-    $rectorConfig->rule(UnusedForeachValueToArrayKeysRector::class);
     $rectorConfig->rule(ChangeArrayPushToArrayAssignRector::class);
     $rectorConfig->rule(UnnecessaryTernaryExpressionRector::class);
-    $rectorConfig->rule(SimplifyRegexPatternRector::class);
     $rectorConfig->rule(FuncGetArgsToVariadicParamRector::class);
     $rectorConfig->rule(MakeInheritedMethodVisibilitySameAsParentRector::class);
     $rectorConfig->rule(SimplifyEmptyArrayCheckRector::class);
