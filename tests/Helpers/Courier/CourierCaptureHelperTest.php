@@ -59,7 +59,7 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         );
     }
 
-    public function testPostWithTagsAppliesTagsToContact(): void
+    public function testPostedTagsWithoutDefaultsApplyNoTags(): void
     {
         $this->withRoutes($this->captureRoute)->post('courier/capture', [
             'email'        => 'tagged@example.com',
@@ -69,15 +69,11 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $contact = (new ContactModel())->where('email', 'tagged@example.com')->first();
         $this->assertNotNull($contact);
 
-        $tag = (new TagModel())->where('slug', 'newsletter')->first();
-        $this->assertNotNull($tag);
+        $this->assertSame(0, (new TagModel())->where('slug', 'newsletter')->countAllResults());
+        $this->assertSame(0, (new TagModel())->where('slug', 'trial')->countAllResults());
 
-        $linked = (new ContactTagModel())
-            ->where('contact_id', $contact->id)
-            ->where('tag_id', $tag->id)
-            ->countAllResults();
-
-        $this->assertSame(1, $linked);
+        $linked = (new ContactTagModel())->where('contact_id', $contact->id)->countAllResults();
+        $this->assertSame(0, $linked);
     }
 
     public function testPostWithDripIdEnrollsContactInDrip(): void
@@ -170,7 +166,7 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $this->assertSame(1, $enrolled);
     }
 
-    public function testDefaultsTagsMergeWithPostTags(): void
+    public function testDefaultsTagsAreAppliedExactlyIgnoringPostTags(): void
     {
         $route = [
             ['POST', 'test/capture-tags', static function (): ResponseInterface {
@@ -188,20 +184,20 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $contact = (new ContactModel())->where('email', 'merge@example.com')->first();
         $this->assertNotNull($contact);
 
-        foreach (['newsletter', 'vip'] as $slug) {
-            $tag = (new TagModel())->where('slug', $slug)->first();
-            $this->assertNotNull($tag, "Tag '{$slug}' not found");
+        $tag = (new TagModel())->where('slug', 'vip')->first();
+        $this->assertNotNull($tag, "Tag 'vip' not found");
 
-            $linked = (new ContactTagModel())
-                ->where('contact_id', $contact->id)
-                ->where('tag_id', $tag->id)
-                ->countAllResults();
+        $linked = (new ContactTagModel())
+            ->where('contact_id', $contact->id)
+            ->where('tag_id', $tag->id)
+            ->countAllResults();
 
-            $this->assertSame(1, $linked, "Tag '{$slug}' not linked to contact");
-        }
+        $this->assertSame(1, $linked, "Tag 'vip' not linked to contact");
+
+        $this->assertSame(0, (new TagModel())->where('slug', 'newsletter')->countAllResults());
     }
 
-    public function testInvalidTagSlugsAreDroppedSilently(): void
+    public function testPostedTagsNeverApplyRegardlessOfValidity(): void
     {
         $this->withRoutes($this->captureRoute)->post('courier/capture', [
             'email'        => 'tagtest@example.com',
@@ -217,16 +213,12 @@ final class CourierCaptureHelperTest extends CIUnitTestCase
         $contact = (new ContactModel())->where('email', 'tagtest@example.com')->first();
         $this->assertNotNull($contact);
 
-        // valid slugs applied
+        // none of the posted slugs are applied, valid-looking or not
         foreach (['valid-tag', 'also-valid'] as $slug) {
-            $tag = (new TagModel())->where('slug', $slug)->first();
-            $this->assertNotNull($tag, "Expected tag '{$slug}' to be created");
+            $this->assertSame(0, (new TagModel())->where('slug', $slug)->countAllResults(), "Tag '{$slug}' should not be created");
         }
 
-        // invalid slugs must not appear in the DB
-        $this->assertSame(0, (new TagModel())->like('slug', '<script>', 'none')->countAllResults());
-        $this->assertSame(0, (new TagModel())->where('slug', str_repeat('a', 65))->countAllResults());
-        $this->assertSame(0, (new TagModel())->where('slug', '')->countAllResults());
+        $this->assertSame(0, (new ContactTagModel())->where('contact_id', $contact->id)->countAllResults());
     }
 
     public function testAbsoluteRedirectUrlIsSanitizedToRoot(): void

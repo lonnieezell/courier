@@ -14,7 +14,6 @@ if (! function_exists('courier_form')) {
      *
      * Usage:
      *   echo courier_form('homepage-signup', [
-     *       'tags'     => ['newsletter'],
      *       'drip'     => 5,
      *       'redirect' => '/thank-you',
      *       'fields'   => ['first_name', 'last_name'],
@@ -22,6 +21,9 @@ if (! function_exists('courier_form')) {
      *       'class'    => 'signup-form',
      *       'ajax'     => false,
      *   ]);
+     *
+     * Tags are never accepted from the client. To apply tags on subscribe, write your
+     * own controller action and call courier_capture() with $defaults['tags'].
      *
      * @param array<string, mixed> $options
      */
@@ -42,7 +44,6 @@ if (! function_exists('courier_form_open')) {
      */
     function courier_form_open(string $source, array $options = []): string
     {
-        $tags     = $options['tags'] ?? [];
         $drip     = $options['drip'] ?? null;
         $redirect = $options['redirect'] ?? '/';
         $class    = $options['class'] ?? '';
@@ -58,10 +59,6 @@ if (! function_exists('courier_form_open')) {
 
         if (config('Courier')->honeypot) {
             $html .= '<input type="text" name="courier_hp" style="display:none" tabindex="-1" autocomplete="off">' . "\n";
-        }
-
-        if ($tags !== []) {
-            $html .= '<input type="hidden" name="courier_tags" value=\'' . json_encode($tags) . '\'>' . "\n";
         }
 
         if ($drip !== null) {
@@ -110,21 +107,10 @@ if (! function_exists('courier_capture')) {
         $firstName = $request->getPost('first_name') ?? '';
         $lastName  = $request->getPost('last_name') ?? '';
         $source    = $request->getPost('courier_source') ?? '';
-        $tagsRaw   = $request->getPost('courier_tags') ?? '[]';
         $dripPost  = $request->getPost('courier_drip_id');
         $redirect  = $request->getPost('courier_redirect') ?? '/';
 
-        $postTags = json_decode($tagsRaw, true);
-        $postTags = is_array($postTags) ? $postTags : [];
-        $postTags = array_values(array_filter(
-            $postTags,
-            static fn ($v): bool => is_string($v)
-                && $v !== ''
-                && strlen($v) <= 64
-                && preg_match('/^[a-z0-9][a-z0-9\-_]*$/', $v) === 1,
-        ));
-
-        // $defaults take precedence for drip/redirect; tags are merged
+        // $defaults take precedence for drip/redirect; tags are server-supplied only
         if (isset($defaults['source'])) {
             $source = $defaults['source'];
         }
@@ -140,7 +126,7 @@ if (! function_exists('courier_capture')) {
             $redirect = '/';
         }
 
-        $tags   = array_values(array_unique(array_merge($postTags, $defaults['tags'] ?? [])));
+        $tags   = $defaults['tags'] ?? [];
         $isAjax = ($defaults['ajax'] ?? false) || $request->isAJAX();
 
         if (config('Courier')->honeypot && ($request->getPost('courier_hp') ?? '') !== '') {
