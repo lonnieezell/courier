@@ -181,7 +181,7 @@ class DripService implements DripServiceInterface
                 $contact = $contactMap[$enrollment->contact_id] ?? null;
 
                 if ($contact === null || $contact->status !== ContactStatus::Subscribed) {
-                    $this->enrollmentModel->update($enrollment->id, ['status' => EnrollmentStatus::Cancelled]);
+                    $this->enrollmentModel->update($enrollment->id, ['status' => EnrollmentStatus::Cancelled, 'locked_at' => null]);
                     $cancelled++;
 
                     continue;
@@ -194,7 +194,7 @@ class DripService implements DripServiceInterface
                     : ($stepMap[$enrollment->campaign_id][$enrollment->current_step] ?? null);
 
                 if ($step === null) {
-                    $this->enrollmentModel->update($enrollment->id, ['status' => EnrollmentStatus::Cancelled]);
+                    $this->enrollmentModel->update($enrollment->id, ['status' => EnrollmentStatus::Cancelled, 'locked_at' => null]);
                     $cancelled++;
 
                     continue;
