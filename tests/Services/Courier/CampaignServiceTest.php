@@ -316,7 +316,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         $already  = $this->insertContact('already@example.com');
         $pending  = $this->insertContact('pending@example.com');
         $failed   = $this->insertContact('failed@example.com');
-        $unsent   = $this->insertContact('unsent@example.com');
+        $this->insertContact('unsent@example.com');
 
         $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
         $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
@@ -332,8 +332,8 @@ final class CampaignServiceTest extends CIUnitTestCase
         });
         $chunkedEmails = array_column($chunked, 'email');
 
-        $direct        = $this->service->resolveAudience($campaignDto);
-        $directEmails  = array_column($direct, 'email');
+        $direct       = $this->service->resolveAudience($campaignDto);
+        $directEmails = array_column($direct, 'email');
 
         sort($chunkedEmails);
         sort($directEmails);
@@ -423,7 +423,7 @@ final class CampaignServiceTest extends CIUnitTestCase
         );
 
         $alreadySent = $contactService->subscribe(['email' => 'wave1@example.com'], ['invite']);
-        $newlyTagged = $contactService->subscribe(['email' => 'wave2@example.com'], ['invite']);
+        $contactService->subscribe(['email' => 'wave2@example.com'], ['invite']);
 
         $sentSend = $this->sendModel->createPending($alreadySent->id, $campaign->id, null);
         $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
@@ -496,10 +496,10 @@ final class CampaignServiceTest extends CIUnitTestCase
 
     public function testResolveAudienceExcludesContactsAlreadySentForBlast(): void
     {
-        $campaign  = $this->insertAndFetchCampaign();
-        $already   = $this->insertContact('already@example.com');
-        $pending   = $this->insertContact('pending@example.com');
-        $unsent    = $this->insertContact('unsent@example.com');
+        $campaign    = $this->insertAndFetchCampaign();
+        $already     = $this->insertContact('already@example.com');
+        $pending     = $this->insertContact('pending@example.com');
+        $this->insertContact('unsent@example.com');
         $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
 
         $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
