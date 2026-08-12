@@ -208,16 +208,24 @@ class CampaignService
             ? $campaign->tag_filter
             : null;
 
+        $excludeCampaignId = $this->blastCampaignId($campaign);
+
         if ($segmentId !== null && $tagFilter !== null) {
-            $bySegment = $this->indexById($this->segmentService->resolve($segmentId));
-            $byTags    = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter));
+            $bySegment = $this->indexById($this->segmentService->resolve($segmentId, $excludeCampaignId));
+            $byTags    = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter, $excludeCampaignId));
             $contacts  = array_intersect_key($bySegment, $byTags);
         } elseif ($segmentId !== null) {
-            $contacts = $this->indexById($this->segmentService->resolve($segmentId));
+            $contacts = $this->indexById($this->segmentService->resolve($segmentId, $excludeCampaignId));
         } elseif ($tagFilter !== null) {
-            $contacts = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter));
+            $contacts = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter, $excludeCampaignId));
         } else {
-            $contacts = $this->indexById($this->contactModel->subscribed()->findAll());
+            $contactModel = $this->contactModel->subscribed();
+
+            if ($excludeCampaignId !== null) {
+                $contactModel = $contactModel->excludeSentForCampaign($excludeCampaignId);
+            }
+
+            $contacts = $this->indexById($contactModel->findAll());
         }
 
         // Final subscribed guard
@@ -432,6 +440,19 @@ class CampaignService
             'opened'  => $opened,
             'clicked' => $clicked,
         ];
+    }
+
+    /**
+     * Returns the campaign id to exclude already-sent contacts for, or null
+     * if the campaign is not a Blast (drip sequences must receive every step).
+     */
+    private function blastCampaignId(CampaignDTO $campaign): ?int
+    {
+        $type = $campaign->type instanceof CampaignType
+            ? $campaign->type
+            : CampaignType::tryFrom((string) $campaign->type);
+
+        return $type === CampaignType::Blast ? $campaign->id : null;
     }
 
     /**

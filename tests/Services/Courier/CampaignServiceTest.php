@@ -417,6 +417,26 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertNotContains('unsub@example.com', $emails);
     }
 
+    public function testResolveAudienceExcludesContactsAlreadySentForBlast(): void
+    {
+        $campaign  = $this->insertAndFetchCampaign();
+        $already   = $this->insertContact('already@example.com');
+        $pending   = $this->insertContact('pending@example.com');
+        $unsent    = $this->insertContact('unsent@example.com');
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
+
+        $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+        $this->sendModel->createPending($pending->id, $campaign->id, null);
+
+        $contacts = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertNotContains('already@example.com', $emails);
+        $this->assertContains('pending@example.com', $emails);
+        $this->assertContains('unsent@example.com', $emails);
+    }
+
     // -------------------------------------------------------------------------
     // prepareBatch()
     // -------------------------------------------------------------------------
@@ -563,6 +583,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     {
         return CampaignDTO::fromObject((object) array_merge([
             'id'         => 0,
+            'type'       => CampaignType::Blast,
             'segment_id' => null,
             'tag_filter' => null,
         ], $overrides));
