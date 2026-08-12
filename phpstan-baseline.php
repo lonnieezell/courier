@@ -188,6 +188,18 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Database/Migrations/2026-06-29-120002_AlterCourierSendsCampaignIdNullable.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBDriver.',
+	'identifier' => 'property.notFound',
+	'count' => 2,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-08-12-120002_AddBlastDedupeIndexToCourierSends.php',
+];
+$ignoreErrors[] = [
+	'rawMessage' => 'Access to an undefined property CodeIgniter\\Database\\ConnectionInterface::$DBPrefix.',
+	'identifier' => 'property.notFound',
+	'count' => 4,
+	'path' => __DIR__ . '/src/Database/Migrations/2026-08-12-120002_AddBlastDedupeIndexToCourierSends.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Call to function config with Myth\\Courier\\Config\\Courier::class is discouraged.',
 	'identifier' => 'codeigniter.factoriesClassConstFetch',
 	'count' => 2,

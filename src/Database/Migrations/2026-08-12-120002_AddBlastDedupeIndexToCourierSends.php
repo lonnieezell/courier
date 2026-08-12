@@ -41,12 +41,12 @@ class AddBlastDedupeIndexToCourierSends extends Migration
         match ($this->db->DBDriver) {
             'SQLite3', 'Postgre', 'SQLSRV' => $this->db->query(
                 "CREATE UNIQUE INDEX {$indexName} ON {$table} (campaign_id, contact_id) " .
-                'WHERE campaign_id IS NOT NULL AND drip_step_id IS NULL'
+                'WHERE campaign_id IS NOT NULL AND drip_step_id IS NULL',
             ),
             'OCI8' => $this->db->query(
                 "CREATE UNIQUE INDEX {$indexName} ON {$table} (" .
                 'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN campaign_id END, ' .
-                'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN contact_id END)'
+                'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN contact_id END)',
             ),
             default => $this->addMysqlBlastDedupe($table, $indexName),
         };
@@ -73,7 +73,7 @@ class AddBlastDedupeIndexToCourierSends extends Migration
             "ALTER TABLE {$table} ADD COLUMN {$column} INT UNSIGNED " .
             'GENERATED ALWAYS AS (' .
             'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN contact_id END' .
-            ') VIRTUAL'
+            ') VIRTUAL',
         );
         $this->db->query("CREATE UNIQUE INDEX {$indexName} ON {$table} (campaign_id, {$column})");
     }
