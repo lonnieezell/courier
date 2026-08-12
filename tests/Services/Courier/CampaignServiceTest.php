@@ -376,6 +376,31 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('tagged@example.com', $contacts[0]->email);
     }
 
+    public function testResolveAudienceWithTagFilterExcludesAlreadySentForBlast(): void
+    {
+        $campaign = $this->insertAndFetchCampaign();
+
+        $contactService = new ContactService(
+            $this->contactModel,
+            new TagModel(),
+            new DripEnrollmentModel(),
+            new ContactTagModel(),
+        );
+
+        $alreadySent = $contactService->subscribe(['email' => 'wave1@example.com'], ['invite']);
+        $newlyTagged = $contactService->subscribe(['email' => 'wave2@example.com'], ['invite']);
+
+        $sentSend = $this->sendModel->createPending($alreadySent->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id, 'tag_filter' => ['invite']]);
+        $contacts    = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertNotContains('wave1@example.com', $emails);
+        $this->assertContains('wave2@example.com', $emails);
+    }
+
     public function testResolveAudienceWithBothNarrowsResult(): void
     {
         $segmentModel = new SegmentModel();
