@@ -92,6 +92,22 @@ public int $maxRetries = 5;
     courier.maxRetries = 5
     ```
 
+### `$staleLockMinutes`
+
+```php
+<?php
+public int $staleLockMinutes = 15;
+```
+
+`courier:process-drips` claims enrollments (`active` → `processing`) before sending them, so an overlapping run can't send the same step twice. If a run crashes or is killed mid-batch, its claimed enrollments stay `processing` until this many minutes pass, at which point the next run reclaims them back to `active` and retries. See [Overlapping runs](drip-sequences.md#overlapping-runs).
+
+Lower this if your batches normally finish in seconds and you want faster recovery from a crashed run; raise it if a single batch can legitimately take a while to send.
+
+!!! tip ".env override"
+    ```
+    courier.staleLockMinutes = 10
+    ```
+
 ### `$throttleMs`
 
 ```php
