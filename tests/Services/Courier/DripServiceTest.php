@@ -650,7 +650,12 @@ final class DripServiceTest extends CIUnitTestCase
             ->first();
 
         $this->assertSame(0, $enrollment->retry_count);
-        $this->assertSame(EnrollmentStatus::Active, $enrollment->status);
+
+        // advance() throwing after a successful send leaves the claim in place
+        // (status stays 'processing') rather than reverting to 'active' — an
+        // immediate resend of the just-sent step. The stale-lock reclaim picks
+        // it up again after staleLockMinutes instead.
+        $this->assertSame(EnrollmentStatus::Processing, $enrollment->status);
     }
 
     public function testProcessDueAtMaxRetriesMarksEnrollmentFailed(): void
@@ -675,5 +680,68 @@ final class DripServiceTest extends CIUnitTestCase
             ->first();
 
         $this->assertSame(EnrollmentStatus::Failed, $enrollment->status);
+    }
+
+    // -----------------------------------------------------------------------
+    // processDue() — overlapping-run protection (issue #20)
+    // -----------------------------------------------------------------------
+
+    public function testProcessDueSkipsEnrollmentsAlreadyClaimedByAnOverlappingRun(): void
+    {
+        $campaign = $this->createDripCampaign();
+        $this->createStep($campaign->id, 1, 24);
+        $contact = $this->createSubscribedContact('overlap@example.com');
+
+        $this->service->enroll($contact->id, $campaign->id);
+        $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->set('next_send_at', date('Y-m-d H:i:s', strtotime('-1 hour')))
+            ->update();
+
+        // Simulate a concurrent run that has already claimed this enrollment
+        // (fresh lock, not stale) before this run's processDue() executes.
+        $claimed = $this->enrollmentModel->claimDue(10);
+        $this->assertCount(1, $claimed);
+
+        $result = $this->service->processDue();
+
+        $this->assertSame(0, $result['processed']);
+        $this->assertSame(0, $result['cancelled']);
+        $this->assertSame(0, $result['failed']);
+
+        $enrollment = $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->first();
+        $this->assertSame(EnrollmentStatus::Processing, $enrollment->status);
+    }
+
+    public function testProcessDueReclaimsStaleProcessingEnrollmentBeforeClaiming(): void
+    {
+        $campaign = $this->createDripCampaign();
+        $step1    = $this->createStep($campaign->id, 1, 24);
+        $contact  = $this->createSubscribedContact('stale@example.com');
+
+        $this->service->enroll($contact->id, $campaign->id);
+
+        // Simulate a crashed prior run: claimed (processing) with a lock well
+        // past the default staleLockMinutes threshold.
+        $this->enrollmentModel
+            ->where('contact_id', $contact->id)
+            ->set('next_send_at', date('Y-m-d H:i:s', strtotime('-1 hour')))
+            ->set('status', EnrollmentStatus::Processing)
+            ->set('locked_at', date('Y-m-d H:i:s', strtotime('-30 minutes')))
+            ->update();
+
+        $result = $this->service->processDue();
+
+        $this->assertSame(1, $result['processed']);
+
+        $send = $this->sendModel
+            ->where('contact_id', $contact->id)
+            ->where('campaign_id', $campaign->id)
+            ->where('drip_step_id', $step1->id)
+            ->first();
+        $this->assertNotNull($send);
     }
 }

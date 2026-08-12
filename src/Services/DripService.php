@@ -136,11 +136,8 @@ class DripService implements DripServiceInterface
      */
     public function processDue(): array
     {
-        $enrollments = $this->enrollmentModel
-            ->where('status', EnrollmentStatus::Active->value)
-            ->where('next_send_at <=', date('Y-m-d H:i:s'))
-            ->limit($this->config->batchSize)
-            ->findAll();
+        $this->enrollmentModel->reclaimStale($this->config->staleLockMinutes);
+        $enrollments = $this->enrollmentModel->claimDue($this->config->batchSize);
 
         if ($enrollments === []) {
             return ['processed' => 0, 'cancelled' => 0, 'failed' => 0];

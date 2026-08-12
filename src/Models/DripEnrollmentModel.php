@@ -30,6 +30,7 @@ class DripEnrollmentModel extends Model
         'next_send_at',
         'retry_count',
         'status',
+        'locked_at',
     ];
     protected array $casts = [
         'status' => 'enum[\Myth\Courier\Enums\EnrollmentStatus]',
@@ -37,7 +38,7 @@ class DripEnrollmentModel extends Model
     protected $validationRules = [
         'contact_id'  => 'required|integer',
         'campaign_id' => 'required|integer',
-        'status'      => 'permit_empty|in_list[active,paused,completed,cancelled,failed]',
+        'status'      => 'permit_empty|in_list[active,processing,paused,completed,cancelled,failed]',
     ];
 
     /**
@@ -57,15 +58,18 @@ class DripEnrollmentModel extends Model
             $this->update($enrollment->id, [
                 'status'      => EnrollmentStatus::Completed,
                 'retry_count' => 0,
+                'locked_at'   => null,
             ]);
 
             return;
         }
 
         $this->update($enrollment->id, [
+            'status'       => EnrollmentStatus::Active,
             'current_step' => $nextStep->position,
             'next_send_at' => date('Y-m-d H:i:s', time() + ((int) $nextStep->delay_hours * 3600)),
             'retry_count'  => 0,
+            'locked_at'    => null,
         ]);
     }
 
@@ -87,6 +91,7 @@ class DripEnrollmentModel extends Model
             $this->update($enrollment->id, [
                 'status'      => EnrollmentStatus::Failed,
                 'retry_count' => $newRetryCount,
+                'locked_at'   => null,
             ]);
             $enrollment->status      = EnrollmentStatus::Failed;
             $enrollment->retry_count = $newRetryCount;
@@ -96,8 +101,62 @@ class DripEnrollmentModel extends Model
         }
 
         $this->update($enrollment->id, [
+            'status'       => EnrollmentStatus::Active,
             'retry_count'  => $newRetryCount,
             'next_send_at' => date('Y-m-d H:i:s', time() + ($retryDelayMinutes * 60)),
+            'locked_at'    => null,
         ]);
+    }
+
+    /**
+     * Atomically claims up to $batchSize due, active enrollments by flipping
+     * them to `processing`. Only rows this call actually wins (verified via
+     * per-row affected-row checks) are returned, so an overlapping run cannot
+     * claim the same enrollment twice.
+     *
+     * @return list<DripEnrollmentDTO>
+     */
+    public function claimDue(int $batchSize): array
+    {
+        $candidates = $this->select('id')
+            ->where('status', EnrollmentStatus::Active->value)
+            ->where('next_send_at <=', date('Y-m-d H:i:s'))
+            ->limit($batchSize)
+            ->findAll();
+
+        $now        = date('Y-m-d H:i:s');
+        $claimedIds = [];
+
+        foreach ($candidates as $candidate) {
+            $this->where('id', $candidate->id)
+                ->where('status', EnrollmentStatus::Active->value)
+                ->set(['status' => EnrollmentStatus::Processing, 'locked_at' => $now])
+                ->update();
+
+            if ($this->db->affectedRows() === 1) {
+                $claimedIds[] = $candidate->id;
+            }
+        }
+
+        if ($claimedIds === []) {
+            return [];
+        }
+
+        return $this->whereIn('id', $claimedIds)->findAll();
+    }
+
+    /**
+     * Returns enrollments stuck in `processing` past $staleMinutes back to
+     * `active`, so a crashed or killed courier:process-drips run does not
+     * strand them permanently.
+     */
+    public function reclaimStale(int $staleMinutes): void
+    {
+        $threshold = date('Y-m-d H:i:s', time() - $staleMinutes * 60);
+
+        $this->where('status', EnrollmentStatus::Processing->value)
+            ->where('locked_at <=', $threshold)
+            ->set(['status' => EnrollmentStatus::Active, 'locked_at' => null])
+            ->update();
     }
 }

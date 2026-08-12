@@ -225,4 +225,232 @@ final class DripEnrollmentModelTest extends CIUnitTestCase
 
         $this->assertSame(0, $updated->retry_count);
     }
+
+    // -----------------------------------------------------------------------
+    // advance() / recordFailure() — clearing the processing claim
+    // -----------------------------------------------------------------------
+
+    public function testAdvanceToNextStepReturnsStatusToActiveAndClearsLockedAt(): void
+    {
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 1,
+            'view'        => 'emails/step1',
+            'subject'     => 'Step 1',
+            'delay_hours' => 0,
+        ]);
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 2,
+            'view'        => 'emails/step2',
+            'subject'     => 'Step 2',
+            'delay_hours' => 24,
+        ]);
+
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->advance($enrollment);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Active, $updated->status);
+        $this->assertNull($updated->locked_at);
+    }
+
+    public function testAdvanceOnLastStepClearsLockedAt(): void
+    {
+        (new DripStepModel())->insert([
+            'campaign_id' => $this->campaignId,
+            'position'    => 1,
+            'view'        => 'emails/only',
+            'subject'     => 'Only Step',
+            'delay_hours' => 0,
+        ]);
+
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->advance($enrollment);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Completed, $updated->status);
+        $this->assertNull($updated->locked_at);
+    }
+
+    public function testRecordFailureReturnsStatusToActiveAndClearsLockedAt(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->recordFailure($enrollment, 'mailer returned false', 5, 3);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Active, $updated->status);
+        $this->assertNull($updated->locked_at);
+    }
+
+    public function testRecordFailureAtMaxRetriesClearsLockedAt(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'retry_count'  => 2,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        $enrollmentModel->recordFailure($enrollment, 'ESP error', 5, 3);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+
+        $this->assertSame(EnrollmentStatus::Failed, $updated->status);
+        $this->assertNull($updated->locked_at);
+    }
+
+    // -----------------------------------------------------------------------
+    // claimDue()
+    // -----------------------------------------------------------------------
+
+    public function testClaimDueClaimsDueActiveEnrollmentsAndMarksThemProcessing(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'next_send_at' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+        ]);
+
+        $claimed = $enrollmentModel->claimDue(10);
+
+        $this->assertCount(1, $claimed);
+        $this->assertSame($enrollmentId, $claimed[0]->id);
+        $this->assertSame(EnrollmentStatus::Processing, $claimed[0]->status);
+
+        $row = $enrollmentModel->find($enrollmentId);
+        $this->assertSame(EnrollmentStatus::Processing, $row->status);
+        $this->assertNotNull($row->locked_at);
+    }
+
+    public function testClaimDueIgnoresEnrollmentsNotYetDue(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'next_send_at' => date('Y-m-d H:i:s', strtotime('+1 hour')),
+        ]);
+
+        $claimed = $enrollmentModel->claimDue(10);
+
+        $this->assertSame([], $claimed);
+    }
+
+    public function testClaimDueDoesNotReclaimEnrollmentsAlreadyClaimedByAnotherRun(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'next_send_at' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+        ]);
+
+        // First run claims the enrollment.
+        $firstRun = $enrollmentModel->claimDue(10);
+        $this->assertCount(1, $firstRun);
+
+        // A second run overlapping the first must not claim it again.
+        $secondRun = $enrollmentModel->claimDue(10);
+        $this->assertSame([], $secondRun);
+    }
+
+    public function testClaimDueRespectsBatchSizeLimit(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $contactModel    = new ContactModel();
+
+        for ($i = 0; $i < 3; $i++) {
+            $contactId = $contactModel->insert(['email' => "batch{$i}@example.com"]);
+            $enrollmentModel->insert([
+                'contact_id'   => $contactId,
+                'campaign_id'  => $this->campaignId,
+                'current_step' => 1,
+                'next_send_at' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+            ]);
+        }
+
+        $claimed = $enrollmentModel->claimDue(2);
+
+        $this->assertCount(2, $claimed);
+        $this->assertSame(1, $enrollmentModel->where('status', EnrollmentStatus::Active->value)->countAllResults());
+    }
+
+    // -----------------------------------------------------------------------
+    // reclaimStale()
+    // -----------------------------------------------------------------------
+
+    public function testReclaimStaleReturnsStaleProcessingEnrollmentsToActive(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s', strtotime('-20 minutes')),
+        ]);
+
+        $enrollmentModel->reclaimStale(15);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+        $this->assertSame(EnrollmentStatus::Active, $updated->status);
+        $this->assertNull($updated->locked_at);
+    }
+
+    public function testReclaimStaleDoesNotAffectRecentProcessingEnrollments(): void
+    {
+        $enrollmentModel = new DripEnrollmentModel();
+        $enrollmentId    = $enrollmentModel->insert([
+            'contact_id'   => $this->contactId,
+            'campaign_id'  => $this->campaignId,
+            'current_step' => 1,
+            'status'       => EnrollmentStatus::Processing,
+            'locked_at'    => date('Y-m-d H:i:s', strtotime('-5 minutes')),
+        ]);
+
+        $enrollmentModel->reclaimStale(15);
+
+        $updated = $enrollmentModel->find($enrollmentId);
+        $this->assertSame(EnrollmentStatus::Processing, $updated->status);
+        $this->assertNotNull($updated->locked_at);
+    }
 }
