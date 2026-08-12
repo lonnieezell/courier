@@ -430,6 +430,23 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('vip@example.com', $contacts[0]->email);
     }
 
+    public function testResolveAudienceDoesNotExcludeAlreadySentForDripSequence(): void
+    {
+        $campaignId = $this->insertDraftCampaign(['type' => CampaignType::DripSequence]);
+        $campaign   = $this->campaignModel->find($campaignId);
+        $contact    = $this->insertContact('drip@example.com');
+
+        // Simulate a completed drip step: a 'sent' row for this campaign_id/contact_id.
+        $sentSend = $this->sendModel->createPending($contact->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id, 'type' => CampaignType::DripSequence]);
+        $contacts    = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertContains('drip@example.com', $emails);
+    }
+
     public function testResolveAudienceExcludesUnsubscribed(): void
     {
         $this->insertContact('sub@example.com');
