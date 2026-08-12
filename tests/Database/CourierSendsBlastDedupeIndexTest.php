@@ -51,6 +51,15 @@ final class CourierSendsBlastDedupeIndexTest extends CIUnitTestCase
         $model->createPending($this->contactId, $this->campaignId, null);
     }
 
+    public function testAllowsRepeatOneOffSendsWithNullCampaignId(): void
+    {
+        $model  = new SendModel();
+        $first  = $model->createPending($this->contactId, null, null);
+        $second = $model->createPending($this->contactId, null, null);
+
+        $this->assertNotSame($first->id, $second->id);
+    }
+
     public function testAllowsMultipleDripStepsForSameCampaignAndContact(): void
     {
         $stepModel = new DripStepModel();

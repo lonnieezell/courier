@@ -9,17 +9,25 @@ use CodeIgniter\Database\Migration;
 /**
  * Adds a DB-level backstop against duplicate Blast sends: a unique
  * constraint on (campaign_id, contact_id) that only applies to rows where
- * drip_step_id IS NULL, so drip sequences (which reuse the same
- * campaign_id/contact_id across steps) remain unaffected.
+ * campaign_id IS NOT NULL AND drip_step_id IS NULL, i.e. genuine Blast
+ * sends. Drip sequences (which reuse the same campaign_id/contact_id
+ * across steps) and one-off transactional sends (which always carry a
+ * NULL campaign_id and may legitimately repeat for the same contact, per
+ * MailerService::sendMailable()) are excluded via the campaign_id
+ * IS NOT NULL half of the predicate — this matters because SQL Server
+ * and Oracle, unlike SQLite/PostgreSQL/MySQL, do not treat every NULL as
+ * distinct within a unique key, so without excluding NULL campaign_id
+ * rows outright, repeat one-off sends to the same contact would
+ * collide on those two drivers.
  *
  * SQLite, PostgreSQL, and SQL Server support this directly as a filtered
  * unique index. Oracle has no filtered index syntax, so a function-based
  * unique index is used instead: the indexed expressions evaluate to NULL
- * for drip rows, and Oracle omits index entries that are entirely NULL,
- * which exempts them from the uniqueness check. MySQL supports neither
- * filtered nor function-based unique indexes, so a generated column that is
- * NULL for drip rows stands in for contact_id, relying on MySQL treating
- * each NULL as distinct within a unique index.
+ * for excluded rows, and Oracle omits index entries that are entirely
+ * NULL, which exempts them from the uniqueness check. MySQL supports
+ * neither filtered nor function-based unique indexes, so a generated
+ * column that is NULL for excluded rows stands in for contact_id,
+ * relying on MySQL treating each NULL as distinct within a unique index.
  */
 class AddBlastDedupeIndexToCourierSends extends Migration
 {
@@ -32,12 +40,13 @@ class AddBlastDedupeIndexToCourierSends extends Migration
 
         match ($this->db->DBDriver) {
             'SQLite3', 'Postgre', 'SQLSRV' => $this->db->query(
-                "CREATE UNIQUE INDEX {$indexName} ON {$table} (campaign_id, contact_id) WHERE drip_step_id IS NULL"
+                "CREATE UNIQUE INDEX {$indexName} ON {$table} (campaign_id, contact_id) " .
+                'WHERE campaign_id IS NOT NULL AND drip_step_id IS NULL'
             ),
             'OCI8' => $this->db->query(
                 "CREATE UNIQUE INDEX {$indexName} ON {$table} (" .
-                'CASE WHEN drip_step_id IS NULL THEN campaign_id END, ' .
-                'CASE WHEN drip_step_id IS NULL THEN contact_id END)'
+                'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN campaign_id END, ' .
+                'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN contact_id END)'
             ),
             default => $this->addMysqlBlastDedupe($table, $indexName),
         };
@@ -62,7 +71,9 @@ class AddBlastDedupeIndexToCourierSends extends Migration
 
         $this->db->query(
             "ALTER TABLE {$table} ADD COLUMN {$column} INT UNSIGNED " .
-            "GENERATED ALWAYS AS (CASE WHEN drip_step_id IS NULL THEN contact_id END) VIRTUAL"
+            'GENERATED ALWAYS AS (' .
+            'CASE WHEN campaign_id IS NOT NULL AND drip_step_id IS NULL THEN contact_id END' .
+            ') VIRTUAL'
         );
         $this->db->query("CREATE UNIQUE INDEX {$indexName} ON {$table} (campaign_id, {$column})");
     }
