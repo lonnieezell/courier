@@ -34,7 +34,6 @@ That's all you need for a working email capture form. Add options to control beh
 ```php
 <?php
 echo courier_form('homepage-signup', [
-    'tags'     => ['newsletter'],       // apply these tags on subscribe
     'drip'     => 3,                    // enroll in drip campaign #3
     'redirect' => '/welcome',           // where to send the user on success
     'fields'   => ['first_name'],       // extra fields: 'first_name', 'last_name'
@@ -51,7 +50,6 @@ The generated HTML looks like this:
 <form action="/courier/capture" method="POST" class="signup-form">
   <input type="hidden" name="csrf_test_name" value="...">
   <input type="hidden" name="courier_source" value="homepage-signup">
-  <input type="hidden" name="courier_tags" value='["newsletter"]'>
   <input type="hidden" name="courier_redirect" value="/welcome">
   <input type="text" name="courier_hp" style="display:none" tabindex="-1" autocomplete="off">
   <input type="email" name="email" required placeholder="Your email">
@@ -59,6 +57,12 @@ The generated HTML looks like this:
   <button type="submit">Join the list</button>
 </form>
 ```
+
+!!! note "There is no `tags` option"
+    `courier_form()` and `courier_form_open()` always post to the built-in `/courier/capture`
+    endpoint, which never applies client-supplied tags (see [Security](#security) below). To
+    tag subscribers from a form, write your own controller action and call `courier_capture()`
+    with `$defaults['tags']` — see [Handling the submission yourself](#handling-the-submission-yourself).
 
 !!! note "CSRF protection"
     The form includes a CSRF token automatically via CI4's `csrf_field()`. Make sure the CI4 CSRF filter is active in your app — it's on by default for POST routes.
@@ -72,7 +76,6 @@ If you need to embed the capture fields inside your own existing form, use `cour
 ```php
 <?php
 echo courier_form_open('footer-cta', [
-    'tags'     => ['newsletter'],
     'redirect' => '/subscribed',
 ]);
 ?>
@@ -117,7 +120,7 @@ class MarketingController extends BaseController
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `tags` | `array` | Merged with any tags from POST |
+| `tags` | `array` | The **only** source of tags — nothing from POST is ever applied, see [Security](#security) |
 | `drip` | `int` | Overrides the POST `courier_drip_id` value |
 | `redirect` | `string` | Overrides the POST `courier_redirect` value |
 | `source` | `string` | Overrides the POST `courier_source` value |
@@ -149,7 +152,6 @@ Set `ajax => true` to get JSON responses instead of redirects. The `courier_redi
 ```php
 <?php
 echo courier_form('popup-signup', [
-    'tags' => ['trial'],
     'ajax' => true,
 ]);
 ```
@@ -213,7 +215,7 @@ Courier validates and sanitises the data it receives before acting on it. A few 
 
 **Redirect safety.** The `courier_redirect` field in POST data is restricted to relative paths. If an absolute URL (`https://...`) is submitted — whether by a tampered form or a crafted POST request — Courier replaces it with `/`. Values passed via `$defaults['redirect']` in your own controller are subject to the same check.
 
-**Tag slugs.** Tags submitted via `courier_tags` are validated before reaching the database. Only lowercase alphanumeric slugs (with `-` and `_` separators, up to 64 characters) are accepted. Anything else is silently dropped. Valid format: `newsletter`, `beta-users`, `plan_pro`.
+**Tags are server-controlled only.** `courier_capture()` never reads tags from POST data — any `courier_tags` field in the request body is ignored entirely. The only way to tag a subscribing contact is `$defaults['tags']`, which your controller sets and a visitor cannot influence. **Never treat a tag as an authorization mechanism unless you control every path that can set it** — if a form needs the visitor to influence tagging (e.g. "which list did you pick?"), validate that choice against your own allowlist in the controller and pass the *validated* result via `$defaults['tags']`; don't trust client input for it directly.
 
 **Re-subscribe behaviour.** If a contact previously unsubscribed, submitting their email re-subscribes them silently. Contacts with `bounced` or `complained` status cannot be re-subscribed; `courier_capture()` returns a validation error in that case.
 

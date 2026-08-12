@@ -33,12 +33,11 @@ final class CourierFormHelperTest extends CIUnitTestCase
         $this->assertStringContainsString('</form>', $html);
     }
 
-    public function testCourierFormEncodesTagsAsJson(): void
+    public function testCourierFormOmitsTagsFieldEvenWhenTagsOptionPassed(): void
     {
         $html = courier_form('blog-sidebar', ['tags' => ['trial', 'newsletter']]);
 
-        $this->assertStringContainsString('name="courier_tags"', $html);
-        $this->assertStringContainsString('["trial","newsletter"]', $html);
+        $this->assertStringNotContainsString('courier_tags', $html);
     }
 
     public function testCourierFormIncludesOptionalFields(): void
@@ -77,7 +76,7 @@ final class CourierFormHelperTest extends CIUnitTestCase
 
         $this->assertStringContainsString('<form', $html);
         $this->assertStringContainsString('name="courier_source"', $html);
-        $this->assertStringContainsString('name="courier_tags"', $html);
+        $this->assertStringNotContainsString('name="courier_tags"', $html);
         $this->assertStringNotContainsString('name="email"', $html);
         $this->assertStringNotContainsString('</form>', $html);
     }
