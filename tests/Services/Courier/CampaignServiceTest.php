@@ -310,6 +310,41 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('vip@example.com', $collected[0]->email);
     }
 
+    public function testResolveAudienceChunkedExcludesContactsAlreadySentForBlast(): void
+    {
+        $campaign = $this->insertAndFetchCampaign();
+        $already  = $this->insertContact('already@example.com');
+        $pending  = $this->insertContact('pending@example.com');
+        $failed   = $this->insertContact('failed@example.com');
+        $unsent   = $this->insertContact('unsent@example.com');
+
+        $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+        $this->sendModel->createPending($pending->id, $campaign->id, null);
+        $failedSend = $this->sendModel->createPending($failed->id, $campaign->id, null);
+        $this->sendModel->update($failedSend->id, ['status' => SendStatus::Failed]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
+
+        $chunked = [];
+        $this->service->resolveAudienceChunked($campaignDto, static function (array $batch) use (&$chunked): void {
+            array_push($chunked, ...$batch);
+        });
+        $chunkedEmails = array_column($chunked, 'email');
+
+        $direct        = $this->service->resolveAudience($campaignDto);
+        $directEmails  = array_column($direct, 'email');
+
+        sort($chunkedEmails);
+        sort($directEmails);
+        $this->assertSame($directEmails, $chunkedEmails);
+
+        $this->assertNotContains('already@example.com', $chunkedEmails);
+        $this->assertContains('pending@example.com', $chunkedEmails);
+        $this->assertContains('failed@example.com', $chunkedEmails);
+        $this->assertContains('unsent@example.com', $chunkedEmails);
+    }
+
     public function testResolveAudienceChunkedDeliversIntersectionWhenBothSegmentAndTagSet(): void
     {
         $segmentModel = new SegmentModel();

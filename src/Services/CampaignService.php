@@ -253,8 +253,10 @@ class CampaignService
             ? $campaign->tag_filter
             : null;
 
+        $excludeCampaignId = $this->blastCampaignId($campaign);
+
         if ($segmentId !== null && $tagFilter !== null) {
-            foreach ($this->segmentService->resolveBySegmentAndTagSlugsChunked($segmentId, $tagFilter, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveBySegmentAndTagSlugsChunked($segmentId, $tagFilter, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
 
@@ -262,7 +264,7 @@ class CampaignService
         }
 
         if ($segmentId !== null) {
-            foreach ($this->segmentService->resolveChunked($segmentId, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveChunked($segmentId, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
 
@@ -270,16 +272,21 @@ class CampaignService
         }
 
         if ($tagFilter !== null) {
-            foreach ($this->segmentService->resolveByTagSlugsChunked($tagFilter, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveByTagSlugsChunked($tagFilter, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
 
             return;
         }
 
-        $batch = [];
+        $batch        = [];
+        $contactModel = $this->contactModel->subscribed();
 
-        $this->contactModel->subscribed()->chunk(
+        if ($excludeCampaignId !== null) {
+            $contactModel = $contactModel->excludeSentForCampaign($excludeCampaignId);
+        }
+
+        $contactModel->chunk(
             $chunkSize,
             static function (object $contact) use (&$batch, $chunkSize, $callback): void {
                 $batch[] = $contact;
