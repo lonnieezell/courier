@@ -14,10 +14,14 @@ use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Enums\ContactStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Models\ContactModel;
+use Myth\Courier\Models\ContactTagModel;
+use Myth\Courier\Models\DripEnrollmentModel;
 use Myth\Courier\Models\DripStepModel;
 use Myth\Courier\Models\SegmentModel;
 use Myth\Courier\Models\SendModel;
+use Myth\Courier\Models\TagModel;
 use Myth\Courier\Services\CampaignService;
+use Myth\Courier\Services\ContactService;
 use Myth\Courier\Services\MailerService;
 use Myth\Courier\Services\SegmentService;
 use Myth\Courier\Services\TemplateService;
@@ -105,6 +109,123 @@ final class SendCampaignTest extends CIUnitTestCase
             ->where('campaign_id', $campaignId)
             ->countAllResults();
         $this->assertSame(1, $sendCount);
+    }
+
+    public function testRunAcrossMultipleBatchesNeverSendsToUnsubscribedContacts(): void
+    {
+        // batchSize=2 forces resolveAudienceChunked()'s no-filter path through
+        // multiple internal chunk() iterations for a 5-contact audience.
+        config('Courier')->batchSize = 2;
+
+        // Physical insertion order matters: the first 2 subscribed contacts
+        // are consumed by the (correctly filtered) first chunk. An unsubscribed
+        // contact sits at the next physical row position, where a second chunk
+        // whose filtering was dropped mid-run would incorrectly pick it up.
+        $this->contactModel->insert(['email' => 'a@example.com', 'status' => ContactStatus::Subscribed]);
+        $this->contactModel->insert(['email' => 'b@example.com', 'status' => ContactStatus::Subscribed]);
+        $unsub = $this->contactModel->insert(['email' => 'unsub@example.com', 'status' => ContactStatus::Unsubscribed]);
+        $this->contactModel->insert(['email' => 'c@example.com', 'status' => ContactStatus::Subscribed]);
+        $this->contactModel->insert(['email' => 'd@example.com', 'status' => ContactStatus::Subscribed]);
+        $this->contactModel->insert(['email' => 'e@example.com', 'status' => ContactStatus::Subscribed]);
+
+        $campaignId = (int) $this->campaignModel->insert([
+            'name'         => 'Multi-Batch Blast',
+            'subject'      => 'Hello',
+            'type'         => CampaignType::Blast,
+            'view'         => self::BODY_VIEW,
+            'status'       => CampaignStatus::Scheduled,
+            'scheduled_at' => date('Y-m-d H:i:s', strtotime('-1 minute')),
+            'from_name'    => 'Sender',
+            'from_email'   => 'sender@example.com',
+        ]);
+
+        $this->command->run([$campaignId]);
+
+        $sends = $this->sendModel->where('campaign_id', $campaignId)->findAll();
+        $this->assertCount(5, $sends, 'Only the 5 subscribed contacts should receive a send row.');
+
+        $contactIds = array_map(static fn (object $s): int => $s->contact_id, $sends);
+        $this->assertNotContains($unsub, $contactIds, 'Unsubscribed contact must never receive a Blast send.');
+    }
+
+    public function testRunAcrossMultipleBatchesWithTagFilterDeliversToEveryTaggedContactExactlyOnce(): void
+    {
+        // batchSize=2 forces resolveAudienceChunked()'s tag-filter path through
+        // multiple resolveByTagSlugsChunked() page fetches for a 5-contact tag.
+        config('Courier')->batchSize = 2;
+
+        $contactService = new ContactService(
+            $this->contactModel,
+            new TagModel(),
+            new DripEnrollmentModel(),
+            new ContactTagModel(),
+        );
+
+        $emails = ['a@example.com', 'b@example.com', 'c@example.com', 'd@example.com', 'e@example.com'];
+
+        foreach ($emails as $email) {
+            $contactService->subscribe(['email' => $email], ['invite']);
+        }
+
+        $campaignId = (int) $this->campaignModel->insert([
+            'name'         => 'Tagged Multi-Batch Blast',
+            'subject'      => 'Hello',
+            'type'         => CampaignType::Blast,
+            'view'         => self::BODY_VIEW,
+            'tag_filter'   => ['invite'],
+            'status'       => CampaignStatus::Scheduled,
+            'scheduled_at' => date('Y-m-d H:i:s', strtotime('-1 minute')),
+            'from_name'    => 'Sender',
+            'from_email'   => 'sender@example.com',
+        ]);
+
+        $this->command->run([$campaignId]);
+
+        $sends = $this->sendModel->where('campaign_id', $campaignId)->findAll();
+        $this->assertCount(count($emails), $sends, 'Every tagged contact should receive exactly one send row.');
+
+        $contactIds = array_map(static fn (object $s): int => $s->contact_id, $sends);
+        $this->assertSame($contactIds, array_unique($contactIds), 'No contact should receive a duplicate send.');
+    }
+
+    public function testRunAcrossMultipleBatchesWithSegmentFilterDeliversToEverySegmentContactExactlyOnce(): void
+    {
+        // batchSize=2 forces resolveAudienceChunked()'s segment path through
+        // multiple resolveChunked() page fetches for a 5-contact segment.
+        config('Courier')->batchSize = 2;
+
+        $segmentModel = new SegmentModel();
+        $segmentId    = (int) $segmentModel->insert([
+            'name'       => 'Source web',
+            'rules'      => [['field' => 'source', 'op' => 'eq', 'value' => 'web']],
+            'match_mode' => 'all',
+        ]);
+
+        $emails = ['a@example.com', 'b@example.com', 'c@example.com', 'd@example.com', 'e@example.com'];
+
+        foreach ($emails as $email) {
+            $this->contactModel->insert(['email' => $email, 'status' => ContactStatus::Subscribed, 'source' => 'web']);
+        }
+
+        $campaignId = (int) $this->campaignModel->insert([
+            'name'         => 'Segment Multi-Batch Blast',
+            'subject'      => 'Hello',
+            'type'         => CampaignType::Blast,
+            'view'         => self::BODY_VIEW,
+            'segment_id'   => $segmentId,
+            'status'       => CampaignStatus::Scheduled,
+            'scheduled_at' => date('Y-m-d H:i:s', strtotime('-1 minute')),
+            'from_name'    => 'Sender',
+            'from_email'   => 'sender@example.com',
+        ]);
+
+        $this->command->run([$campaignId]);
+
+        $sends = $this->sendModel->where('campaign_id', $campaignId)->findAll();
+        $this->assertCount(count($emails), $sends, 'Every segment-matched contact should receive exactly one send row.');
+
+        $contactIds = array_map(static fn (object $s): int => $s->contact_id, $sends);
+        $this->assertSame($contactIds, array_unique($contactIds), 'No contact should receive a duplicate send.');
     }
 
     public function testRunSetsStatusPausedOnExceptionAndContinuesToNextCampaign(): void

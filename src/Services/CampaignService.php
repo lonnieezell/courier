@@ -208,16 +208,24 @@ class CampaignService
             ? $campaign->tag_filter
             : null;
 
+        $excludeCampaignId = $this->blastCampaignId($campaign);
+
         if ($segmentId !== null && $tagFilter !== null) {
-            $bySegment = $this->indexById($this->segmentService->resolve($segmentId));
-            $byTags    = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter));
+            $bySegment = $this->indexById($this->segmentService->resolve($segmentId, $excludeCampaignId));
+            $byTags    = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter, $excludeCampaignId));
             $contacts  = array_intersect_key($bySegment, $byTags);
         } elseif ($segmentId !== null) {
-            $contacts = $this->indexById($this->segmentService->resolve($segmentId));
+            $contacts = $this->indexById($this->segmentService->resolve($segmentId, $excludeCampaignId));
         } elseif ($tagFilter !== null) {
-            $contacts = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter));
+            $contacts = $this->indexById($this->segmentService->resolveByTagSlugs($tagFilter, $excludeCampaignId));
         } else {
-            $contacts = $this->indexById($this->contactModel->subscribed()->findAll());
+            $contactModel = $this->contactModel->subscribed();
+
+            if ($excludeCampaignId !== null) {
+                $contactModel = $contactModel->excludeSentForCampaign($excludeCampaignId);
+            }
+
+            $contacts = $this->indexById($contactModel->findAll());
         }
 
         // Final subscribed guard
@@ -245,8 +253,10 @@ class CampaignService
             ? $campaign->tag_filter
             : null;
 
+        $excludeCampaignId = $this->blastCampaignId($campaign);
+
         if ($segmentId !== null && $tagFilter !== null) {
-            foreach ($this->segmentService->resolveBySegmentAndTagSlugsChunked($segmentId, $tagFilter, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveBySegmentAndTagSlugsChunked($segmentId, $tagFilter, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
 
@@ -254,7 +264,7 @@ class CampaignService
         }
 
         if ($segmentId !== null) {
-            foreach ($this->segmentService->resolveChunked($segmentId, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveChunked($segmentId, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
 
@@ -262,9 +272,36 @@ class CampaignService
         }
 
         if ($tagFilter !== null) {
-            foreach ($this->segmentService->resolveByTagSlugsChunked($tagFilter, $chunkSize) as $chunk) {
+            foreach ($this->segmentService->resolveByTagSlugsChunked($tagFilter, $chunkSize, $excludeCampaignId) as $chunk) {
                 $callback($chunk);
             }
+
+            return;
+        }
+
+        if ($excludeCampaignId !== null) {
+            // Keyset pagination, not OFFSET: each callback invocation marks its
+            // contacts 'sent', which shrinks the excludeSentForCampaign() filtered
+            // set out from under an OFFSET-based page fetch (silently skipping
+            // contacts). Paging by id keeps each fetch correct regardless of how
+            // much the filtered set has shrunk since the last page.
+            $lastId = 0;
+
+            do {
+                $rows = $this->contactModel
+                    ->subscribed()
+                    ->excludeSentForCampaign($excludeCampaignId)
+                    ->where('id >', $lastId)
+                    ->orderBy('id', 'ASC')
+                    ->findAll($chunkSize);
+
+                if ($rows === []) {
+                    break;
+                }
+
+                $callback($rows);
+                $lastId = (int) end($rows)->id;
+            } while (count($rows) === $chunkSize);
 
             return;
         }
@@ -363,8 +400,13 @@ class CampaignService
             return ['sent' => 0, 'failed' => 0];
         }
 
+        // Uses a throwaway ContactModel instance rather than $this->contactModel:
+        // that property's query builder may be mid-iteration inside an ongoing
+        // resolveAudienceChunked() chunk() loop, and findAll() resets a builder's
+        // WHERE clauses after running, which would silently drop that loop's
+        // subscribed/already-sent filtering on its next iteration.
         $contactIds  = array_unique(array_map(static fn (object $s): int => $s->contact_id, $sends));
-        $contactRows = $this->contactModel->whereIn('id', $contactIds)->findAll();
+        $contactRows = (new ContactModel())->whereIn('id', $contactIds)->findAll();
         $contactMap  = [];
 
         foreach ($contactRows as $c) {
@@ -432,6 +474,19 @@ class CampaignService
             'opened'  => $opened,
             'clicked' => $clicked,
         ];
+    }
+
+    /**
+     * Returns the campaign id to exclude already-sent contacts for, or null
+     * if the campaign is not a Blast (drip sequences must receive every step).
+     */
+    private function blastCampaignId(CampaignDTO $campaign): ?int
+    {
+        $type = $campaign->type instanceof CampaignType
+            ? $campaign->type
+            : CampaignType::tryFrom((string) $campaign->type);
+
+        return $type === CampaignType::Blast ? $campaign->id : null;
     }
 
     /**

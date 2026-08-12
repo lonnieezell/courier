@@ -310,6 +310,41 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('vip@example.com', $collected[0]->email);
     }
 
+    public function testResolveAudienceChunkedExcludesContactsAlreadySentForBlast(): void
+    {
+        $campaign = $this->insertAndFetchCampaign();
+        $already  = $this->insertContact('already@example.com');
+        $pending  = $this->insertContact('pending@example.com');
+        $failed   = $this->insertContact('failed@example.com');
+        $this->insertContact('unsent@example.com');
+
+        $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+        $this->sendModel->createPending($pending->id, $campaign->id, null);
+        $failedSend = $this->sendModel->createPending($failed->id, $campaign->id, null);
+        $this->sendModel->update($failedSend->id, ['status' => SendStatus::Failed]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
+
+        $chunked = [];
+        $this->service->resolveAudienceChunked($campaignDto, static function (array $batch) use (&$chunked): void {
+            array_push($chunked, ...$batch);
+        });
+        $chunkedEmails = array_column($chunked, 'email');
+
+        $direct       = $this->service->resolveAudience($campaignDto);
+        $directEmails = array_column($direct, 'email');
+
+        sort($chunkedEmails);
+        sort($directEmails);
+        $this->assertSame($directEmails, $chunkedEmails);
+
+        $this->assertNotContains('already@example.com', $chunkedEmails);
+        $this->assertContains('pending@example.com', $chunkedEmails);
+        $this->assertContains('failed@example.com', $chunkedEmails);
+        $this->assertContains('unsent@example.com', $chunkedEmails);
+    }
+
     public function testResolveAudienceChunkedDeliversIntersectionWhenBothSegmentAndTagSet(): void
     {
         $segmentModel = new SegmentModel();
@@ -376,6 +411,31 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('tagged@example.com', $contacts[0]->email);
     }
 
+    public function testResolveAudienceWithTagFilterExcludesAlreadySentForBlast(): void
+    {
+        $campaign = $this->insertAndFetchCampaign();
+
+        $contactService = new ContactService(
+            $this->contactModel,
+            new TagModel(),
+            new DripEnrollmentModel(),
+            new ContactTagModel(),
+        );
+
+        $alreadySent = $contactService->subscribe(['email' => 'wave1@example.com'], ['invite']);
+        $contactService->subscribe(['email' => 'wave2@example.com'], ['invite']);
+
+        $sentSend = $this->sendModel->createPending($alreadySent->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id, 'tag_filter' => ['invite']]);
+        $contacts    = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertNotContains('wave1@example.com', $emails);
+        $this->assertContains('wave2@example.com', $emails);
+    }
+
     public function testResolveAudienceWithBothNarrowsResult(): void
     {
         $segmentModel = new SegmentModel();
@@ -405,6 +465,23 @@ final class CampaignServiceTest extends CIUnitTestCase
         $this->assertSame('vip@example.com', $contacts[0]->email);
     }
 
+    public function testResolveAudienceDoesNotExcludeAlreadySentForDripSequence(): void
+    {
+        $campaignId = $this->insertDraftCampaign(['type' => CampaignType::DripSequence]);
+        $campaign   = $this->campaignModel->find($campaignId);
+        $contact    = $this->insertContact('drip@example.com');
+
+        // Simulate a completed drip step: a 'sent' row for this campaign_id/contact_id.
+        $sentSend = $this->sendModel->createPending($contact->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id, 'type' => CampaignType::DripSequence]);
+        $contacts    = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertContains('drip@example.com', $emails);
+    }
+
     public function testResolveAudienceExcludesUnsubscribed(): void
     {
         $this->insertContact('sub@example.com');
@@ -415,6 +492,26 @@ final class CampaignServiceTest extends CIUnitTestCase
 
         $emails = array_column($contacts, 'email');
         $this->assertNotContains('unsub@example.com', $emails);
+    }
+
+    public function testResolveAudienceExcludesContactsAlreadySentForBlast(): void
+    {
+        $campaign    = $this->insertAndFetchCampaign();
+        $already     = $this->insertContact('already@example.com');
+        $pending     = $this->insertContact('pending@example.com');
+        $this->insertContact('unsent@example.com');
+        $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
+
+        $sentSend = $this->sendModel->createPending($already->id, $campaign->id, null);
+        $this->sendModel->update($sentSend->id, ['status' => SendStatus::Sent]);
+        $this->sendModel->createPending($pending->id, $campaign->id, null);
+
+        $contacts = $this->service->resolveAudience($campaignDto);
+
+        $emails = array_column($contacts, 'email');
+        $this->assertNotContains('already@example.com', $emails);
+        $this->assertContains('pending@example.com', $emails);
+        $this->assertContains('unsent@example.com', $emails);
     }
 
     // -------------------------------------------------------------------------
@@ -563,6 +660,7 @@ final class CampaignServiceTest extends CIUnitTestCase
     {
         return CampaignDTO::fromObject((object) array_merge([
             'id'         => 0,
+            'type'       => CampaignType::Blast,
             'segment_id' => null,
             'tag_filter' => null,
         ], $overrides));

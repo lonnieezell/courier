@@ -6,6 +6,7 @@ namespace Myth\Courier\Models;
 
 use CodeIgniter\Model;
 use Myth\Courier\DTO\ContactDTO;
+use Myth\Courier\Enums\SendStatus;
 use Myth\Courier\Traits\HasDTO;
 
 /**
@@ -62,5 +63,22 @@ class ContactModel extends Model
     public function subscribed(): static
     {
         return $this->where('status', 'subscribed');
+    }
+
+    /**
+     * Excludes contacts who already have a 'sent' row for the given campaign.
+     * Returns $this so it can be chained with other query builder calls.
+     */
+    public function excludeSentForCampaign(int $campaignId): static
+    {
+        $p      = $this->db->getPrefix();
+        $status = $this->db->escape(SendStatus::Sent->value);
+        $sql    = 'NOT EXISTS ('
+            . "SELECT 1 FROM {$p}courier_sends _cs "
+            . "WHERE _cs.campaign_id = {$campaignId} AND _cs.contact_id = {$p}courier_contacts.id "
+            . "AND _cs.status = {$status}"
+            . ')';
+
+        return $this->where($sql, null, false);
     }
 }

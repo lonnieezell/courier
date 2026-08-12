@@ -39,7 +39,7 @@ class SegmentService
      *
      * @return list<ContactDTO>
      */
-    public function resolveByTagSlugs(array $slugs): array
+    public function resolveByTagSlugs(array $slugs, ?int $excludeSentForCampaignId = null): array
     {
         $count = count($slugs);
 
@@ -47,13 +47,18 @@ class SegmentService
             return [];
         }
 
-        $p = $this->contactModel->db->getPrefix();
-
-        return $this->contactModel
+        $p       = $this->contactModel->db->getPrefix();
+        $builder = $this->contactModel
             ->select("{$p}courier_contacts.*")
             ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
             ->join('courier_tags t', 't.id = ct.tag_id')
-            ->subscribed()
+            ->subscribed();
+
+        if ($excludeSentForCampaignId !== null) {
+            $builder = $builder->excludeSentForCampaign($excludeSentForCampaignId);
+        }
+
+        return $builder
             ->whereIn('t.slug', $slugs)
             ->groupBy("{$p}courier_contacts.id")
             ->having('COUNT(DISTINCT t.id) =', $count)
@@ -68,7 +73,7 @@ class SegmentService
      *
      * @return Generator<int, list<ContactDTO>>
      */
-    public function resolveByTagSlugsChunked(array $slugs, int $chunkSize = 200): Generator
+    public function resolveByTagSlugsChunked(array $slugs, int $chunkSize = 200, ?int $excludeSentForCampaignId = null): Generator
     {
         if ($slugs === []) {
             return;
@@ -77,17 +82,31 @@ class SegmentService
         $count  = count($slugs);
         $p      = $this->contactModel->db->getPrefix();
         $offset = 0;
+        $lastId = 0;
 
         do {
-            $rows = $this->contactModel
+            $builder = $this->contactModel
                 ->select("{$p}courier_contacts.*")
                 ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
                 ->join('courier_tags t', 't.id = ct.tag_id')
-                ->subscribed()
+                ->subscribed();
+
+            if ($excludeSentForCampaignId !== null) {
+                // Keyset pagination, not OFFSET: contacts drop out of this
+                // filtered set as the caller marks them 'sent' between page
+                // fetches, which would make an OFFSET-based fetch silently
+                // skip contacts. Paging by id is immune to that shrinkage.
+                $builder = $builder
+                    ->excludeSentForCampaign($excludeSentForCampaignId)
+                    ->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
+            }
+
+            $rows = $builder
                 ->whereIn('t.slug', $slugs)
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
-                ->findAll($chunkSize, $offset);
+                ->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -95,7 +114,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
@@ -104,9 +127,9 @@ class SegmentService
      *
      * @return list<ContactDTO>
      */
-    public function resolve(int $segmentId): array
+    public function resolve(int $segmentId, ?int $excludeSentForCampaignId = null): array
     {
-        return $this->buildQuery($segmentId)->findAll();
+        return $this->buildQuery($segmentId, $excludeSentForCampaignId)->findAll();
     }
 
     /**
@@ -126,12 +149,12 @@ class SegmentService
      *
      * @return list<ContactDTO>
      */
-    public function resolveBySegmentAndTagSlugs(int $segmentId, array $slugs): array
+    public function resolveBySegmentAndTagSlugs(int $segmentId, array $slugs, ?int $excludeSentForCampaignId = null): array
     {
         $count = count($slugs);
         $p     = $this->contactModel->db->getPrefix();
 
-        return $this->buildQuery($segmentId)
+        return $this->buildQuery($segmentId, $excludeSentForCampaignId)
             ->select("{$p}courier_contacts.*")
             ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
             ->join('courier_tags t', 't.id = ct.tag_id')
@@ -150,21 +173,31 @@ class SegmentService
      *
      * @return Generator<int, list<ContactDTO>>
      */
-    public function resolveBySegmentAndTagSlugsChunked(int $segmentId, array $slugs, int $chunkSize = 200): Generator
+    public function resolveBySegmentAndTagSlugsChunked(int $segmentId, array $slugs, int $chunkSize = 200, ?int $excludeSentForCampaignId = null): Generator
     {
         $count  = count($slugs);
         $p      = $this->contactModel->db->getPrefix();
         $offset = 0;
+        $lastId = 0;
 
         do {
-            $rows = $this->buildQuery($segmentId)
+            $query = $this->buildQuery($segmentId, $excludeSentForCampaignId)
                 ->select("{$p}courier_contacts.*")
                 ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
                 ->join('courier_tags t', 't.id = ct.tag_id')
-                ->whereIn('t.slug', $slugs)
+                ->whereIn('t.slug', $slugs);
+
+            if ($excludeSentForCampaignId !== null) {
+                // Keyset pagination — see resolveByTagSlugsChunked() for why
+                // OFFSET is unsafe once excludeSentForCampaign() is applied.
+                $query = $query->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
+            }
+
+            $rows = $query
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
-                ->findAll($chunkSize, $offset);
+                ->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -172,7 +205,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
@@ -183,12 +220,23 @@ class SegmentService
      *
      * @return Generator<int, list<ContactDTO>>
      */
-    public function resolveChunked(int $segmentId, int $chunkSize = 200): Generator
+    public function resolveChunked(int $segmentId, int $chunkSize = 200, ?int $excludeSentForCampaignId = null): Generator
     {
         $offset = 0;
+        $lastId = 0;
+        $p      = $this->contactModel->db->getPrefix();
 
         do {
-            $rows = $this->buildQuery($segmentId)->findAll($chunkSize, $offset);
+            $query = $this->buildQuery($segmentId, $excludeSentForCampaignId);
+
+            if ($excludeSentForCampaignId !== null) {
+                // Keyset pagination — see resolveByTagSlugsChunked() for why
+                // OFFSET is unsafe once excludeSentForCampaign() is applied.
+                $query = $query->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
+            }
+
+            $rows = $query->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -196,7 +244,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
@@ -204,13 +256,19 @@ class SegmentService
      * Builds the base query for a segment, applying all rules.
      * Always restricts to subscribed contacts.
      */
-    private function buildQuery(int $segmentId): ContactModel
+    private function buildQuery(int $segmentId, ?int $excludeSentForCampaignId = null): ContactModel
     {
         $segment  = $this->segmentModel->find($segmentId);
         $rules    = (array) ($segment->rules ?? []);
         $matchAny = ($segment->match_mode ?? 'all') === 'any';
         $db       = $this->contactModel->db;
-        $builder  = $this->contactModel->subscribed()->builder();
+        $model    = $this->contactModel->subscribed();
+
+        if ($excludeSentForCampaignId !== null) {
+            $model = $model->excludeSentForCampaign($excludeSentForCampaignId);
+        }
+
+        $builder = $model->builder();
 
         if ($rules === []) {
             return $this->contactModel;

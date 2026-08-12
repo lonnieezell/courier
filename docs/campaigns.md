@@ -127,6 +127,15 @@ $campaignService->resume($campaign->id);
 
 This moves it back to `scheduled` so the next command run picks it up.
 
+### Resending is safe
+
+Re-running `courier:send-campaign` against a Blast campaign — whether resuming
+a paused send or re-triggering it manually — only delivers to contacts who
+don't already have a `sent` record for that campaign. Growing a tag or
+segment between runs delivers only to the newly matching contacts; contacts
+already delivered to are skipped. This does not apply to drip sequences,
+where each contact is expected to receive every step.
+
 ## Checking campaign stats
 
 ```php
