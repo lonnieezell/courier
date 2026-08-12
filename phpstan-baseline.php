@@ -254,6 +254,12 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Models/DripEnrollmentModel.php',
 ];
 $ignoreErrors[] = [
+	'rawMessage' => 'Method Myth\\Courier\\Models\\DripEnrollmentModel::claimDue() should return list<Myth\\Courier\\DTO\\DripEnrollmentDTO> but returns list<object{id: int, contact_id: int, campaign_id: int, current_step: int, next_send_at: string|null, status: Myth\\Courier\\Enums\\EnrollmentStatus, created_at: string|null, updated_at: string|null, retry_count: int, locked_at: string|null}>.',
+	'identifier' => 'return.type',
+	'count' => 1,
+	'path' => __DIR__ . '/src/Models/DripEnrollmentModel.php',
+];
+$ignoreErrors[] = [
 	'rawMessage' => 'Only booleans are allowed in an if condition, mixed given.',
 	'identifier' => 'if.condNotBoolean',
 	'count' => 1,

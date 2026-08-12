@@ -17,6 +17,7 @@ class DripEnrollmentDTO extends BaseDTO
     public int $current_step;
     public ?string $next_send_at = null;
     public int $retry_count      = 0;
+    public ?string $locked_at    = null;
     public EnrollmentStatus $status;
     public string $created_at;
     public string $updated_at;

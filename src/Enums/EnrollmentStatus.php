@@ -6,9 +6,10 @@ namespace Myth\Courier\Enums;
 
 enum EnrollmentStatus: string
 {
-    case Active    = 'active';
-    case Paused    = 'paused';
-    case Completed = 'completed';
-    case Cancelled = 'cancelled';
-    case Failed    = 'failed';
+    case Active     = 'active';
+    case Processing = 'processing';
+    case Paused     = 'paused';
+    case Completed  = 'completed';
+    case Cancelled  = 'cancelled';
+    case Failed     = 'failed';
 }

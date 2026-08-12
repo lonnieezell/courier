@@ -54,6 +54,14 @@ class Courier extends BaseConfig
     public int $maxRetries = 3;
 
     /**
+     * Minutes before a `processing` enrollment claim is considered stale and
+     * reclaimed back to `active`. Protects against a crashed or killed
+     * courier:process-drips run stranding enrollments permanently.
+     * .env: courier.staleLockMinutes
+     */
+    public int $staleLockMinutes = 15;
+
+    /**
      * Milliseconds to sleep between individual sends (0 = no throttle).
      * .env: courier.throttleMs
      */

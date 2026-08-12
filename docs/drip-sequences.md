@@ -83,14 +83,26 @@ $enrollment  = $dripService->enroll($contact->id, $campaign->id);
 
 ## Processing due steps
 
-The `courier:process-drips` command does the actual sending. Run it frequently via cron:
+The `courier:process-drips` command does the actual sending. Run it frequently, using [CodeIgniter Tasks](https://github.com/codeigniter4/tasks):
+
+```php
+// app/Config/Tasks.php
+$schedule->command('courier:process-drips')->everyMinute()->singleInstance();
+```
+
+On raw crontab, wrap the command in `flock` so overlapping invocations can't run at once:
 
 ```bash
-# Send due drip steps every minute
-* * * * * php /path/to/your/app/spark courier:process-drips
+* * * * * flock -n /var/lock/courier-drips.lock php /path/to/your/app/spark courier:process-drips
 ```
 
 Each run processes up to `$batchSize` enrollments (default: 200). If you have more than that in the queue, they'll drain across successive runs — that's intentional so you don't blast your email provider.
+
+### Overlapping runs
+
+Before sending, each run atomically claims its batch — due enrollments move from `active` to an intermediate `processing` status. An overlapping run's claim query only matches `active` rows, so it can't pick up enrollments the first run already claimed, and each step is sent exactly once even if a run takes longer than the interval between runs.
+
+If a run crashes or is killed mid-batch, its claimed enrollments stay `processing` until `$staleLockMinutes` (default: 15) passes, at which point the next run reclaims them back to `active` and retries. `singleInstance()`/`flock` are still recommended as defence in depth — they stop a second run from starting at all — but the claim is what actually guarantees no duplicate sends.
 
 ## Cancelling an enrollment
 
@@ -116,11 +128,13 @@ $enrollment = $dripService->getEnrollmentStatus($contact->id, $campaign->id);
 // Returns DripEnrollmentDTO or null
 ```
 
-Enrollment statuses: `active`, `cancelled`, `completed`.
+Enrollment statuses: `active`, `processing`, `cancelled`, `completed`, `failed`.
+
+`processing` is transient — it's only set while a `courier:process-drips` run has an enrollment claimed for sending; see [Overlapping runs](#overlapping-runs).
 
 ## Enrollment lifecycle
 
 ```
-(subscribe or enroll()) → active → [step 1] → [step 2] → ... → completed
-                                                          ↘ cancelled (unsubscribe or manual)
+(subscribe or enroll()) → active ⇄ processing → [step 1] → [step 2] → ... → completed
+                                                                      ↘ cancelled (unsubscribe or manual)
 ```

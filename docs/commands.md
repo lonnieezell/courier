@@ -1,8 +1,26 @@
 # CLI Commands
 
-Courier's automation commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results.
+Courier's automation commands are designed to run on a schedule — each one is stateless, processes a bounded batch, and logs its results.
 
 For interactive management of contacts, campaigns, segments, tags, and drip enrollments, see [Management Commands](management-commands.md).
+
+## Scheduling
+
+Use [CodeIgniter Tasks](https://github.com/codeigniter4/tasks) to run these commands, with `singleInstance()` so an overlapping run is skipped rather than started:
+
+```php
+// app/Config/Tasks.php
+$schedule->command('courier:process-drips')->everyMinute()->singleInstance();
+$schedule->command('courier:send-campaign')->everyFiveMinutes()->singleInstance();
+```
+
+If you're staying on raw crontab, wrap each command in `flock` so two overlapping invocations can't run at once:
+
+```bash
+* * * * * flock -n /var/lock/courier-drips.lock php /path/to/app/spark courier:process-drips
+```
+
+`courier:process-drips` also claims enrollments before sending, so duplicate sends are prevented even without `singleInstance()`/`flock` — see [Drip Sequences](drip-sequences.md#overlapping-runs). Scheduler-level overlap protection is still recommended as defence in depth.
 
 ## `courier:send-campaign`
 
@@ -28,11 +46,16 @@ php spark courier:send-campaign 42
 
 A paused campaign can be resumed via `CampaignService::resume()` or by fixing the issue and calling `courier:send-campaign <id>` again.
 
-**Recommended cron schedule:**
+**Recommended schedule** (see [Scheduling](#scheduling)):
+
+```php
+// app/Config/Tasks.php
+$schedule->command('courier:send-campaign')->everyFiveMinutes()->singleInstance();
+```
 
 ```bash
-# Check for scheduled campaigns every 5 minutes
-*/5 * * * * php /path/to/app/spark courier:send-campaign
+# raw cron equivalent
+*/5 * * * * flock -n /var/lock/courier-send-campaign.lock php /path/to/app/spark courier:send-campaign
 ```
 
 ## `courier:process-drips`
@@ -45,19 +68,25 @@ php spark courier:process-drips
 
 **What it does:**
 
-1. Finds active enrollments where `next_send_at <= now` (up to `$batchSize`)
-2. Sends the current step email to each contact
-3. Advances each enrollment to the next step (updating `next_send_at` based on the next step's `delay_hours`)
-4. Marks the enrollment `completed` when the contact finishes all steps
-5. Cancels the enrollment if the contact is no longer subscribed
+1. Reclaims any `processing` enrollment stuck past `$staleLockMinutes` (a crashed prior run) back to `active`
+2. Claims active enrollments where `next_send_at <= now` (up to `$batchSize`), marking them `processing` so an overlapping run can't claim them too
+3. Sends the current step email to each contact
+4. Advances each enrollment to the next step (updating `next_send_at` based on the next step's `delay_hours`) and clears the claim
+5. Marks the enrollment `completed` when the contact finishes all steps
+6. Cancels the enrollment if the contact is no longer subscribed
 
-**Recommended cron schedule:**
+**Recommended schedule** (see [Scheduling](#scheduling)):
 
 Run this frequently so drip steps go out close to their scheduled time:
 
+```php
+// app/Config/Tasks.php
+$schedule->command('courier:process-drips')->everyMinute()->singleInstance();
+```
+
 ```bash
-# Process due drip steps every minute
-* * * * * php /path/to/app/spark courier:process-drips
+# raw cron equivalent
+* * * * * flock -n /var/lock/courier-drips.lock php /path/to/app/spark courier:process-drips
 ```
 
 If your batch size is smaller than your active enrollment count, the queue drains across successive runs. That's by design — it prevents overwhelming your email provider in a single burst.
