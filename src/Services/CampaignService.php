@@ -279,14 +279,36 @@ class CampaignService
             return;
         }
 
-        $batch        = [];
-        $contactModel = $this->contactModel->subscribed();
-
         if ($excludeCampaignId !== null) {
-            $contactModel = $contactModel->excludeSentForCampaign($excludeCampaignId);
+            // Keyset pagination, not OFFSET: each callback invocation marks its
+            // contacts 'sent', which shrinks the excludeSentForCampaign() filtered
+            // set out from under an OFFSET-based page fetch (silently skipping
+            // contacts). Paging by id keeps each fetch correct regardless of how
+            // much the filtered set has shrunk since the last page.
+            $lastId = 0;
+
+            do {
+                $rows = $this->contactModel
+                    ->subscribed()
+                    ->excludeSentForCampaign($excludeCampaignId)
+                    ->where('id >', $lastId)
+                    ->orderBy('id', 'ASC')
+                    ->findAll($chunkSize);
+
+                if ($rows === []) {
+                    break;
+                }
+
+                $callback($rows);
+                $lastId = (int) end($rows)->id;
+            } while (count($rows) === $chunkSize);
+
+            return;
         }
 
-        $contactModel->chunk(
+        $batch = [];
+
+        $this->contactModel->subscribed()->chunk(
             $chunkSize,
             static function (object $contact) use (&$batch, $chunkSize, $callback): void {
                 $batch[] = $contact;
@@ -378,8 +400,13 @@ class CampaignService
             return ['sent' => 0, 'failed' => 0];
         }
 
+        // Uses a throwaway ContactModel instance rather than $this->contactModel:
+        // that property's query builder may be mid-iteration inside an ongoing
+        // resolveAudienceChunked() chunk() loop, and findAll() resets a builder's
+        // WHERE clauses after running, which would silently drop that loop's
+        // subscribed/already-sent filtering on its next iteration.
         $contactIds  = array_unique(array_map(static fn (object $s): int => $s->contact_id, $sends));
-        $contactRows = $this->contactModel->whereIn('id', $contactIds)->findAll();
+        $contactRows = (new ContactModel())->whereIn('id', $contactIds)->findAll();
         $contactMap  = [];
 
         foreach ($contactRows as $c) {

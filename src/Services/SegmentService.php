@@ -82,6 +82,7 @@ class SegmentService
         $count  = count($slugs);
         $p      = $this->contactModel->db->getPrefix();
         $offset = 0;
+        $lastId = 0;
 
         do {
             $builder = $this->contactModel
@@ -91,14 +92,21 @@ class SegmentService
                 ->subscribed();
 
             if ($excludeSentForCampaignId !== null) {
-                $builder = $builder->excludeSentForCampaign($excludeSentForCampaignId);
+                // Keyset pagination, not OFFSET: contacts drop out of this
+                // filtered set as the caller marks them 'sent' between page
+                // fetches, which would make an OFFSET-based fetch silently
+                // skip contacts. Paging by id is immune to that shrinkage.
+                $builder = $builder
+                    ->excludeSentForCampaign($excludeSentForCampaignId)
+                    ->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
             }
 
             $rows = $builder
                 ->whereIn('t.slug', $slugs)
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
-                ->findAll($chunkSize, $offset);
+                ->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -106,7 +114,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
@@ -166,16 +178,26 @@ class SegmentService
         $count  = count($slugs);
         $p      = $this->contactModel->db->getPrefix();
         $offset = 0;
+        $lastId = 0;
 
         do {
-            $rows = $this->buildQuery($segmentId, $excludeSentForCampaignId)
+            $query = $this->buildQuery($segmentId, $excludeSentForCampaignId)
                 ->select("{$p}courier_contacts.*")
                 ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
                 ->join('courier_tags t', 't.id = ct.tag_id')
-                ->whereIn('t.slug', $slugs)
+                ->whereIn('t.slug', $slugs);
+
+            if ($excludeSentForCampaignId !== null) {
+                // Keyset pagination — see resolveByTagSlugsChunked() for why
+                // OFFSET is unsafe once excludeSentForCampaign() is applied.
+                $query = $query->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
+            }
+
+            $rows = $query
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
-                ->findAll($chunkSize, $offset);
+                ->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -183,7 +205,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
@@ -197,9 +223,20 @@ class SegmentService
     public function resolveChunked(int $segmentId, int $chunkSize = 200, ?int $excludeSentForCampaignId = null): Generator
     {
         $offset = 0;
+        $lastId = 0;
+        $p      = $this->contactModel->db->getPrefix();
 
         do {
-            $rows = $this->buildQuery($segmentId, $excludeSentForCampaignId)->findAll($chunkSize, $offset);
+            $query = $this->buildQuery($segmentId, $excludeSentForCampaignId);
+
+            if ($excludeSentForCampaignId !== null) {
+                // Keyset pagination — see resolveByTagSlugsChunked() for why
+                // OFFSET is unsafe once excludeSentForCampaign() is applied.
+                $query = $query->where("{$p}courier_contacts.id >", $lastId)
+                    ->orderBy("{$p}courier_contacts.id", 'ASC');
+            }
+
+            $rows = $query->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
 
             if ($rows === []) {
                 break;
@@ -207,7 +244,11 @@ class SegmentService
 
             yield $rows;
 
-            $offset += $chunkSize;
+            if ($excludeSentForCampaignId !== null) {
+                $lastId = (int) end($rows)->id;
+            } else {
+                $offset += $chunkSize;
+            }
         } while (count($rows) === $chunkSize);
     }
 
