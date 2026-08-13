@@ -58,7 +58,10 @@ return static function (RectorConfig $rectorConfig): void {
         PHPUnitSetList::PHPUNIT_100,
     ]);
 
-    $rectorConfig->parallel();
+    // Parallel workers don't inherit the CI4 bootstrap's Config\Migrations
+    // binding, so phpstan-codeigniter's SchemaMigrator crashes with a null
+    // config as soon as any rule touches a Model return type. Stay single-process.
+    $rectorConfig->disableParallel();
 
     // Github action cache
     $rectorConfig->cacheClass(FileCacheStorage::class);
