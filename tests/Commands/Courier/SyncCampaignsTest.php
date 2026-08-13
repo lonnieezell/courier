@@ -9,6 +9,8 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Services;
 use Myth\Courier\Commands\SyncCampaigns;
+use Myth\Courier\Enums\CampaignStatus;
+use Myth\Courier\Enums\CampaignType;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Services\CampaignFileLoader;
 
@@ -118,5 +120,91 @@ final class SyncCampaignsTest extends CIUnitTestCase
 
         $this->assertNotNull($this->campaignModel->where('name', 'valid-campaign')->first());
         $this->assertNull($this->campaignModel->where('name', 'bad')->first());
+    }
+
+    private function writeBlastYaml(string $name): string
+    {
+        $yaml = <<<YAML
+            name: {$name}
+            type: blast
+            subject: "20% off this week"
+            from_name: Test Sender
+            from_email: test@example.com
+            view: emails/spring-sale
+            tag_filter:
+              - customer
+              - newsletter
+
+            YAML;
+
+        $filename = $this->campaignsDir . '/' . $name . '.yaml';
+        file_put_contents($filename, $yaml);
+
+        return basename($filename);
+    }
+
+    public function testSyncCreatesBlastCampaignRowAsDraft(): void
+    {
+        $this->writeBlastYaml('spring-sale');
+
+        $this->command->run([]);
+
+        $campaign = $this->campaignModel->where('name', 'spring-sale')->first();
+        $this->assertNotNull($campaign);
+        $this->assertSame(CampaignType::Blast, $campaign->type);
+        $this->assertSame(CampaignStatus::Draft, $campaign->status);
+        $this->assertSame('20% off this week', $campaign->subject);
+        $this->assertSame('emails/spring-sale', $campaign->view);
+        $this->assertSame(['customer', 'newsletter'], (array) $campaign->tag_filter);
+    }
+
+    public function testSyncUpdatesBlastContentOnRerun(): void
+    {
+        $this->writeBlastYaml('spring-sale');
+        $this->command->run([]);
+
+        file_put_contents(
+            $this->campaignsDir . '/spring-sale.yaml',
+            "name: spring-sale\ntype: blast\nsubject: \"30% off, last day\"\nfrom_name: Test Sender\nfrom_email: test@example.com\nview: emails/spring-sale\n",
+        );
+        $this->command->run([]);
+
+        $campaigns = $this->campaignModel->where('name', 'spring-sale')->findAll();
+        $this->assertCount(1, $campaigns);
+        $this->assertSame('30% off, last day', $campaigns[0]->subject);
+        $this->assertNull($campaigns[0]->tag_filter);
+    }
+
+    public function testSyncDoesNotResetStatusOfAScheduledBlast(): void
+    {
+        $this->writeBlastYaml('spring-sale');
+        $this->command->run([]);
+
+        $campaign = $this->campaignModel->where('name', 'spring-sale')->first();
+        $this->campaignModel->update($campaign->id, [
+            'status'       => CampaignStatus::Scheduled,
+            'scheduled_at' => '2026-06-01 09:00:00',
+        ]);
+
+        // Re-sync after an operator has scheduled the send — content changes,
+        // but the schedule an operator set must survive.
+        $this->writeBlastYaml('spring-sale');
+        $this->command->run([]);
+
+        $reloaded = $this->campaignModel->where('name', 'spring-sale')->first();
+        $this->assertSame(CampaignStatus::Scheduled, $reloaded->status);
+        $this->assertSame('2026-06-01 09:00:00', $reloaded->scheduled_at);
+    }
+
+    public function testSyncSkipsBlastMissingView(): void
+    {
+        file_put_contents(
+            $this->campaignsDir . '/broken-blast.yaml',
+            "name: broken-blast\ntype: blast\nsubject: \"Hi\"\nfrom_name: Test Sender\nfrom_email: test@example.com\n",
+        );
+
+        $this->command->run([]);
+
+        $this->assertNull($this->campaignModel->where('name', 'broken-blast')->first());
     }
 }
