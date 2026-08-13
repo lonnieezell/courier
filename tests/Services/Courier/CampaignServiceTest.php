@@ -496,9 +496,9 @@ final class CampaignServiceTest extends CIUnitTestCase
 
     public function testResolveAudienceExcludesContactsAlreadySentForBlast(): void
     {
-        $campaign    = $this->insertAndFetchCampaign();
-        $already     = $this->insertContact('already@example.com');
-        $pending     = $this->insertContact('pending@example.com');
+        $campaign = $this->insertAndFetchCampaign();
+        $already  = $this->insertContact('already@example.com');
+        $pending  = $this->insertContact('pending@example.com');
         $this->insertContact('unsent@example.com');
         $campaignDto = $this->makeCampaignObject(['id' => $campaign->id]);
 

@@ -28,7 +28,10 @@ class LinkModel extends Model
 
     public function findByToken(string $token): ?LinkDTO
     {
-        return $this->where('link_token', $token)->first();
+        /** @var LinkDTO|null $link */
+        $link = $this->where('link_token', $token)->first();
+
+        return $link;
     }
 
     /**

@@ -67,7 +67,10 @@ class CampaignService
 
         $id = (int) $this->campaignModel->insert($data);
 
-        return $this->campaignModel->find($id);
+        /** @var CampaignDTO $campaign */
+        $campaign = $this->campaignModel->find($id); // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
+
+        return $campaign;
     }
 
     /**
@@ -87,15 +90,7 @@ class CampaignService
             throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
-        $type = $campaign->type instanceof CampaignType
-            ? $campaign->type
-            : CampaignType::tryFrom((string) $campaign->type);
-
-        if ($type === null) {
-            throw new CourierValidationException('Campaign has an unrecognized type.');
-        }
-
-        if ($type !== CampaignType::DripSequence) {
+        if ($campaign->type !== CampaignType::DripSequence) {
             throw new CourierValidationException('Only drip_sequence campaigns can have drip steps.');
         }
 
@@ -117,7 +112,10 @@ class CampaignService
 
         $id = (int) $this->dripStepModel->insert($stepData);
 
-        return $this->dripStepModel->find($id);
+        /** @var DripStepDTO $step */
+        $step = $this->dripStepModel->find($id); // @phpstan-ignore varTag.type (afterFind already casts rows to DripStepDTO; its nullable id field defeats structural subtyping)
+
+        return $step;
     }
 
     /**
@@ -134,15 +132,7 @@ class CampaignService
             throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
-        $status = $campaign->status instanceof CampaignStatus
-            ? $campaign->status
-            : CampaignStatus::tryFrom((string) $campaign->status);
-
-        if ($status === null) {
-            throw new CourierValidationException('Campaign has an unrecognized status.');
-        }
-
-        if ($status !== CampaignStatus::Draft) {
+        if ($campaign->status !== CampaignStatus::Draft) {
             throw new CourierValidationException('Only draft campaigns can be scheduled.');
         }
 
@@ -170,15 +160,7 @@ class CampaignService
             throw new CourierValidationException("Campaign {$campaignId} not found.");
         }
 
-        $status = $campaign->status instanceof CampaignStatus
-            ? $campaign->status
-            : CampaignStatus::tryFrom((string) $campaign->status);
-
-        if ($status === null) {
-            throw new CourierValidationException('Campaign has an unrecognized status.');
-        }
-
-        if ($status !== CampaignStatus::Paused) {
+        if ($campaign->status !== CampaignStatus::Paused) {
             throw new CourierValidationException('Only paused campaigns can be resumed.');
         }
 
@@ -202,7 +184,7 @@ class CampaignService
      */
     public function resolveAudience(CampaignDTO $campaign): array
     {
-        $segmentId = $campaign->segment_id ?? null;
+        $segmentId = $campaign->segment_id;
 
         $tagFilter = isset($campaign->tag_filter) && is_array($campaign->tag_filter) && $campaign->tag_filter !== []
             ? $campaign->tag_filter
@@ -248,7 +230,7 @@ class CampaignService
     public function resolveAudienceChunked(CampaignDTO $campaign, Closure $callback): void
     {
         $chunkSize = $this->config->batchSize;
-        $segmentId = $campaign->segment_id ?? null;
+        $segmentId = $campaign->segment_id;
         $tagFilter = isset($campaign->tag_filter) && is_array($campaign->tag_filter) && $campaign->tag_filter !== []
             ? $campaign->tag_filter
             : null;
@@ -342,7 +324,8 @@ class CampaignService
             return [];
         }
 
-        $contactIds   = array_map(static fn (object $c): int => $c->id, $contacts);
+        $contactIds = array_map(static fn (object $c): int => $c->id, $contacts);
+        /** @var list<SendDTO> $existingRows */
         $existingRows = $this->sendModel
             ->where('campaign_id', $campaign->id)
             ->whereIn('contact_id', $contactIds)
@@ -358,11 +341,7 @@ class CampaignService
             $existing = $existingMap[(int) $contact->id] ?? null;
 
             if ($existing !== null) {
-                $status = $existing->status instanceof SendStatus
-                    ? $existing->status
-                    : SendStatus::tryFrom((string) $existing->status);
-
-                if ($status === SendStatus::Pending || $status === SendStatus::Sent) {
+                if ($existing->status === SendStatus::Pending || $existing->status === SendStatus::Sent) {
                     $sends[] = $existing;
 
                     continue;
@@ -370,7 +349,9 @@ class CampaignService
 
                 // Failed or unknown → reset to pending for retry
                 $this->sendModel->update($existing->id, ['status' => SendStatus::Pending]);
-                $sends[] = $this->sendModel->find($existing->id);
+                /** @var SendDTO $refetched */
+                $refetched = $this->sendModel->find($existing->id);
+                $sends[]   = $refetched;
 
                 continue;
             }
@@ -405,8 +386,9 @@ class CampaignService
         // resolveAudienceChunked() chunk() loop, and findAll() resets a builder's
         // WHERE clauses after running, which would silently drop that loop's
         // subscribed/already-sent filtering on its next iteration.
-        $contactIds  = array_unique(array_map(static fn (object $s): int => $s->contact_id, $sends));
-        $contactRows = (new ContactModel())->whereIn('id', $contactIds)->findAll();
+        $contactIds = array_unique(array_map(static fn (object $s): int => $s->contact_id, $sends));
+        /** @var list<ContactDTO> $contactRows */
+        $contactRows = (new ContactModel())->whereIn('id', $contactIds)->findAll(); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
         $contactMap  = [];
 
         foreach ($contactRows as $c) {
@@ -425,7 +407,9 @@ class CampaignService
             $campaignId = (int) $send->campaign_id;
 
             if (! isset($campaignCache[$campaignId])) {
-                $campaignCache[$campaignId] = $this->campaignModel->find($campaignId);
+                /** @var CampaignDTO $campaignForSend */
+                $campaignForSend            = $this->campaignModel->find($campaignId); // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
+                $campaignCache[$campaignId] = $campaignForSend;
             }
 
             $result = $this->mailerService->send($contact, $campaignCache[$campaignId], $send);
@@ -482,11 +466,7 @@ class CampaignService
      */
     private function blastCampaignId(CampaignDTO $campaign): ?int
     {
-        $type = $campaign->type instanceof CampaignType
-            ? $campaign->type
-            : CampaignType::tryFrom((string) $campaign->type);
-
-        return $type === CampaignType::Blast ? $campaign->id : null;
+        return $campaign->type === CampaignType::Blast ? $campaign->id : null;
     }
 
     /**

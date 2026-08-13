@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use Myth\Courier\Config\Courier as CourierConfig;
+use Myth\Courier\DTO\CampaignDTO;
+use Myth\Courier\DTO\ContactDTO;
 use Myth\Courier\DTO\DripEnrollmentDTO;
 use Myth\Courier\DTO\DripStepDTO;
 use Myth\Courier\Enums\CampaignType;
@@ -44,15 +46,15 @@ class DripService implements DripServiceInterface
      */
     public function enroll(int $contactId, int $campaignId): ?DripEnrollmentDTO
     {
-        /** @var object $campaign */
-        $campaign = $this->campaignModel->find($campaignId);
+        /** @var CampaignDTO|null $campaign */
+        $campaign = $this->campaignModel->find($campaignId); // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
 
         if ($campaign === null || $campaign->type !== CampaignType::DripSequence) {
             throw new RuntimeException('Campaign not found or is not a drip sequence.');
         }
 
-        /** @var object $contact */
-        $contact = $this->contactModel->find($contactId);
+        /** @var ContactDTO|null $contact */
+        $contact = $this->contactModel->find($contactId); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
 
         if ($contact === null || $contact->status !== ContactStatus::Subscribed) {
             throw new RuntimeException('Contact is not subscribed.');
@@ -77,7 +79,10 @@ class DripService implements DripServiceInterface
             'next_send_at' => date('Y-m-d H:i:s', time() + ($delayHours * 3600)),
         ]);
 
-        return $this->enrollmentModel->find($id);
+        /** @var DripEnrollmentDTO $enrollment */
+        $enrollment = $this->enrollmentModel->find($id);
+
+        return $enrollment;
     }
 
     /**
@@ -149,13 +154,19 @@ class DripService implements DripServiceInterface
 
         $contactMap = [];
 
-        foreach ($this->contactModel->whereIn('id', $contactIds)->findAll() as $c) {
+        /** @var list<ContactDTO> $contactRows */
+        $contactRows = $this->contactModel->whereIn('id', $contactIds)->findAll(); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
+
+        foreach ($contactRows as $c) {
             $contactMap[$c->id] = $c;
         }
 
         $campaignMap = [];
 
-        foreach ($this->campaignModel->whereIn('id', $campaignIds)->findAll() as $camp) {
+        /** @var list<CampaignDTO> $campaignRows */
+        $campaignRows = $this->campaignModel->whereIn('id', $campaignIds)->findAll(); // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
+
+        foreach ($campaignRows as $camp) {
             $campaignMap[$camp->id] = $camp;
         }
 
@@ -163,7 +174,10 @@ class DripService implements DripServiceInterface
         $stepMap       = [];
 
         if ($dbCampaignIds !== []) {
-            foreach ($this->stepModel->whereIn('campaign_id', array_values($dbCampaignIds))->findAll() as $step) {
+            /** @var list<DripStepDTO> $stepRows */
+            $stepRows = $this->stepModel->whereIn('campaign_id', array_values($dbCampaignIds))->findAll(); // @phpstan-ignore varTag.type (afterFind already casts rows to DripStepDTO; its nullable id field defeats structural subtyping)
+
+            foreach ($stepRows as $step) {
                 $stepMap[$step->campaign_id][$step->position] = $step;
             }
         }
@@ -245,10 +259,13 @@ class DripService implements DripServiceInterface
      */
     public function getEnrollmentStatus(int $contactId, int $campaignId): ?DripEnrollmentDTO
     {
-        return $this->enrollmentModel
+        /** @var DripEnrollmentDTO|null $enrollment */
+        $enrollment = $this->enrollmentModel
             ->where('contact_id', $contactId)
             ->where('campaign_id', $campaignId)
             ->first();
+
+        return $enrollment;
     }
 
     /**

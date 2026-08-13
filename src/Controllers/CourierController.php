@@ -133,7 +133,7 @@ class CourierController extends Controller
         foreach ($driver->parseEvents($this->request) as $event) {
             $email     = $event['email'];
             $type      = $event['type'];
-            $messageId = $event['message_id'] ?? null;
+            $messageId = $event['message_id'];
 
             if ($type === 'bounce') {
                 $contactService->suppress($email, ContactStatus::Bounced);

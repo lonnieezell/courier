@@ -45,7 +45,10 @@ class SendModel extends Model
 
     public function findByOpenToken(string $token): ?SendDTO
     {
-        return $this->where('open_token', $token)->first();
+        /** @var SendDTO|null $send */
+        $send = $this->where('open_token', $token)->first();
+
+        return $send;
     }
 
     /**
@@ -53,7 +56,10 @@ class SendModel extends Model
      */
     public function findByUnsubscribeToken(string $token): ?SendDTO
     {
-        return $this->where('unsubscribe_token', $token)->first();
+        /** @var SendDTO|null $send */
+        $send = $this->where('unsubscribe_token', $token)->first();
+
+        return $send;
     }
 
     /**
@@ -62,12 +68,15 @@ class SendModel extends Model
      */
     public function findLatestPendingByEmail(string $email): ?SendDTO
     {
-        return $this->select('courier_sends.*')
+        /** @var SendDTO|null $send */
+        $send = $this->select('courier_sends.*')
             ->join('courier_contacts', 'courier_contacts.id = courier_sends.contact_id')
             ->where('courier_contacts.email', $email)
             ->where('courier_sends.status', SendStatus::Pending->value)
             ->orderBy('courier_sends.id', 'DESC')
             ->first();
+
+        return $send;
     }
 
     /**
@@ -91,6 +100,9 @@ class SendModel extends Model
             'unsubscribe_token_expires_at' => $expiry,
         ]);
 
-        return $this->find($id);
+        /** @var SendDTO $send */
+        $send = $this->find($id);
+
+        return $send;
     }
 }

@@ -69,10 +69,11 @@ class ContactService
                     'subscribed_at'   => date('Y-m-d H:i:s'),
                     'unsubscribed_at' => null,
                 ]);
-                $contact = $this->contactModel->find($contact->id);
+                /** @var ContactDTO $contact */
+                $contact = $this->contactModel->find($contact->id); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
             } elseif ($contact->status === ContactStatus::Subscribed) {
                 throw new ContactAlreadySubscribedException('Contact is already subscribed.');
-            } elseif ($contact->status === ContactStatus::Bounced || $contact->status === ContactStatus::Complained) {
+            } else {
                 throw new CourierValidationException(
                     "Contact cannot be re-subscribed: status is {$contact->status->value}",
                 );
@@ -80,7 +81,8 @@ class ContactService
         } else {
             $insertData = array_merge($data, ['subscribed_at' => date('Y-m-d H:i:s')]);
             $id         = $this->contactModel->insert($insertData);
-            $contact    = $this->contactModel->find($id);
+            /** @var ContactDTO $contact */
+            $contact = $this->contactModel->find($id); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
         }
 
         if ($tags !== []) {
@@ -246,6 +248,9 @@ class ContactService
 
     public function getContact(string $email): ?ContactDTO
     {
-        return $this->contactModel->where('email', $email)->first();
+        /** @var ContactDTO|null $contact */
+        $contact = $this->contactModel->where('email', $email)->first(); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
+
+        return $contact;
     }
 }

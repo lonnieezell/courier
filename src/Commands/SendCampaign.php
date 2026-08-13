@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Myth\Courier\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
+use Myth\Courier\DTO\CampaignDTO;
 use Myth\Courier\Enums\CampaignStatus;
 use Myth\Courier\Models\CampaignModel;
 use Myth\Courier\Services\CampaignService;
@@ -38,10 +39,12 @@ class SendCampaign extends BaseCommand
         $campaignId = isset($params[0]) && $params[0] !== '' ? (int) $params[0] : null;
 
         if ($campaignId !== null) {
-            $campaigns = [$campaignModel->find($campaignId)];
-            $campaigns = array_filter($campaigns);
+            /** @var CampaignDTO|null $campaign */
+            $campaign  = $campaignModel->find($campaignId); // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
+            $campaigns = $campaign !== null ? [$campaign] : [];
         } else {
-            $campaigns = $campaignModel
+            /** @var list<CampaignDTO> $campaigns */
+            $campaigns = $campaignModel // @phpstan-ignore varTag.type (afterFind already casts rows to CampaignDTO; its mixed tag_filter field defeats structural subtyping)
                 ->where('status', CampaignStatus::Scheduled->value)
                 ->where('scheduled_at <=', date('Y-m-d H:i:s'))
                 ->findAll();
