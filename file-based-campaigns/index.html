@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#file-based-drip-campaigns" class="md-skip">
+        <a href="#file-based-campaigns" class="md-skip">
           Skip to content
         </a>
       
@@ -554,6 +554,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#drip-sequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drip sequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Drip sequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#campaign-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -579,6 +591,39 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#blasts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blasts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Blasts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#campaign-fields_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Campaign fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#authoring-workflow" class="md-nav__link">
@@ -592,10 +637,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enrolling-contacts" class="md-nav__link">
+  <a href="#enrolling-contacts-drip-sequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enrolling contacts
+        Enrolling contacts (drip sequences)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-a-blast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending a blast
       
     </span>
   </a>
@@ -861,6 +917,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#drip-sequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drip sequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Drip sequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#campaign-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -886,6 +954,39 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#blasts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blasts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Blasts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#campaign-fields_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Campaign fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#authoring-workflow" class="md-nav__link">
@@ -899,10 +1000,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enrolling-contacts" class="md-nav__link">
+  <a href="#enrolling-contacts-drip-sequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enrolling contacts
+        Enrolling contacts (drip sequences)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-a-blast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending a blast
       
     </span>
   </a>
@@ -956,9 +1068,9 @@
   
 
 
-<h1 id="file-based-drip-campaigns">File-Based Drip Campaigns</h1>
-<p>File-based campaigns let you define drip sequences as YAML files in your project instead of creating them programmatically. The files live alongside your code, get reviewed in pull requests, and are synced into the database with a single Spark command.</p>
-<p>Use this approach when your drip sequences are long-lived and stable — onboarding flows, welcome series, re-engagement tracks. If you need to create campaigns dynamically at runtime, use the <a href="../drip-sequences/">programmatic API</a> instead.</p>
+<h1 id="file-based-campaigns">File-Based Campaigns</h1>
+<p>File-based campaigns let you define drip sequences or blasts as YAML files in your project instead of creating them programmatically. The files live alongside your code, get reviewed in pull requests, and are synced into the database with a single Spark command.</p>
+<p>Use this approach when a campaign is long-lived and stable — onboarding flows, welcome series, re-engagement tracks, or a one-time blast whose audience is a tag/segment filter. If you need to create campaigns dynamically at runtime, use the <a href="../drip-sequences/">programmatic API</a> instead.</p>
 <h2 id="directory-setup">Directory setup</h2>
 <p>By default, Courier looks for YAML files in:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>app/courier/campaigns/
@@ -981,7 +1093,9 @@
 </code></pre></div>
 <p>Set an absolute path. Relative paths are not supported.</p>
 <h2 id="yaml-file-format">YAML file format</h2>
-<p>Each <code>.yaml</code> file defines one drip campaign. The filename becomes the campaign's <code>source_file</code> identifier in the database.</p>
+<p>Each <code>.yaml</code> file defines one campaign — a drip sequence or a blast, chosen by <code>type</code>. The filename becomes the campaign's <code>source_file</code> identifier in the database.</p>
+<h3 id="drip-sequences">Drip sequences</h3>
+<p><code>type</code> defaults to <code>drip_sequence</code> when omitted, so existing files need no change.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># app/courier/campaigns/welcome-sequence.yaml</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Welcome Sequence</span>
@@ -1005,7 +1119,7 @@
 <a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">    </span><span class="nt">view</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">App\Views\emails\welcome_step3</span>
 <a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">    </span><span class="nt">delay_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">72</span>
 </code></pre></div>
-<h3 id="campaign-fields">Campaign fields</h3>
+<h4 id="campaign-fields">Campaign fields</h4>
 <table>
 <thead>
 <tr>
@@ -1031,6 +1145,11 @@
 <td>Sender email address (must be valid)</td>
 </tr>
 <tr>
+<td><code>type</code></td>
+<td>No</td>
+<td><code>drip_sequence</code> (default) or <code>blast</code></td>
+</tr>
+<tr>
 <td><code>layout</code></td>
 <td>No</td>
 <td>CI4 view string for the email layout wrapper</td>
@@ -1042,7 +1161,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="step-fields">Step fields</h3>
+<h4 id="step-fields">Step fields</h4>
 <table>
 <thead>
 <tr>
@@ -1078,44 +1197,120 @@
 <p class="admonition-title">Step 1 delay</p>
 <p>Set <code>delay_hours: 0</code> on your first step to send immediately when a contact enrolls.</p>
 </div>
+<h3 id="blasts">Blasts</h3>
+<p>A blast is a single send to an audience resolved from a tag filter and/or segment, with no steps and no per-contact enrollment.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># app/courier/campaigns/spring-sale.yaml</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Spring Sale</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">blast</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;20%</span><span class="nv"> </span><span class="s">off</span><span class="nv"> </span><span class="s">this</span><span class="nv"> </span><span class="s">week</span><span class="nv"> </span><span class="s">only&quot;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">from_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Acme Team</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nt">from_email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello@acme.com</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">view</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">App\Views\emails\spring_sale</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nt">layout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">App\Views\emails\layouts\default</span><span class="w">   </span><span class="c1"># optional</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">tag_filter</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># optional; omit to target all subscribed contacts</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">newsletter</span>
+</code></pre></div>
+<h4 id="campaign-fields_1">Campaign fields</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Yes</td>
+<td>Unique campaign name. Used to match existing DB rows on sync.</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>Yes</td>
+<td>Must be <code>blast</code></td>
+</tr>
+<tr>
+<td><code>subject</code></td>
+<td>Yes</td>
+<td>Email subject line</td>
+</tr>
+<tr>
+<td><code>view</code></td>
+<td>Yes</td>
+<td>CI4 view string rendered as the email body</td>
+</tr>
+<tr>
+<td><code>from_name</code></td>
+<td>Yes</td>
+<td>Sender display name</td>
+</tr>
+<tr>
+<td><code>from_email</code></td>
+<td>Yes</td>
+<td>Sender email address (must be valid)</td>
+</tr>
+<tr>
+<td><code>layout</code></td>
+<td>No</td>
+<td>CI4 view string for the email layout wrapper</td>
+</tr>
+<tr>
+<td><code>tag_filter</code></td>
+<td>No</td>
+<td>List of tag slugs; audience is contacts carrying all of them. Omit to target every subscribed contact.</td>
+</tr>
+</tbody>
+</table>
+<p>A synced blast is only ever inserted as <code>draft</code> — re-running sync after an operator has scheduled or sent it (via <code>courier:campaigns schedule</code> / <code>courier:send-campaign</code>) updates its content fields but leaves <code>status</code>, <code>scheduled_at</code>, and <code>sent_at</code> untouched. Scheduling and sending stay manual steps; see <a href="../commands/">CLI Commands</a>.</p>
 <h2 id="authoring-workflow">Authoring workflow</h2>
 <p><strong>1. Write your YAML files</strong> in <code>app/courier/campaigns/</code>.</p>
 <p><strong>2. Validate them</strong> — catches errors before touching the database:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:validate-campaigns
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:validate-campaigns
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>OK   welcome-sequence.yaml
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>OK   re-engagement.yaml
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>FAIL onboarding.yaml: step[1]: missing required field &#39;subject&#39;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>OK   welcome-sequence.yaml
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>OK   re-engagement.yaml
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>FAIL onboarding.yaml: step[1]: missing required field &#39;subject&#39;
 </code></pre></div>
 <p>Exit code is <code>0</code> if everything passes, <code>1</code> if any file fails. This makes it safe to run in CI before deploying.</p>
 <p><strong>3. Sync to the database</strong> — upserts campaigns by name:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:sync-campaigns
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:sync-campaigns
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>CREATED welcome-sequence.yaml → campaign &#39;Welcome Sequence&#39;
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>UPDATED re-engagement.yaml → campaign &#39;Re-engagement Track&#39;
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>SKIP    onboarding.yaml: step[1]: missing required field &#39;subject&#39;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>CREATED welcome-sequence.yaml → campaign &#39;Welcome Sequence&#39;
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>UPDATED re-engagement.yaml → campaign &#39;Re-engagement Track&#39;
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>SKIP    onboarding.yaml: step[1]: missing required field &#39;subject&#39;
 </code></pre></div>
 <p>Run sync whenever you add or update a campaign file. Invalid files are skipped — other files in the batch still sync.</p>
-<h2 id="enrolling-contacts">Enrolling contacts</h2>
-<p>Once a campaign is synced, enroll contacts the same way as any other drip campaign:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">$campaign</span> <span class="o">=</span> <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;campaignService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">getByName</span><span class="p">(</span><span class="s1">&#39;Welcome Sequence&#39;</span><span class="p">);</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nx">service</span><span class="p">(</span><span class="s1">&#39;dripService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">enroll</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+<h2 id="enrolling-contacts-drip-sequences">Enrolling contacts (drip sequences)</h2>
+<p>Once a drip campaign is synced, enroll contacts the same way as any other drip campaign:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">$campaign</span> <span class="o">=</span> <span class="nx">service</span><span class="p">(</span><span class="s1">&#39;campaignService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">getByName</span><span class="p">(</span><span class="s1">&#39;Welcome Sequence&#39;</span><span class="p">);</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nx">service</span><span class="p">(</span><span class="s1">&#39;dripService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">enroll</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
 </code></pre></div>
 <p>Or enroll at subscribe time:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nx">service</span><span class="p">(</span><span class="s1">&#39;contactService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">subscribe</span><span class="p">(</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="p">[</span><span class="s1">&#39;email&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;ada@example.com&#39;</span><span class="p">],</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="nx">dripCampaignId</span><span class="o">:</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nx">service</span><span class="p">(</span><span class="s1">&#39;contactService&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">subscribe</span><span class="p">(</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="p">[</span><span class="s1">&#39;email&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;ada@example.com&#39;</span><span class="p">],</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="nx">dripCampaignId</span><span class="o">:</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">);</span>
 </code></pre></div>
 <p>The drip processor reads step content directly from the YAML file at send time — steps are not stored in the database.</p>
+<h2 id="sending-a-blast">Sending a blast</h2>
+<p>A synced blast sits in <code>draft</code> until an operator sends it — nothing sends automatically just because the file synced. Either send it immediately by ID:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign<span class="w"> </span>&lt;id&gt;
+</code></pre></div>
+<p>or schedule it for later, which <code>courier:send-campaign</code> (run with no ID, e.g. from a scheduled task) picks up once due:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:campaigns<span class="w"> </span>schedule<span class="w"> </span>--id<span class="o">=</span>&lt;id&gt;<span class="w"> </span>--at<span class="o">=</span><span class="s2">&quot;2026-06-01 09:00:00&quot;</span>
+</code></pre></div>
+<p><code>courier:campaigns list</code> shows the ID once the campaign has synced.</p>
 <h2 id="ci-pipeline-integration">CI pipeline integration</h2>
 <p>Add a validate step to your CI pipeline to catch broken campaign files before they reach production:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># .github/workflows/ci.yml</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate campaign files</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">php spark courier:validate-campaigns</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># .github/workflows/ci.yml</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate campaign files</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">php spark courier:validate-campaigns</span>
 </code></pre></div>
 <p>Because <code>courier:validate-campaigns</code> is read-only and exits non-zero on failure, it integrates cleanly as a pre-deploy gate.</p>
 <h2 id="next-steps">Next steps</h2>
