@@ -567,6 +567,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Processing due steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overlapping-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overlapping runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -906,6 +923,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Processing due steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overlapping-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overlapping runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1032,29 +1066,36 @@
 </code></pre></div>
 <p><code>enroll()</code> returns <code>null</code> if the contact is already enrolled (any status — prevents double-enrolling). It throws a <code>RuntimeException</code> if the contact isn't subscribed or the campaign has no steps yet.</p>
 <h2 id="processing-due-steps">Processing due steps</h2>
-<p>The <code>courier:process-drips</code> command does the actual sending. Run it frequently via cron:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Send due drip steps every minute</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>php<span class="w"> </span>/path/to/your/app/spark<span class="w"> </span>courier:process-drips
+<p>The <code>courier:process-drips</code> command does the actual sending. Run it frequently, using <a href="https://github.com/codeigniter4/tasks">CodeIgniter Tasks</a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="x">// app/Config/Tasks.php</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="x">$schedule-&gt;command(&#39;courier:process-drips&#39;)-&gt;everyMinute()-&gt;singleInstance();</span>
+</code></pre></div>
+<p>On raw crontab, wrap the command in <code>flock</code> so overlapping invocations can't run at once:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>flock<span class="w"> </span>-n<span class="w"> </span>/var/lock/courier-drips.lock<span class="w"> </span>php<span class="w"> </span>/path/to/your/app/spark<span class="w"> </span>courier:process-drips
 </code></pre></div>
 <p>Each run processes up to <code>$batchSize</code> enrollments (default: 200). If you have more than that in the queue, they'll drain across successive runs — that's intentional so you don't blast your email provider.</p>
+<h3 id="overlapping-runs">Overlapping runs</h3>
+<p>Before sending, each run atomically claims its batch — due enrollments move from <code>active</code> to an intermediate <code>processing</code> status. An overlapping run's claim query only matches <code>active</code> rows, so it can't pick up enrollments the first run already claimed, and each step is sent exactly once even if a run takes longer than the interval between runs.</p>
+<p>If a run crashes or is killed mid-batch, its claimed enrollments stay <code>processing</code> until <code>$staleLockMinutes</code> (default: 15) passes, at which point the next run reclaims them back to <code>active</code> and retries. <code>singleInstance()</code>/<code>flock</code> are still recommended as defence in depth — they stop a second run from starting at all — but the claim is what actually guarantees no duplicate sends.</p>
 <h2 id="cancelling-an-enrollment">Cancelling an enrollment</h2>
 <p>To cancel a specific contact from one campaign:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">cancel</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">cancel</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
 </code></pre></div>
 <p>To cancel all drip enrollments for a contact (this happens automatically on unsubscribe):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">cancelAllForContact</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">cancelAllForContact</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="checking-enrollment-status">Checking enrollment status</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">$enrollment</span> <span class="o">=</span> <span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">getEnrollmentStatus</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1">// Returns DripEnrollmentDTO or null</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">$enrollment</span> <span class="o">=</span> <span class="nv">$dripService</span><span class="o">-&gt;</span><span class="na">getEnrollmentStatus</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1">// Returns DripEnrollmentDTO or null</span>
 </code></pre></div>
-<p>Enrollment statuses: <code>active</code>, <code>cancelled</code>, <code>completed</code>.</p>
+<p>Enrollment statuses: <code>active</code>, <code>processing</code>, <code>cancelled</code>, <code>completed</code>, <code>failed</code>.</p>
+<p><code>processing</code> is transient — it's only set while a <code>courier:process-drips</code> run has an enrollment claimed for sending; see <a href="#overlapping-runs">Overlapping runs</a>.</p>
 <h2 id="enrollment-lifecycle">Enrollment lifecycle</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>(subscribe or enroll()) → active → [step 1] → [step 2] → ... → completed
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>                                                          ↘ cancelled (unsubscribe or manual)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>(subscribe or enroll()) → active ⇄ processing → [step 1] → [step 2] → ... → completed
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>                                                                      ↘ cancelled (unsubscribe or manual)
 </code></pre></div>
 
 

@@ -595,6 +595,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#scheduling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#couriersend-campaign" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -776,6 +787,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#scheduling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#couriersend-campaign" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -867,14 +889,24 @@
 
 
 <h1 id="cli-commands">CLI Commands</h1>
-<p>Courier's automation commands are designed to run via cron — each one is stateless, processes a bounded batch, and logs its results.</p>
+<p>Courier's automation commands are designed to run on a schedule — each one is stateless, processes a bounded batch, and logs its results.</p>
 <p>For interactive management of contacts, campaigns, segments, tags, and drip enrollments, see <a href="../management-commands/">Management Commands</a>.</p>
+<h2 id="scheduling">Scheduling</h2>
+<p>Use <a href="https://github.com/codeigniter4/tasks">CodeIgniter Tasks</a> to run these commands, with <code>singleInstance()</code> so an overlapping run is skipped rather than started:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="x">// app/Config/Tasks.php</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="x">$schedule-&gt;command(&#39;courier:process-drips&#39;)-&gt;everyMinute()-&gt;singleInstance();</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="x">$schedule-&gt;command(&#39;courier:send-campaign&#39;)-&gt;everyFiveMinutes()-&gt;singleInstance();</span>
+</code></pre></div>
+<p>If you're staying on raw crontab, wrap each command in <code>flock</code> so two overlapping invocations can't run at once:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>flock<span class="w"> </span>-n<span class="w"> </span>/var/lock/courier-drips.lock<span class="w"> </span>php<span class="w"> </span>/path/to/app/spark<span class="w"> </span>courier:process-drips
+</code></pre></div>
+<p><code>courier:process-drips</code> also claims enrollments before sending, so duplicate sends are prevented even without <code>singleInstance()</code>/<code>flock</code> — see <a href="../drip-sequences/#overlapping-runs">Drip Sequences</a>. Scheduler-level overlap protection is still recommended as defence in depth.</p>
 <h2 id="couriersend-campaign"><code>courier:send-campaign</code></h2>
 <p>Sends all scheduled blast campaigns whose <code>scheduled_at</code> time has passed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign
 </code></pre></div>
 <p>To send a specific campaign by ID (useful for testing or manual sends):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign<span class="w"> </span><span class="m">42</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:send-campaign<span class="w"> </span><span class="m">42</span>
 </code></pre></div>
 <p><strong>What it does:</strong></p>
 <ol>
@@ -885,83 +917,90 @@
 <li>Marks the campaign <code>sent</code> when done, or <code>paused</code> if an exception occurs</li>
 </ol>
 <p>A paused campaign can be resumed via <code>CampaignService::resume()</code> or by fixing the issue and calling <code>courier:send-campaign &lt;id&gt;</code> again.</p>
-<p><strong>Recommended cron schedule:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check for scheduled campaigns every 5 minutes</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>*/5<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>php<span class="w"> </span>/path/to/app/spark<span class="w"> </span>courier:send-campaign
+<p><strong>Recommended schedule</strong> (see <a href="#scheduling">Scheduling</a>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="x">// app/Config/Tasks.php</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="x">$schedule-&gt;command(&#39;courier:send-campaign&#39;)-&gt;everyFiveMinutes()-&gt;singleInstance();</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># raw cron equivalent</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>*/5<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>flock<span class="w"> </span>-n<span class="w"> </span>/var/lock/courier-send-campaign.lock<span class="w"> </span>php<span class="w"> </span>/path/to/app/spark<span class="w"> </span>courier:send-campaign
 </code></pre></div>
 <h2 id="courierprocess-drips"><code>courier:process-drips</code></h2>
 <p>Sends due drip sequence steps to enrolled contacts.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:process-drips
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:process-drips
 </code></pre></div>
 <p><strong>What it does:</strong></p>
 <ol>
-<li>Finds active enrollments where <code>next_send_at &lt;= now</code> (up to <code>$batchSize</code>)</li>
+<li>Reclaims any <code>processing</code> enrollment stuck past <code>$staleLockMinutes</code> (a crashed prior run) back to <code>active</code></li>
+<li>Claims active enrollments where <code>next_send_at &lt;= now</code> (up to <code>$batchSize</code>), marking them <code>processing</code> so an overlapping run can't claim them too</li>
 <li>Sends the current step email to each contact</li>
-<li>Advances each enrollment to the next step (updating <code>next_send_at</code> based on the next step's <code>delay_hours</code>)</li>
+<li>Advances each enrollment to the next step (updating <code>next_send_at</code> based on the next step's <code>delay_hours</code>) and clears the claim</li>
 <li>Marks the enrollment <code>completed</code> when the contact finishes all steps</li>
 <li>Cancels the enrollment if the contact is no longer subscribed</li>
 </ol>
-<p><strong>Recommended cron schedule:</strong></p>
+<p><strong>Recommended schedule</strong> (see <a href="#scheduling">Scheduling</a>):</p>
 <p>Run this frequently so drip steps go out close to their scheduled time:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Process due drip steps every minute</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>php<span class="w"> </span>/path/to/app/spark<span class="w"> </span>courier:process-drips
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="x">// app/Config/Tasks.php</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="x">$schedule-&gt;command(&#39;courier:process-drips&#39;)-&gt;everyMinute()-&gt;singleInstance();</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># raw cron equivalent</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>flock<span class="w"> </span>-n<span class="w"> </span>/var/lock/courier-drips.lock<span class="w"> </span>php<span class="w"> </span>/path/to/app/spark<span class="w"> </span>courier:process-drips
 </code></pre></div>
 <p>If your batch size is smaller than your active enrollment count, the queue drains across successive runs. That's by design — it prevents overwhelming your email provider in a single burst.</p>
 <h2 id="couriertrack-events"><code>courier:track-events</code></h2>
 <p>A stub command for processing bounce webhooks or SMTP feedback loops.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:track-events
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:track-events
 </code></pre></div>
 <p>Out of the box this command does nothing but log a warning. It's a placeholder — extend it when you're ready to handle bounce webhooks from your email provider:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp">&lt;?php</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1">// app/Commands/ProcessBounces.php</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">namespace</span> <span class="nx">App\Commands</span><span class="p">;</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">use</span> <span class="nx">Myth\Courier\Commands\TrackEvents</span><span class="p">;</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">use</span> <span class="nx">Myth\Courier\Models\ContactModel</span><span class="p">;</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">use</span> <span class="nx">Myth\Courier\Enums\ContactStatus</span><span class="p">;</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">class</span> <span class="nc">ProcessBounces</span> <span class="k">extends</span> <span class="nx">TrackEvents</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">{</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">protected</span> <span class="nv">$name</span> <span class="o">=</span> <span class="s1">&#39;courier:track-events&#39;</span><span class="p">;</span> <span class="c1">// override the base command</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="k">protected</span> <span class="k">function</span> <span class="nf">processBounce</span><span class="p">(</span><span class="nx">string</span> <span class="nv">$email</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="p">{</span>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="nv">$contact</span> <span class="o">=</span> <span class="nx">model</span><span class="p">(</span><span class="nx">ContactModel</span><span class="o">::</span><span class="na">class</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="nv">$email</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">first</span><span class="p">();</span>
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>        <span class="k">if</span> <span class="p">(</span><span class="nv">$contact</span> <span class="o">===</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span><span class="p">;</span> <span class="p">}</span>
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="nx">model</span><span class="p">(</span><span class="nx">ContactModel</span><span class="o">::</span><span class="na">class</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">update</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="p">[</span>
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>            <span class="s1">&#39;status&#39;</span> <span class="o">=&gt;</span> <span class="nx">ContactStatus</span><span class="o">::</span><span class="na">Bounced</span><span class="o">-&gt;</span><span class="na">value</span><span class="p">,</span>
-<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>        <span class="p">]);</span>
-<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="p">}</span>
-<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">&lt;?php</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1">// app/Commands/ProcessBounces.php</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">namespace</span> <span class="nx">App\Commands</span><span class="p">;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">use</span> <span class="nx">Myth\Courier\Commands\TrackEvents</span><span class="p">;</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">use</span> <span class="nx">Myth\Courier\Models\ContactModel</span><span class="p">;</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="k">use</span> <span class="nx">Myth\Courier\Enums\ContactStatus</span><span class="p">;</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="k">class</span> <span class="nc">ProcessBounces</span> <span class="k">extends</span> <span class="nx">TrackEvents</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">{</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="k">protected</span> <span class="nv">$name</span> <span class="o">=</span> <span class="s1">&#39;courier:track-events&#39;</span><span class="p">;</span> <span class="c1">// override the base command</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="k">protected</span> <span class="k">function</span> <span class="nf">processBounce</span><span class="p">(</span><span class="nx">string</span> <span class="nv">$email</span><span class="p">)</span><span class="o">:</span> <span class="nx">void</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="p">{</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        <span class="nv">$contact</span> <span class="o">=</span> <span class="nx">model</span><span class="p">(</span><span class="nx">ContactModel</span><span class="o">::</span><span class="na">class</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="nv">$email</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">first</span><span class="p">();</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>        <span class="k">if</span> <span class="p">(</span><span class="nv">$contact</span> <span class="o">===</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span><span class="p">;</span> <span class="p">}</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>        <span class="nx">model</span><span class="p">(</span><span class="nx">ContactModel</span><span class="o">::</span><span class="na">class</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">update</span><span class="p">(</span><span class="nv">$contact</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">,</span> <span class="p">[</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>            <span class="s1">&#39;status&#39;</span> <span class="o">=&gt;</span> <span class="nx">ContactStatus</span><span class="o">::</span><span class="na">Bounced</span><span class="o">-&gt;</span><span class="na">value</span><span class="p">,</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>        <span class="p">]);</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>    <span class="p">}</span>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="couriervalidate-campaigns"><code>courier:validate-campaigns</code></h2>
 <p>Validates all YAML drip campaign definition files without writing to the database.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:validate-campaigns
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:validate-campaigns
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>OK   welcome-sequence.yaml
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>FAIL onboarding.yaml: step[1]: missing required field &#39;subject&#39;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>OK   welcome-sequence.yaml
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>FAIL onboarding.yaml: step[1]: missing required field &#39;subject&#39;
 </code></pre></div>
 <p>Exit code <code>0</code> means all files passed (or no files were found). Exit code <code>1</code> means at least one file failed. This makes the command safe to use as a pre-deploy gate in CI:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># .github/workflows/ci.yml</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate campaign files</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">php spark courier:validate-campaigns</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># .github/workflows/ci.yml</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate campaign files</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">php spark courier:validate-campaigns</span>
 </code></pre></div>
 <p>See <a href="../file-based-campaigns/">File-Based Campaigns</a> for the full YAML format.</p>
 <h2 id="couriersync-campaigns"><code>courier:sync-campaigns</code></h2>
 <p>Syncs YAML drip campaign files into the <code>courier_campaigns</code> table. Campaigns are upserted by name — running the command twice is safe.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:sync-campaigns
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>php<span class="w"> </span>spark<span class="w"> </span>courier:sync-campaigns
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>CREATED welcome-sequence.yaml → campaign &#39;Welcome Sequence&#39;
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>UPDATED re-engagement.yaml → campaign &#39;Re-engagement Track&#39;
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>SKIP    onboarding.yaml: step[1]: missing required field &#39;subject&#39;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>CREATED welcome-sequence.yaml → campaign &#39;Welcome Sequence&#39;
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>UPDATED re-engagement.yaml → campaign &#39;Re-engagement Track&#39;
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>SKIP    onboarding.yaml: step[1]: missing required field &#39;subject&#39;
 </code></pre></div>
 <p>Invalid files are skipped with a <code>SKIP</code> error; valid files in the same batch still sync. Steps are <strong>not</strong> written to the database — the YAML file is the runtime source of truth for step content and is read at send time by <code>courier:process-drips</code>.</p>
 <p>Run this command during deployment after any campaign file changes.</p>
 <h2 id="logging">Logging</h2>
 <p>All automation commands write to CI4's log system using the <code>[Courier]</code> prefix. Check your <code>writable/logs/</code> directory if something isn't sending as expected.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>[courier:send-campaign] Campaign 42 failed: Connection refused
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>[courier:process-drips] processed=14 cancelled=1 failed=0
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>[courier:send-campaign] Campaign 42 failed: Connection refused
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>[courier:process-drips] processed=14 cancelled=1 failed=0
 </code></pre></div>
 
 

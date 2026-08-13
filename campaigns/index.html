@@ -579,6 +579,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Campaign lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resending-is-safe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resending is safe
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -962,6 +979,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Campaign lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resending-is-safe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resending is safe
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1115,6 +1149,13 @@
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">$campaignService</span><span class="o">-&gt;</span><span class="na">resume</span><span class="p">(</span><span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
 </code></pre></div>
 <p>This moves it back to <code>scheduled</code> so the next command run picks it up.</p>
+<h3 id="resending-is-safe">Resending is safe</h3>
+<p>Re-running <code>courier:send-campaign</code> against a Blast campaign — whether resuming
+a paused send or re-triggering it manually — only delivers to contacts who
+don't already have a <code>sent</code> record for that campaign. Growing a tag or
+segment between runs delivers only to the newly matching contacts; contacts
+already delivered to are skipped. This does not apply to drip sequences,
+where each contact is expected to receive every step.</p>
 <h2 id="checking-campaign-stats">Checking campaign stats</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">&lt;?php</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">$stats</span> <span class="o">=</span> <span class="nv">$campaignService</span><span class="o">-&gt;</span><span class="na">getCampaignStats</span><span class="p">(</span><span class="nv">$campaign</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
