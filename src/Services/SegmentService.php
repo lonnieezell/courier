@@ -58,11 +58,14 @@ class SegmentService
             $builder = $builder->excludeSentForCampaign($excludeSentForCampaignId);
         }
 
-        return $builder
+        /** @var list<ContactDTO> $contacts */
+        $contacts = $builder // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
             ->whereIn('t.slug', $slugs)
             ->groupBy("{$p}courier_contacts.id")
             ->having('COUNT(DISTINCT t.id) =', $count)
             ->findAll();
+
+        return $contacts;
     }
 
     /**
@@ -102,7 +105,8 @@ class SegmentService
                     ->orderBy("{$p}courier_contacts.id", 'ASC');
             }
 
-            $rows = $builder
+            /** @var list<ContactDTO> $rows */
+            $rows = $builder // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
                 ->whereIn('t.slug', $slugs)
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
@@ -129,7 +133,10 @@ class SegmentService
      */
     public function resolve(int $segmentId, ?int $excludeSentForCampaignId = null): array
     {
-        return $this->buildQuery($segmentId, $excludeSentForCampaignId)->findAll();
+        /** @var list<ContactDTO> $contacts */
+        $contacts = $this->buildQuery($segmentId, $excludeSentForCampaignId)->findAll(); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
+
+        return $contacts;
     }
 
     /**
@@ -154,7 +161,8 @@ class SegmentService
         $count = count($slugs);
         $p     = $this->contactModel->db->getPrefix();
 
-        return $this->buildQuery($segmentId, $excludeSentForCampaignId)
+        /** @var list<ContactDTO> $contacts */
+        $contacts = $this->buildQuery($segmentId, $excludeSentForCampaignId) // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
             ->select("{$p}courier_contacts.*")
             ->join('courier_contact_tags ct', "ct.contact_id = {$p}courier_contacts.id")
             ->join('courier_tags t', 't.id = ct.tag_id')
@@ -162,6 +170,8 @@ class SegmentService
             ->groupBy("{$p}courier_contacts.id")
             ->having('COUNT(DISTINCT t.id) =', $count)
             ->findAll();
+
+        return $contacts;
     }
 
     /**
@@ -194,7 +204,8 @@ class SegmentService
                     ->orderBy("{$p}courier_contacts.id", 'ASC');
             }
 
-            $rows = $query
+            /** @var list<ContactDTO> $rows */
+            $rows = $query // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
                 ->groupBy("{$p}courier_contacts.id")
                 ->having('COUNT(DISTINCT t.id) =', $count)
                 ->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
@@ -236,7 +247,8 @@ class SegmentService
                     ->orderBy("{$p}courier_contacts.id", 'ASC');
             }
 
-            $rows = $query->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset);
+            /** @var list<ContactDTO> $rows */
+            $rows = $query->findAll($chunkSize, $excludeSentForCampaignId !== null ? 0 : $offset); // @phpstan-ignore varTag.type (afterFind already casts rows to ContactDTO; its mixed custom_fields field defeats structural subtyping)
 
             if ($rows === []) {
                 break;

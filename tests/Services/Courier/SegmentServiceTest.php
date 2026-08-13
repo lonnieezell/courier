@@ -42,7 +42,6 @@ final class SegmentServiceTest extends CIUnitTestCase
         $contactModel->insert(['email' => 'sub@example.com', 'status' => ContactStatus::Subscribed]);
         $contactModel->insert(['email' => 'unsub@example.com', 'status' => ContactStatus::Unsubscribed]);
 
-        // @phpstan-ignore argument.type
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'       => 'All contacts',
             'rules'      => [],
@@ -113,7 +112,6 @@ final class SegmentServiceTest extends CIUnitTestCase
 
         $pivotModel->insert(['contact_id' => $c1Id, 'tag_id' => $tagId]);
 
-        // @phpstan-ignore argument.type (JsonCast requires PHP array; CI4 Model::insert() types are too strict)
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'       => 'Newsletter subscribers',
             'rules'      => [['field' => 'tag', 'op' => 'in', 'value' => 'newsletter']],
@@ -142,7 +140,6 @@ final class SegmentServiceTest extends CIUnitTestCase
             'subscribed_at' => '2026-06-01 00:00:00',
         ]);
 
-        // @phpstan-ignore argument.type (JsonCast requires PHP array; CI4 Model::insert() types are too strict)
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'       => 'Recent',
             'rules'      => [['field' => 'subscribed_at', 'op' => 'gte', 'value' => '2026-04-01']],
@@ -172,7 +169,6 @@ final class SegmentServiceTest extends CIUnitTestCase
         $pivotModel->insert(['contact_id' => $c1Id, 'tag_id' => $vipId]);
         $pivotModel->insert(['contact_id' => $c2Id, 'tag_id' => $newsletterId]);
 
-        // @phpstan-ignore argument.type (JsonCast requires PHP array; CI4 Model::insert() types are too strict)
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'  => 'VIP or Newsletter',
             'rules' => [
@@ -196,7 +192,6 @@ final class SegmentServiceTest extends CIUnitTestCase
 
         $vipId = $tagModel->skipValidation(true)->insert(['slug' => 'vip', 'label' => 'VIP']);
 
-        // @phpstan-ignore argument.type
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'       => 'Web source',
             'rules'      => [['field' => 'source', 'op' => 'eq', 'value' => 'web']],
@@ -235,7 +230,6 @@ final class SegmentServiceTest extends CIUnitTestCase
 
         $pivotModel->insert(['contact_id' => $c1Id, 'tag_id' => $tagId]);
 
-        // @phpstan-ignore argument.type (JsonCast requires PHP array; CI4 Model::insert() types are too strict)
         $segmentId = $segmentModel->skipValidation(true)->insert([
             'name'       => 'Newsletter subscribers',
             'rules'      => [['field' => 'tag', 'op' => 'in', 'value' => 'newsletter']],
