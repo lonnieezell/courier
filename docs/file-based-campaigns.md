@@ -1,8 +1,8 @@
-# File-Based Drip Campaigns
+# File-Based Campaigns
 
-File-based campaigns let you define drip sequences as YAML files in your project instead of creating them programmatically. The files live alongside your code, get reviewed in pull requests, and are synced into the database with a single Spark command.
+File-based campaigns let you define drip sequences or blasts as YAML files in your project instead of creating them programmatically. The files live alongside your code, get reviewed in pull requests, and are synced into the database with a single Spark command.
 
-Use this approach when your drip sequences are long-lived and stable — onboarding flows, welcome series, re-engagement tracks. If you need to create campaigns dynamically at runtime, use the [programmatic API](drip-sequences.md) instead.
+Use this approach when a campaign is long-lived and stable — onboarding flows, welcome series, re-engagement tracks, or a one-time blast whose audience is a tag/segment filter. If you need to create campaigns dynamically at runtime, use the [programmatic API](drip-sequences.md) instead.
 
 ## Directory setup
 
@@ -39,7 +39,11 @@ Set an absolute path. Relative paths are not supported.
 
 ## YAML file format
 
-Each `.yaml` file defines one drip campaign. The filename becomes the campaign's `source_file` identifier in the database.
+Each `.yaml` file defines one campaign — a drip sequence or a blast, chosen by `type`. The filename becomes the campaign's `source_file` identifier in the database.
+
+### Drip sequences
+
+`type` defaults to `drip_sequence` when omitted, so existing files need no change.
 
 ```yaml
 # app/courier/campaigns/welcome-sequence.yaml
@@ -66,17 +70,18 @@ steps:
     delay_hours: 72
 ```
 
-### Campaign fields
+#### Campaign fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
 | `name` | Yes | Unique campaign name. Used to match existing DB rows on sync. |
 | `from_name` | Yes | Sender display name |
 | `from_email` | Yes | Sender email address (must be valid) |
+| `type` | No | `drip_sequence` (default) or `blast` |
 | `layout` | No | CI4 view string for the email layout wrapper |
 | `steps` | Yes | Array of step definitions (at least one) |
 
-### Step fields
+#### Step fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -87,6 +92,40 @@ steps:
 
 !!! tip "Step 1 delay"
     Set `delay_hours: 0` on your first step to send immediately when a contact enrolls.
+
+### Blasts
+
+A blast is a single send to an audience resolved from a tag filter and/or segment, with no steps and no per-contact enrollment.
+
+```yaml
+# app/courier/campaigns/spring-sale.yaml
+
+name: Spring Sale
+type: blast
+subject: "20% off this week only"
+from_name: Acme Team
+from_email: hello@acme.com
+view: App\Views\emails\spring_sale
+layout: App\Views\emails\layouts\default   # optional
+tag_filter:                                 # optional; omit to target all subscribed contacts
+  - customer
+  - newsletter
+```
+
+#### Campaign fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Unique campaign name. Used to match existing DB rows on sync. |
+| `type` | Yes | Must be `blast` |
+| `subject` | Yes | Email subject line |
+| `view` | Yes | CI4 view string rendered as the email body |
+| `from_name` | Yes | Sender display name |
+| `from_email` | Yes | Sender email address (must be valid) |
+| `layout` | No | CI4 view string for the email layout wrapper |
+| `tag_filter` | No | List of tag slugs; audience is contacts carrying all of them. Omit to target every subscribed contact. |
+
+A synced blast is only ever inserted as `draft` — re-running sync after an operator has scheduled or sent it (via `courier:campaigns schedule` / `courier:send-campaign`) updates its content fields but leaves `status`, `scheduled_at`, and `sent_at` untouched. Scheduling and sending stay manual steps; see [CLI Commands](commands.md).
 
 ## Authoring workflow
 
@@ -120,9 +159,9 @@ SKIP    onboarding.yaml: step[1]: missing required field 'subject'
 
 Run sync whenever you add or update a campaign file. Invalid files are skipped — other files in the batch still sync.
 
-## Enrolling contacts
+## Enrolling contacts (drip sequences)
 
-Once a campaign is synced, enroll contacts the same way as any other drip campaign:
+Once a drip campaign is synced, enroll contacts the same way as any other drip campaign:
 
 ```php
 <?php
@@ -142,6 +181,22 @@ service('contactService')->subscribe(
 ```
 
 The drip processor reads step content directly from the YAML file at send time — steps are not stored in the database.
+
+## Sending a blast
+
+A synced blast sits in `draft` until an operator sends it — nothing sends automatically just because the file synced. Either send it immediately by ID:
+
+```bash
+php spark courier:send-campaign <id>
+```
+
+or schedule it for later, which `courier:send-campaign` (run with no ID, e.g. from a scheduled task) picks up once due:
+
+```bash
+php spark courier:campaigns schedule --id=<id> --at="2026-06-01 09:00:00"
+```
+
+`courier:campaigns list` shows the ID once the campaign has synced.
 
 ## CI pipeline integration
 
