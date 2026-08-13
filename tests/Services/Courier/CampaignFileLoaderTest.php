@@ -136,4 +136,78 @@ final class CampaignFileLoaderTest extends CIUnitTestCase
         $this->assertNotEmpty($errors);
         $this->assertStringContainsString("missing required field 'subject'", $errors[0]);
     }
+
+    private function validBlastData(): array
+    {
+        return [
+            'name'       => 'spring-sale',
+            'type'       => 'blast',
+            'subject'    => '20% off this week',
+            'view'       => 'emails/spring-sale',
+            'from_name'  => 'Acme Team',
+            'from_email' => 'hello@acme.com',
+        ];
+    }
+
+    public function testValidateReturnsEmptyArrayForValidBlastData(): void
+    {
+        $errors = $this->loader->validate($this->validBlastData(), 'spring-sale.yaml');
+        $this->assertSame([], $errors);
+    }
+
+    public function testValidateBlastDoesNotRequireSteps(): void
+    {
+        $data = $this->validBlastData();
+        $this->assertArrayNotHasKey('steps', $data);
+
+        $errors = $this->loader->validate($data, 'spring-sale.yaml');
+        $this->assertSame([], $errors);
+    }
+
+    public function testValidateReturnsMissingSubjectErrorForBlast(): void
+    {
+        $data = $this->validBlastData();
+        unset($data['subject']);
+        $errors = $this->loader->validate($data, 'test.yaml');
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString("missing required field 'subject'", $errors[0]);
+    }
+
+    public function testValidateReturnsMissingViewErrorForBlast(): void
+    {
+        $data = $this->validBlastData();
+        unset($data['view']);
+        $errors = $this->loader->validate($data, 'test.yaml');
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString("missing required field 'view'", $errors[0]);
+    }
+
+    public function testValidateAcceptsOptionalTagFilterForBlast(): void
+    {
+        $data               = $this->validBlastData();
+        $data['tag_filter'] = ['customer', 'newsletter'];
+        $errors             = $this->loader->validate($data, 'spring-sale.yaml');
+        $this->assertSame([], $errors);
+    }
+
+    public function testValidateReturnsInvalidTypeError(): void
+    {
+        $data         = $this->validBlastData();
+        $data['type'] = 'not-a-real-type';
+        $errors       = $this->loader->validate($data, 'test.yaml');
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString("invalid type 'not-a-real-type'", $errors[0]);
+    }
+
+    public function testValidateDefaultsToDripSequenceWhenTypeOmitted(): void
+    {
+        $data = $this->validData();
+        $this->assertArrayNotHasKey('type', $data);
+
+        // Valid drip data passes; missing 'steps' should still fail as before.
+        unset($data['steps']);
+        $errors = $this->loader->validate($data, 'test.yaml');
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString("missing required field 'steps'", $errors[0]);
+    }
 }

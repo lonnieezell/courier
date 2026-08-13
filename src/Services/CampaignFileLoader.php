@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Myth\Courier\Services;
 
 use Myth\Courier\DTO\DripStepDTO;
+use Myth\Courier\Enums\CampaignType;
 use RuntimeException;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Loads and validates file-based drip campaign definitions from YAML files.
+ * Loads and validates file-based campaign definitions from YAML files.
+ * Two shapes share the format: a drip sequence (default, 'steps' required)
+ * and a blast ('type: blast', a single subject/view, no steps).
  */
 class CampaignFileLoader
 {
-    private const REQUIRED_CAMPAIGN_FIELDS = ['name', 'from_name', 'from_email', 'steps'];
+    private const REQUIRED_CAMPAIGN_FIELDS = ['name', 'from_name', 'from_email'];
+    private const REQUIRED_DRIP_FIELDS     = ['steps'];
+    private const REQUIRED_BLAST_FIELDS    = ['subject', 'view'];
     private const REQUIRED_STEP_FIELDS     = ['position', 'subject', 'view', 'delay_hours'];
 
     public function __construct(private readonly string $campaignsPath = '')
@@ -50,6 +55,30 @@ class CampaignFileLoader
 
         if (isset($data['from_email']) && $data['from_email'] !== '' && ! filter_var($data['from_email'], FILTER_VALIDATE_EMAIL)) {
             $errors[] = "{$filename}: 'from_email' is not a valid email address";
+        }
+
+        $type = CampaignType::tryFrom((string) ($data['type'] ?? CampaignType::DripSequence->value));
+
+        if ($type === null) {
+            $errors[] = "{$filename}: invalid type '{$data['type']}'; expected 'blast' or 'drip_sequence'";
+
+            return $errors;
+        }
+
+        if ($type === CampaignType::Blast) {
+            foreach (self::REQUIRED_BLAST_FIELDS as $field) {
+                if (! isset($data[$field]) || $data[$field] === '') {
+                    $errors[] = "{$filename}: missing required field '{$field}'";
+                }
+            }
+
+            return $errors;
+        }
+
+        foreach (self::REQUIRED_DRIP_FIELDS as $field) {
+            if (! isset($data[$field]) || $data[$field] === '') {
+                $errors[] = "{$filename}: missing required field '{$field}'";
+            }
         }
 
         if (isset($data['steps']) && is_array($data['steps'])) {
